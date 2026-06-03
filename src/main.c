@@ -3,6 +3,8 @@
 #include <string.h>
 #include <time.h>
 
+#include <unistd.h>
+
 #include <sys/stat.h>
 
 // TODO: Write a compiler driver module to handle allocating and freeing memory,
