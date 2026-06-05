@@ -6,6 +6,8 @@
 #include "dd_string.h"
 
 typedef enum tokenKind_ {
+    TOKEN_UNKOWN,           // Unkown token
+    TOKEN_EOF,              // EOF (End Of File)
     // Punctuation
     TOKEN_LEFT_PAREN,       // (
     TOKEN_RIGHT_PAREN,      // )
@@ -44,8 +46,11 @@ typedef struct tokenList_ {
 void TokenList_init(TokenList *tl);
 void TokenList_destroy(TokenList* tl);
 void TokenList_append(TokenList* tl, Token tok);
+void TokenList_print(TokenList *tl);
 
 static char *token_literal_list[TOKENKIND_LEN] = {
+    (char *)"UNKNOWN",
+    (char *)"EOF",
     // Punctuation
     (char *)"(",            // TOKEN_LEFT_PAREN
     (char *)")",            // TOKEN_RIGHT_PAREN

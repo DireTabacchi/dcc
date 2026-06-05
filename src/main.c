@@ -7,6 +7,10 @@
 
 #include <sys/stat.h>
 
+#include "token.h"
+#include "tokenizer.h"
+#include "dcc_error.h"
+
 // TODO: Write a compiler driver module to handle allocating and freeing memory,
 //       cleaning up temporary files
 
@@ -142,7 +146,7 @@ int main(int argc, char *argv[]) {
 
     struct stat src_stat;
     if (stat(opts.filepath, &src_stat) != 0) {
-        printf("[Error] Cannot open file %s\n", opts.filepath);
+        printf("[Error] Cannot stat file %s\n", opts.filepath);
         return EXIT_FAILURE;
     }
 
@@ -173,14 +177,27 @@ int main(int argc, char *argv[]) {
     //printf("[debug] preproc filename: %s\n", preproc_filename);
 
     // Preprocess file; Let GCC handle that
-    // allocate space for command: 15 characters (exe, flags, spaces, NULL byte), strlen(src), strlen(preproc_filename)
+    // allocate space for command: 15 characters (exe, flags, spaces, NULL byte) + strlen(src) + strlen(preproc_filename)
     char *preproc_command = (char *)calloc(15 + strlen(opts.filepath) + strlen(opts.filepath), sizeof(char));
     sprintf(preproc_command, "gcc -E -P %s -o %s", opts.filepath, preproc_filename);
     //printf("[debug] Preproc_command:\n%s\n", preproc_command);
     system(preproc_command);
     free(preproc_command); // preproc command no longer needed
 
+    
     // TODO: Tokenize file
+    Tokenizer tok_driver = {0};
+    bool compiler_erred = false;
+    Tokenizer_init(&tok_driver, preproc_filename);
+    tokenize(&tok_driver);
+
+    TokenList_print(&tok_driver.tokens);
+
+    if (tok_driver.errors.len > 0) {
+        compiler_erred = true;
+        ErrorList_print(&tok_driver.errors);
+    }
+
     // TODO: Parse Tokens
     // TODO: Generate assembly
 
@@ -191,8 +208,14 @@ int main(int argc, char *argv[]) {
 
     // TODO: delete assembly file when done
 
+    Tokenizer_destroy(&tok_driver);
+
     free(file_basename);
     free(preproc_filename);
+
+    if (compiler_erred) {
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }

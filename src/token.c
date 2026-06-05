@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -32,4 +33,13 @@ void TokenList_append(TokenList* tl, Token tok) {
 
     memcpy(&tl->toks[tl->len], &tok, sizeof(Token));
     tl->len += 1;
+}
+
+void TokenList_print(TokenList *tl) {
+    printf("%-24s | %-32s | %-11s | %-6s | %-6s\n", "Token Kind", "Token Text", "File Offset", "Line", "Column");
+    printf("===========================================================================================\n");
+    for (size_t tl_idx = 0; tl_idx < tl->len; tl_idx++) {
+        Token tok = tl->toks[tl_idx];
+        printf("%-24s | %-32.32s | %-11d | %-6d | %-6d\n", token_literal_list[tok.kind], tok.text.cstr, tok.pos.offset, tok.pos.line, tok.pos.column);
+    }
 }

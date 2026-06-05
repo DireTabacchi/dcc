@@ -3,8 +3,10 @@
 
 #include "dd_string.h"
 #include "token.h"
+#include "dcc_error.h"
 
 typedef struct tokenizer_ {
+    String src_path;
     String src;
 
     char ch;            // current character (src[offset])
@@ -14,7 +16,7 @@ typedef struct tokenizer_ {
     long line_offset;   // offset of beginning of line
 
     TokenList tokens;
-    long error_count;
+    ErrorList errors;
 } Tokenizer;
 
 void Tokenizer_init(Tokenizer *t, const char *path);

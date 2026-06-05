@@ -9,11 +9,12 @@ typedef struct string_ {
     size_t len;     // Length of cstr (minus NULL byte)
 } String;
 
-// Create a String object from a NULL-terminated C-string.
-String String_initCstr(const char *str);
+/* Create a String object from a NULL-terminated C-string. */
+String String_init_cstr(const char *str);
+
 // Create a String object with a known byte length `len`, minus the NULL byte.
 // The returned String will have enough memory to hold `len` characters plus a NULL byte.
-String String_initLength(size_t len);
+String String_init_length(size_t len);
 void String_free(String *str);
 
 static inline ssize_t dd_strlen(const char *str) {
