@@ -27,20 +27,16 @@ static char advance(Tokenizer *t) {
 }
 
 void Tokenizer_init(Tokenizer *t, const char *src_path) {
-    printf("[Tokenizer_init] path is: %s\n", src_path);
     int src_fd = open(src_path, O_RDONLY);
-    printf("[Tokenizer_init] src_fd is %d\n", src_fd);
     if (src_fd == -1) {
         printf("Unable to open file %s\n", src_path);
         perror("Error: ");
         return;
     }
-    printf("[Tokenizer_init] Opened file %s with file descriptor %d\n", src_path, src_fd);
 
     struct stat src_stat = {0};
     fstat(src_fd, &src_stat);
 
-    printf("[Tokenizer_init] size: %ld\n", src_stat.st_size);
     t->src = String_init_length(src_stat.st_size);
     read(src_fd, t->src.cstr, t->src.len);
     t->src_path = String_init_cstr(src_path);
@@ -70,6 +66,7 @@ void Tokenizer_destroy(Tokenizer *t) {
     ErrorList_destroy(&t->errors);
 }
 
+// Check if a char `c` is a whitespace character.
 #define ISWHITESPACE(c) ((c) == '\n' || (c) == '\r' || (c) == '\t' || (c) == ' ')
 // Check if a char `c` is a digit character.
 #define ISDIGIT(c) ('0' <= (c) && (c) <= '9')
@@ -93,11 +90,10 @@ static bool is_keyword(String kw, long start, long rest_len, const char *rest) {
         return true;
     }
 
-    printf("kw.cstr[start] %s does NOT match rest %s\n", &kw.cstr[start], rest);
     return false;
 }
 
-static void scanIdentifier(Tokenizer *t, long offset) {
+static void scan_identifier(Tokenizer *t, long offset) {
     TokenPos ident_pos = { .offset = offset, .line = t->line, .column = offset - t->line_offset + 1 };
     while (ISALPHA(t->ch) || ISDIGIT(t->ch)) advance(t);
 
@@ -143,11 +139,11 @@ static void scan_number(Tokenizer *t, long offset) {
         Error err = {0};
         err.file = String_init_cstr(t->src_path.cstr);
         err.pos = tok_pos;
-        char *test = "invalid constant or identifier ''";
         String err_scan = String_init_length(t->offset - offset);
         memcpy(err_scan.cstr, &t->src.cstr[offset], err_scan.len);
         err.desc = String_init_length(err_scan.len + 33);
         snprintf(err.desc.cstr, err.desc.len+1, "invalid constant or identifier '%s'", err_scan.cstr);
+        String_free(&err_scan);
         ErrorList_append(&t->errors, err);
         return;
     }
@@ -172,7 +168,7 @@ void tokenize(Tokenizer *t) {
         if (ISDIGIT(t->ch)) {
             scan_number(t, offset);
         } else if (ISALPHA(t->ch)) {
-            scanIdentifier(t, offset);
+            scan_identifier(t, offset);
         } else {
             Token tok = {0};
             tok.pos = (TokenPos){ .offset = t->offset, .line = t->line, .column = t->offset - t->line_offset + 1 };
