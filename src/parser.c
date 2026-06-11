@@ -1,0 +1,161 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "dd_string.h"
+
+#include "token.h"
+#include "tokenizer.h"
+#include "dcc_error.h"
+#include "ast.h"
+
+#include "parser.h"
+
+// TODO: write error creating util function (vargs?)
+
+// Parser Utilities
+
+static void advance_token(Parser* p) {
+    p->prev_idx = p->curr_idx;
+    p->curr_idx++;
+    if (p->curr_idx >= p->tokenizer.tokens.len) {
+        p->curr_idx = -1;
+    }
+}
+
+static bool expect_token(Parser *p, TokenKind expected_kind) {
+    if (p->curr_idx == -1) {
+        return false;
+    }
+
+    if (p->tokenizer.tokens.toks[p->curr_idx].kind == TOKEN_EOF && expected_kind != TOKEN_EOF) {
+        Token err_token = p->tokenizer.tokens.toks[p->prev_idx];
+        Error err = {0};
+        err.file = String_init_cstr(p->tokenizer.src_path.cstr);
+        err.pos = err_token.pos;
+        String expected_token_kind = String_init_cstr(token_literal_list[expected_kind]);
+        err.desc = String_init_length(expected_token_kind.len + 33);
+        snprintf(err.desc.cstr, err.desc.len+1, "expected %s, but found end of input", expected_token_kind.cstr);
+        String_free(&expected_token_kind);
+
+        ErrorList_append(&p->errors, err);
+
+        // Advance parser so curr_idx becomes -1, We've reached EOF, don't need
+        // anymore errors saying that we've reached it.
+        advance_token(p);
+
+        return false;
+    }
+
+    Token actual = p->tokenizer.tokens.toks[p->curr_idx];
+    if (actual.kind == expected_kind) {
+        advance_token(p);
+        return true;
+    }
+
+    Error err = {0};
+    err.file = String_init_cstr(p->tokenizer.src_path.cstr);
+    err.pos = actual.pos;
+    String expected_token_kind = String_init_cstr(token_literal_list[expected_kind]);
+    String found_token_kind;
+    if (actual.kind == TOKEN_IDENTIFIER) {
+        found_token_kind = String_init_length(actual.text.len + 13);
+        snprintf(found_token_kind.cstr, found_token_kind.len+1, "identifier '%s'", actual.text.cstr);
+    } else if (actual.kind == TOKEN_CONSTANT) { 
+        found_token_kind = String_init_length(actual.text.len + 11);
+        snprintf(found_token_kind.cstr, found_token_kind.len+1, "constant '%s'", actual.text.cstr);
+    } else {
+        found_token_kind = String_init_cstr(token_literal_list[actual.kind]);
+    }
+    err.desc = String_init_length(expected_token_kind.len + found_token_kind.len + 21);
+    snprintf(err.desc.cstr, err.desc.len+1, "expected %s, but found %s", expected_token_kind.cstr, found_token_kind.cstr);
+    String_free(&expected_token_kind);
+    String_free(&found_token_kind);
+
+    ErrorList_append(&p->errors, err);
+
+    advance_token(p);
+    return false;
+}
+
+// parse_* functions
+
+static String parse_identifier(Parser *p) {
+    if (!expect_token(p, TOKEN_IDENTIFIER)) {
+        return String_init_cstr("ERROR");
+    }
+
+    Token ident = p->tokenizer.tokens.toks[p->prev_idx];
+    return String_copy(ident.text);
+}
+
+static AstNode *parse_expression(Parser *p) {
+    expect_token(p, TOKEN_CONSTANT);
+    Token constant_tok = p->tokenizer.tokens.toks[p->prev_idx];
+
+    int constant_val = strtol(constant_tok.text.cstr, NULL, 10);
+
+    AstNode *constant = AstNode_create();
+    constant->kind = ASTNODE_CONSTANT;
+    constant->node.constant.c = constant_val;
+    
+    return constant;
+}
+
+static AstNode *parse_statement(Parser *p) {
+    expect_token(p, TOKEN_KW_RETURN);
+    AstNode *exp = parse_expression(p);
+    expect_token(p, TOKEN_SEMICOLON);
+
+    AstNode *stmt = AstNode_create();
+    stmt->kind = ASTNODE_RETURN;
+    stmt->node.ret.constant = exp;
+
+    return stmt;
+}
+
+static AstNode *parse_function(Parser *p) {
+    expect_token(p, TOKEN_KW_INT);
+    String name = parse_identifier(p);
+    expect_token(p, TOKEN_LEFT_PAREN);
+    expect_token(p, TOKEN_KW_VOID);
+    expect_token(p, TOKEN_RIGHT_PAREN);
+    expect_token(p, TOKEN_LEFT_BRACE);
+    AstNode *stmt = parse_statement(p);
+    expect_token(p, TOKEN_RIGHT_BRACE);
+
+    AstNode *f = AstNode_create();
+    f->kind = ASTNODE_FUNCTION;
+    f->node.function.name = name;
+    f->node.function.statement = stmt;
+
+    return f;
+}
+
+void parse(Parser *p) {
+    AstNode *func = parse_function(p);
+    expect_token(p, TOKEN_EOF);
+
+    p->program->node.program.function = func;
+}
+
+// Parser management
+
+void Parser_init(Parser *p, const char *path) {
+    Tokenizer_init(&p->tokenizer, path);
+    ErrorList_init(&p->errors);
+    p->program = AstNode_create();
+    p->program->kind = ASTNODE_PROGRAM;
+    p->curr_idx = 0;
+    p->prev_idx = p->curr_idx-1;
+}
+
+void Parser_destroy(Parser *p) {
+    Tokenizer_destroy(&p->tokenizer);
+    ErrorList_destroy(&p->errors);
+    AstNode_destroy(p->program);
+}
+
+void Parser_print_ast(Parser *p) {
+    AstNode_print(p->program, 0);
+}
+

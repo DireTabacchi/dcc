@@ -17,6 +17,10 @@ String String_init_length(size_t len) {
     return ret;
 }
 
+String String_copy(String src) {
+    return String_init_cstr(src.cstr);
+}
+
 void String_free(String *str) {
     free(str->cstr);
 }

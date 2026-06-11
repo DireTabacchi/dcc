@@ -15,6 +15,10 @@ String String_init_cstr(const char *str);
 // Create a String object with a known byte length `len`, minus the NULL byte.
 // The returned String will have enough memory to hold `len` characters plus a NULL byte.
 String String_init_length(size_t len);
+
+// Create a String object that is a copy of `src`.
+String String_copy(String src);
+
 void String_free(String *str);
 
 static inline ssize_t dd_strlen(const char *str) {

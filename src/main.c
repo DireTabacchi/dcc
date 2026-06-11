@@ -9,6 +9,7 @@
 
 #include "token.h"
 #include "tokenizer.h"
+#include "parser.h"
 #include "dcc_error.h"
 
 // TODO: Write a compiler driver module to handle allocating and freeing memory,
@@ -185,17 +186,28 @@ int main(int argc, char *argv[]) {
     free(preproc_command); // preproc command no longer needed
 
     
-    // TODO: Tokenize file
-    Tokenizer tok_driver = {0};
+    Parser driver = {0};
+    Parser_init(&driver, preproc_filename);
     bool compiler_erred = false;
-    Tokenizer_init(&tok_driver, preproc_filename);
-    tokenize(&tok_driver);
+    //Tokenizer_init(&tok_driver, preproc_filename);
+    if (opts.dbf >= DBF_LEX || opts.dbf == DBF_NONE) {
+        tokenize(&driver.tokenizer);
+        TokenList_print(&driver.tokenizer.tokens);
+    }
 
-    TokenList_print(&tok_driver.tokens);
+    if (opts.dbf >= DBF_PARSE || opts.dbf == DBF_NONE) {
+        parse(&driver);
+        Parser_print_ast(&driver);
+    }
 
-    if (tok_driver.errors.len > 0) {
+    if (driver.tokenizer.errors.len > 0) {
         compiler_erred = true;
-        ErrorList_print(&tok_driver.errors);
+        ErrorList_print(&driver.tokenizer.errors);
+    }
+
+    if (driver.errors.len > 0) {
+        compiler_erred = true;
+        ErrorList_print(&driver.errors);
     }
 
     // TODO: Parse Tokens
@@ -208,7 +220,7 @@ int main(int argc, char *argv[]) {
 
     // TODO: delete assembly file when done
 
-    Tokenizer_destroy(&tok_driver);
+    Parser_destroy(&driver);
 
     free(file_basename);
     free(preproc_filename);
