@@ -156,6 +156,7 @@ void Parser_destroy(Parser *p) {
 }
 
 void Parser_print_ast(Parser *p) {
+    puts("Generated AST Structure\n=======================");
     AstNode_print(p->program, 0);
 }
 

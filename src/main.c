@@ -10,6 +10,7 @@
 #include "token.h"
 #include "tokenizer.h"
 #include "parser.h"
+#include "codegen.h"
 #include "dcc_error.h"
 
 // TODO: Write a compiler driver module to handle allocating and freeing memory,
@@ -185,7 +186,6 @@ int main(int argc, char *argv[]) {
     system(preproc_command);
     free(preproc_command); // preproc command no longer needed
 
-    
     Parser driver = {0};
     Parser_init(&driver, preproc_filename);
     bool compiler_erred = false;
@@ -210,8 +210,19 @@ int main(int argc, char *argv[]) {
         ErrorList_print(&driver.errors);
     }
 
-    // TODO: Parse Tokens
-    // TODO: Generate assembly
+    if (!compiler_erred && opts.dbf >= DBF_CODEGEN || opts.dbf == DBF_NONE) {
+        // TODO: creates a whole compiler-driver structure and clean up main
+        CodegenDriver cgd = {0};
+        trx_ast_asm(&cgd, driver.program);
+        CodegenDriver_print_gen_asm(&cgd);
+        AsmNode_destroy(cgd.program);
+    }
+
+    char *asm_filename = (char *)calloc(basename_len+3, sizeof(char)); // need free
+    memcpy(asm_filename, file_basename, basename_len);
+    memcpy(&asm_filename[basename_len], ".s", 2);
+    printf("[debug] ASM filename: %s\n", asm_filename);
+    // TODO: Emit assembly
 
     if (opts.bf != BF_EMIT_PREPROCESSOR) {
         //puts("removing preprocessor file");
@@ -224,6 +235,7 @@ int main(int argc, char *argv[]) {
 
     free(file_basename);
     free(preproc_filename);
+    free(asm_filename);
 
     if (compiler_erred) {
         return EXIT_FAILURE;
