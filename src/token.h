@@ -14,6 +14,10 @@ typedef enum tokenKind_ {
     TOKEN_LEFT_BRACE,       // {
     TOKEN_RIGHT_BRACE,      // }
     TOKEN_SEMICOLON,        // ;
+    // -- Operators
+    TOKEN_OP_COMPLEMENT,    // ~
+    TOKEN_OP_MINUS,         // -
+    TOKEN_OP_DECREMENT,     // --
     // Keywords
     TOKEN_KW_INT,           // int
     TOKEN_KW_VOID,          // void
@@ -57,6 +61,10 @@ static char *token_literal_list[TOKENKIND_LEN] = {
     (char *)"{",            // TOKEN_LEFT_BRACE
     (char *)"}",            // TOKEN_RIGHT_BRACE
     (char *)";",            // TOKEN_SEMICOLON
+    // -- Operators
+    (char *)"~",            // TOKEN_OP_COMPLEMENT
+    (char *)"-",            // TOKEN_OP_MINUS
+    (char *)"--",           // TOKEN_OP_DECREMENT
     // Keywords
     (char *)"int",          // TOKEN_KW_INT
     (char *)"void",         // TOKEN_KW_VOID
