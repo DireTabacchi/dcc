@@ -34,6 +34,7 @@ typedef struct asmNode_ {
 } AsmNode;
 
 typedef struct codegen_ {
+    String dest;
     AsmNode *program;
 } CodegenDriver;
 
