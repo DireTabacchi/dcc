@@ -14,17 +14,23 @@
 
 // Parser Utilities
 
-static void advance_token(Parser* p) {
+static Token advance_token(Parser* p) {
     p->prev_idx = p->curr_idx;
     p->curr_idx++;
     if (p->curr_idx >= p->tokenizer.tokens.len) {
         p->curr_idx = -1;
     }
+
+    return p->tokenizer.tokens.toks[p->prev_idx];
 }
 
-static bool expect_token(Parser *p, TokenKind expected_kind) {
+static Token peek_token(Parser *p) {
+    return p->tokenizer.tokens.toks[p->curr_idx];
+}
+
+static Token expect_token(Parser *p, TokenKind expected_kind) {
     if (p->curr_idx == -1) {
-        return false;
+        return p->tokenizer.tokens.toks[p->prev_idx];
     }
 
     if (p->tokenizer.tokens.toks[p->curr_idx].kind == TOKEN_EOF && expected_kind != TOKEN_EOF) {
@@ -43,13 +49,13 @@ static bool expect_token(Parser *p, TokenKind expected_kind) {
         // anymore errors saying that we've reached it.
         advance_token(p);
 
-        return false;
+        return p->tokenizer.tokens.toks[p->prev_idx];
     }
 
     Token actual = p->tokenizer.tokens.toks[p->curr_idx];
     if (actual.kind == expected_kind) {
         advance_token(p);
-        return true;
+        return actual;
     }
 
     Error err = {0};
@@ -74,13 +80,14 @@ static bool expect_token(Parser *p, TokenKind expected_kind) {
     ErrorList_append(&p->errors, err);
 
     advance_token(p);
-    return false;
+    return actual;
 }
 
 // parse_* functions
 
 static String parse_identifier(Parser *p) {
-    if (!expect_token(p, TOKEN_IDENTIFIER)) {
+    Token tok;
+    if ((tok = expect_token(p, TOKEN_IDENTIFIER)), tok.kind != TOKEN_IDENTIFIER) {
         return String_init_cstr("ERROR");
     }
 
@@ -88,17 +95,62 @@ static String parse_identifier(Parser *p) {
     return String_copy(ident.text);
 }
 
+static UnaryOpKind parse_unop(Parser *p) {
+    Token tok = advance_token(p);
+    if (tok.kind == TOKEN_OP_MINUS) {
+        return UNARY_NEGATE;
+    } else if (tok.kind == TOKEN_OP_COMPLEMENT) {
+        return UNARY_COMPLEMENT;
+    }
+    return UNARY_INVALID;
+}
+
 static AstNode *parse_expression(Parser *p) {
-    expect_token(p, TOKEN_CONSTANT);
-    Token constant_tok = p->tokenizer.tokens.toks[p->prev_idx];
+    Token tok = peek_token(p);
+    switch (tok.kind) {
+    case TOKEN_CONSTANT: {
+        expect_token(p, TOKEN_CONSTANT);
+        Token constant_tok = p->tokenizer.tokens.toks[p->prev_idx];
 
-    int constant_val = strtol(constant_tok.text.cstr, NULL, 10);
+        int constant_val = strtol(constant_tok.text.cstr, NULL, 10);
 
-    AstNode *constant = AstNode_create();
-    constant->kind = ASTNODE_CONSTANT;
-    constant->node.constant.c = constant_val;
-    
-    return constant;
+        AstNode *constant = AstNode_create();
+        constant->kind = ASTNODE_CONSTANT;
+        constant->node.constant.c = constant_val;
+
+        return constant;
+    }
+    case TOKEN_OP_MINUS:
+    case TOKEN_OP_COMPLEMENT: {
+        UnaryOpKind op = parse_unop(p);
+        AstNode *exp = parse_expression(p);
+
+        AstNode *unary = AstNode_create();
+        unary->kind = ASTNODE_UNARY;
+        unary->node.unary.op = op;
+        unary->node.unary.exp = exp;
+
+        return unary;
+    }
+    case TOKEN_LEFT_PAREN: {
+        advance_token(p);
+        AstNode *exp = parse_expression(p);
+        expect_token(p, TOKEN_RIGHT_PAREN);
+        return exp;
+    }
+    default: {
+        Error exp_err = {0};
+        exp_err.file = String_init_cstr(p->tokenizer.src_path.cstr);
+        exp_err.desc = String_init_length(30 + dd_strlen(token_literal_list[tok.kind]));
+        snprintf(exp_err.desc.cstr, exp_err.desc.len+1, "expected an expression, got \"%s\"", token_literal_list[tok.kind]);
+        exp_err.pos = tok.pos;
+        ErrorList_append(&p->errors, exp_err);
+
+        AstNode *inv = AstNode_create();
+        inv->kind = ASTNODE_INVALID;
+        return inv;
+    }
+    }
 }
 
 static AstNode *parse_statement(Parser *p) {

@@ -18,6 +18,9 @@ void AstNode_destroy(AstNode *node) {
     if (node == NULL) return;
 
     switch (node->kind) {
+    case ASTNODE_INVALID:
+        free(node);
+        break;
     case ASTNODE_PROGRAM:
         AstNode_destroy(node->node.program.function);
         free(node);
@@ -34,6 +37,10 @@ void AstNode_destroy(AstNode *node) {
     case ASTNODE_CONSTANT:
         free(node);
         break;
+    case ASTNODE_UNARY:
+        AstNode_destroy(node->node.unary.exp);
+        free(node);
+        break;
     }
 }
 
@@ -43,6 +50,8 @@ void AstNode_print(AstNode *node, int indent_lvl) {
     //printf("indent level is: %d; spaces is: %d\n", indent_lvl, spaces);
 
     switch (node->kind) {
+    case ASTNODE_INVALID:
+        break;
     case ASTNODE_PROGRAM:
         printf("%*s\n", spaces, "Program(");
         AstNode_print(node->node.program.function, indent_lvl+1);
@@ -67,5 +76,16 @@ void AstNode_print(AstNode *node, int indent_lvl) {
     case ASTNODE_CONSTANT:
         printf("%2$*1$s%3$d)\n", spaces+9, "Constant(", node->node.constant.c);
         break;
+    case ASTNODE_UNARY:
+        printf("%2$*1$s\n", spaces+6, "Unary(");
+        indent_lvl += 1;
+        spaces = indent_lvl * 4;
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", (node->node.unary.op == UNARY_NEGATE) ? "Negate" :
+            ((node->node.unary.op == UNARY_COMPLEMENT) ? "Complement" : "Invald"), spaces + 5, "exp=(");
+        AstNode_print(node->node.unary.exp, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * 4;
+        printf("%2$*1$c\n", spaces+1, ')');
     }
 }
