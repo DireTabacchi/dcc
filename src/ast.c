@@ -45,7 +45,7 @@ void AstNode_destroy(AstNode *node) {
 }
 
 void AstNode_print(AstNode *node, int indent_lvl) {
-    int spaces = indent_lvl * 4;
+    int spaces = indent_lvl * SPACES_PER_INDENT;
 
     //printf("indent level is: %d; spaces is: %d\n", indent_lvl, spaces);
 
@@ -60,12 +60,12 @@ void AstNode_print(AstNode *node, int indent_lvl) {
     case ASTNODE_FUNCTION:
         printf("%2$*1$s\n", spaces+9, "Function(");
         indent_lvl += 1;
-        spaces = indent_lvl * 4;
+        spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$s\"%3$s\"\n%5$*4$s",
             spaces+5, "name=", node->node.function.name.cstr, spaces+5, "body=");
         AstNode_print(node->node.function.statement, indent_lvl);
         indent_lvl -= 1;
-        spaces = indent_lvl * 4;
+        spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');
         break;
     case ASTNODE_RETURN:
@@ -79,13 +79,13 @@ void AstNode_print(AstNode *node, int indent_lvl) {
     case ASTNODE_UNARY:
         printf("%2$*1$s\n", spaces+6, "Unary(");
         indent_lvl += 1;
-        spaces = indent_lvl * 4;
+        spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", (node->node.unary.op == UNARY_NEGATE) ? "Negate" :
             ((node->node.unary.op == UNARY_COMPLEMENT) ? "Complement" : "Invald"), spaces + 5, "exp=(");
         AstNode_print(node->node.unary.exp, indent_lvl+1);
         printf("%2$*1$c\n", spaces+1, ')');
         indent_lvl -= 1;
-        spaces = indent_lvl * 4;
+        spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');
     }
 }
