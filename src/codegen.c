@@ -42,6 +42,8 @@ void AsmNode_destroy(AsmNode *node) {
     }
 }
 
+// TODO: make the function body a list structure
+
 AsmNode *AsmNode_function_create(String function_name) {
     AsmNode *f = malloc(sizeof(AsmNode));
     f->kind = ASMNODE_FUNCTION;
@@ -147,7 +149,7 @@ static AsmNode *trx_ret(AstNode *ast_ret, AsmNode *asm_function) {
 
     // generate code for MOV instruction.
     // generate the constant ASM code.
-    AsmNode *asm_constant = trx_constant(ast_ret->node.ret.constant);
+    AsmNode *asm_constant = trx_constant(ast_ret->node.ret.expr);
 
     // generate ASM for dest reg.
     AsmNode *asm_reg = AsmNode_create();

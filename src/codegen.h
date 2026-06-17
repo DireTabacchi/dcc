@@ -3,6 +3,8 @@
 
 #include "dd_string.h"
 #include "ast.h"
+#include "tacd.h"
+
 
 typedef enum asmNodeKind_ {
     ASMNODE_PROGRAM,
@@ -33,8 +35,10 @@ typedef struct asmNode_ {
     } instr;
 } AsmNode;
 
+typedef struct tacdCode_ *TacdCode_ty;
 typedef struct codegen_ {
     String dest;
+    TacdGenerator tacd_gen;
     AsmNode *program;
 } CodegenDriver;
 

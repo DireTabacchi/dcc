@@ -12,6 +12,7 @@
 #include "parser.h"
 #include "codegen.h"
 #include "codegen_x86_64.h"
+#include "tacd.h"
 
 #include "dcc_error.h"
 
@@ -28,6 +29,7 @@ typedef enum drybuildflag_ {
     DBF_NONE,
     DBF_LEX,
     DBF_PARSE,
+    DBF_TACD,
     DBF_CODEGEN
 } DryBuildFlag;
 
@@ -67,6 +69,7 @@ void print_usage(char *argv0) {
     puts("  -E\t\t\tEmit Preprocessor code.\n  -S\t\t\tEmit Assembly code.");
     puts("  --lex\t\t\tRun compiler up through the Lexing stage. Does not produce output.");
     puts("  --parse\t\tRun compiler up through the Parsinging stage. Does not produce output.");
+    puts("  --tacky\t\tRun compiler up through the TACD gen stage. Does not produce output.");
     puts("  --codegen\t\tRun compiler up through the Codegen stage. Does not produce output.");
 }
 
@@ -115,6 +118,13 @@ int parseCommand(Options *opts, int argc, char *argv[]) {
                         opts->dbf = DBF_PARSE;
                     } else {
                         puts("Found --parse, but a dry build was already selected.");
+                        found_error = true;
+                    }
+                } else if (strcmp("--tacky", argv[argi]) == 0) {
+                    if (opts->dbf == DBF_NONE) {
+                        opts->dbf = DBF_TACD;
+                    } else {
+                        puts("Found --tacky, but a dry build was already selected.");
                         found_error = true;
                     }
                 } else if (strcmp("--codegen", argv[argi]) == 0) {
@@ -228,6 +238,14 @@ int main(int argc, char *argv[]) {
     if (driver.errors.len > 0) {
         compiler_erred = true;
         ErrorList_print(&driver.errors);
+    }
+
+    if (!compiler_erred && (opts.dbf >= DBF_TACD || opts.dbf == DBF_NONE)) {
+        TacdGenerator tacd_gen = {0};
+        TacdGenerator_init(&tacd_gen);
+        generate_tacd(&tacd_gen, driver.program);
+        Tacd_print(tacd_gen.program, 0);
+        TacdGenerator_deinit(&tacd_gen);
     }
 
     CodegenDriver cgd = {0};

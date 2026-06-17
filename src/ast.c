@@ -31,7 +31,7 @@ void AstNode_destroy(AstNode *node) {
         free(node);
         break;
     case ASTNODE_RETURN:
-        AstNode_destroy(node->node.ret.constant);
+        AstNode_destroy(node->node.ret.expr);
         free(node);
         break;
     case ASTNODE_CONSTANT:
@@ -46,8 +46,6 @@ void AstNode_destroy(AstNode *node) {
 
 void AstNode_print(AstNode *node, int indent_lvl) {
     int spaces = indent_lvl * SPACES_PER_INDENT;
-
-    //printf("indent level is: %d; spaces is: %d\n", indent_lvl, spaces);
 
     switch (node->kind) {
     case ASTNODE_INVALID:
@@ -70,7 +68,7 @@ void AstNode_print(AstNode *node, int indent_lvl) {
         break;
     case ASTNODE_RETURN:
         printf("Return(\n");
-        AstNode_print(node->node.ret.constant, indent_lvl+1);
+        AstNode_print(node->node.ret.expr, indent_lvl+1);
         printf("%2$*1$c\n", spaces+1, ')');
         break;
     case ASTNODE_CONSTANT:

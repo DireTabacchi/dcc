@@ -24,7 +24,7 @@ typedef struct astNode_ {
     union {
         struct { AstNode_ty function; } program;
         struct { String name; AstNode_ty statement; } function;
-        struct { AstNode_ty constant; } ret;
+        struct { AstNode_ty expr; } ret;
         struct { int c; } constant;
         struct { UnaryOpKind op; AstNode_ty exp; } unary;
     } node;
