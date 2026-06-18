@@ -23,6 +23,12 @@ typedef enum tacdValueKind_ {
     TACD_VALUE_IDENTIFIER
 } TacdValueKind;
 
+typedef enum tacdUnaryOp_ {
+    TACD_UNARY_INVALID,
+    TACD_UNARY_COMPLEMENT,
+    TACD_UNARY_NEGATE
+} TacdUnaryOp;
+
 typedef struct tacdValue_ {
     TacdValueKind kind;
     union {
@@ -35,7 +41,7 @@ typedef struct tacdCode_ {
     TacdCodeKind kind;
     union {
         struct { TacdValue val; } ret;
-        struct { UnaryOpKind op; TacdValue src; TacdValue dest; } unary;
+        struct { TacdUnaryOp op; TacdValue src; TacdValue dest; } unary;
     } code;
 } TacdCode;
 

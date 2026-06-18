@@ -240,18 +240,19 @@ int main(int argc, char *argv[]) {
         ErrorList_print(&driver.errors);
     }
 
+    CodegenDriver cgd = {0};
+    CodegenDriver_init(&cgd);
     if (!compiler_erred && (opts.dbf >= DBF_TACD || opts.dbf == DBF_NONE)) {
-        TacdGenerator tacd_gen = {0};
-        TacdGenerator_init(&tacd_gen);
-        generate_tacd(&tacd_gen, driver.program);
-        Tacd_print(tacd_gen.program, 0);
-        TacdGenerator_deinit(&tacd_gen);
+        generate_tacd(&cgd.tacd_gen, driver.program);
+        Tacd_print(cgd.tacd_gen.program, 0);
     }
 
-    CodegenDriver cgd = {0};
     if (!compiler_erred && (opts.dbf >= DBF_CODEGEN || opts.dbf == DBF_NONE)) {
         // TODO: creates a whole compiler-driver structure and clean up main
-        trx_ast_asm(&cgd, driver.program);
+        trx_asm(&cgd, cgd.tacd_gen.program);
+        CodegenDriver_print_gen_asm(&cgd);
+        int resolved_offset = resolve_pseudo_registers(&cgd);
+        printf("resolved offset: %d\n", resolved_offset);
         CodegenDriver_print_gen_asm(&cgd);
     }
 
@@ -281,12 +282,15 @@ int main(int argc, char *argv[]) {
         remove(cgd.dest.cstr);
     }
 
-    AsmNode_destroy(cgd.program);
+    CodegenDriver_deinit(&cgd);
     Parser_destroy(&driver);
 
     String_free(&file_basename);
     String_free(&preproc_filename);
-    String_free(&cgd.dest);
+
+    //if (!compiler_erred) {
+    //    TacdGenerator_deinit(&cgd.tacd_gen);
+    //}
 
     if (compiler_erred) {
         return EXIT_FAILURE;

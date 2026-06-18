@@ -12,6 +12,7 @@ typedef enum asmNodeKind_ {
 } AsmNodeKind;
 
 typedef enum asmInstrKind_ {
+    ASM_INSTR_INVALID,
     ASM_ALLOCSTACK,     // instruction `subq $n, %rsp`
     ASM_INSTR_MOV,
     ASM_INSTR_UNARY,
@@ -19,11 +20,13 @@ typedef enum asmInstrKind_ {
 } AsmInstrKind;
 
 typedef enum unop_ {
-    NEG,
-    NOT
+    UNARYOP_INVALID,
+    UNARYOP_NEG,
+    UNARYOP_NOT
 } UnaryOp;
 
 typedef enum operandType_ {
+    OPERAND_INVALID,
     OPERAND_IMM,
     OPERAND_REG,
     OPERAND_PSEUDO,
@@ -72,9 +75,31 @@ typedef struct asmNode_ {
     } node;
 } AsmNode;
 
+/*
+   CodegenDriver
+*/
+
+/*
+    Map Pseudo(identifier) -> Stack(int)
+*/
+
+typedef struct {
+    String ident;
+    int stack_offset;
+} PseudoStackMapping;
+
+typedef struct pseudoSymMap_ {
+    PseudoStackMapping *data;
+    size_t len;
+    size_t cap;
+} PseudoSymMap;
+
 typedef struct codegen_ {
     String dest;
+
     TacdGenerator tacd_gen;
+    PseudoSymMap stack_offsets;
+
     AsmNode *program;
 } CodegenDriver;
 
@@ -86,8 +111,20 @@ void InstrArray_init(InstrArray *ia);
 void InstrArray_deinit(InstrArray *ia);
 void InstrArray_append(InstrArray *ia, AsmInstr in);
 
-/* Translate an AST to generated ASM instructions.  */
-void trx_ast_asm(CodegenDriver *cg, AstNode *src);
+/*
+   PseudoSymMap
+*/
+
+void PseudoSymMap_init(PseudoSymMap *map);
+void PseudoSymMap_deinit(PseudoSymMap *map);
+void PseudoSymMap_append(PseudoSymMap *map, PseudoStackMapping item);
+bool PseudoSymMap_contains(PseudoSymMap *map, String key, int *val);
+
+/* Translate TACD to generated ASM instructions. First pass.    */
+void trx_asm(CodegenDriver *cgd, TacdNode *src);
+
+/* Resolve Pseudo registers to Stack offsets. Returns total stack offset. Second pass.  */
+int resolve_pseudo_registers(CodegenDriver *cgd);
 
 /*  Create memory for a general AsmNode.
     If the intended node is a function, prefer `AsmNode_function_create`.   */
@@ -96,20 +133,8 @@ AsmNode *AsmNode_create();
 /*  Free memory for an AsmNode. */
 void AsmNode_destroy(AsmNode *node);
 
-/*  Create and initialize memory for an AsmNode function with `name`.
-    Prefer this over AsmNode_create for making function nodes.  */
-AsmNode *AsmNode_function_create(String name);
-
-/*  Free and deinitialize memory for an AsmNode function.
-    Also frees memory allocated for the node iteslf.
-    Does nothing if `asm_function` kind is not `ASMNODE_FUNCTION`.  */
-void AsmNode_function_destroy(AsmNode *asm_function);
-
-/*  Append `instr` to the list of instructions in `asm_function`,
-    growing the list as needed.
-    The value pointed to by `instr` is copied, and the owner of `instr` will retain ownership of memory.
-    Does nothing if `asm_function` kind is not `ASMNODE_FUNCTION`.  */
-void AsmNode_function_append(AsmNode *asm_function, AsmNode *instr);
+void CodegenDriver_init(CodegenDriver *cgd);
+void CodegenDriver_deinit(CodegenDriver *cgd);
 void CodegenDriver_print_gen_asm(CodegenDriver *cgd);
 
 #endif // CODEGEN_H
