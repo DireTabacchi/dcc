@@ -1,6 +1,12 @@
 program = Program(function_definition)
 function_definition = Function(identifier name, instruction* instructions)
 instruction = Mov(operand src, operand dst)
+            | Unary(unary_operator, operand)
+            | AllocateStack(int)
             | Ret
+unary_operator = Neg | Not
 operand = Imm(int)
-        | Register
+        | Reg(reg)
+        | Pseudo(identifier)
+        | Stack(int)
+    reg = AX | R10

@@ -5,7 +5,7 @@
 
 typedef enum reg_ {
     REG_EAX
-} Register;
+} X64Register;
 
 void emit_program(CodegenDriver *cgd);
 

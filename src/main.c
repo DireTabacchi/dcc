@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
         remove(preproc_filename.cstr);
     }
 
-    if (opts.dbf < DBF_LEX) {
+    if (opts.dbf < DBF_LEX && opts.bf < BF_EMIT_PREPROCESSOR) {
         // allocate space for command: 8 characters ((3)exe, (2)flags, (3)spaces) + strlen(src) + strlen(preproc_filename)
         String assemble_command = String_init_length(8 + cgd.dest.len + file_basename.len);
         sprintf(assemble_command.cstr, "gcc %s -o %s", cgd.dest.cstr, file_basename.cstr);

@@ -46,22 +46,22 @@ void CodeList_deinit(CodeList* il) {
     free(il->codes);
 }
 
-void CodeList_append(CodeList* il, TacdCode code) {
-    if (il == NULL) return;
-    if (il->codes == NULL) return;
+void CodeList_append(CodeList* cl, TacdCode code) {
+    if (cl == NULL) return;
+    if (cl->codes == NULL) return;
 
-    if (il->len == il->cap) {
-        size_t old_cap = il->cap;
+    if (cl->len == cl->cap) {
+        size_t old_cap = cl->cap;
         size_t new_cap = old_cap / 2 + old_cap;
         TacdCode *new_codes = calloc(new_cap, sizeof(TacdCode));
-        memcpy(new_codes, il->codes, old_cap*sizeof(TacdCode));
-        free(il->codes);
-        il->codes = new_codes;
-        il->cap = new_cap;
+        memcpy(new_codes, cl->codes, old_cap*sizeof(TacdCode));
+        free(cl->codes);
+        cl->codes = new_codes;
+        cl->cap = new_cap;
     }
 
-    memcpy(&il->codes[il->len], &code, sizeof(TacdCode));
-    il->len += 1;
+    memcpy(&cl->codes[cl->len], &code, sizeof(TacdCode));
+    cl->len += 1;
 }
 
 void TacdSymTable_init(TacdSymTable *tst) {

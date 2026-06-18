@@ -9,11 +9,56 @@
 typedef enum asmNodeKind_ {
     ASMNODE_PROGRAM,
     ASMNODE_FUNCTION,
-    ASMNODE_MOV,
-    ASMNODE_IMM,
-    ASMNODE_REG,
-    ASMNODE_RET
 } AsmNodeKind;
+
+typedef enum asmInstrKind_ {
+    ASM_ALLOCSTACK,     // instruction `subq $n, %rsp`
+    ASM_INSTR_MOV,
+    ASM_INSTR_UNARY,
+    ASM_INSTR_RET
+} AsmInstrKind;
+
+typedef enum unop_ {
+    NEG,
+    NOT
+} UnaryOp;
+
+typedef enum operandType_ {
+    OPERAND_IMM,
+    OPERAND_REG,
+    OPERAND_PSEUDO,
+    OPERAND_STACK
+} OperandType;
+
+typedef enum register_ {
+    AX,
+    R10
+} Register;
+
+typedef struct operand_ {
+    OperandType type;
+    union {
+        int imm;
+        Register reg;
+        String pseudo;
+        int stack;
+    } val;
+} Operand;
+
+typedef struct asmInstr_ {
+    AsmInstrKind kind;
+    union {
+        struct { Operand src; Operand dest; } mov;
+        struct { UnaryOp unop; Operand op; } unary;
+        int alloc_stack;
+    } instr;
+} AsmInstr;
+
+typedef struct instrArray_ {
+    AsmInstr *instrs;
+    size_t len;
+    size_t cap;
+} InstrArray;
 
 typedef struct asmNode_ *AsmNode_ty;
 typedef struct asmNode_ {
@@ -22,25 +67,24 @@ typedef struct asmNode_ {
         struct { AsmNode_ty function; } program;
         struct {
             String name;
-            AsmNode_ty instructions;
-            size_t instrs_len;
-            size_t instrs_cap;
+            InstrArray instrs;
         } function;
-        struct {
-            // TODO: perhaps create a specific structure for operands
-            AsmNode_ty src;
-            AsmNode_ty dest;
-        } mov;
-        struct { int c; } imm;
-    } instr;
+    } node;
 } AsmNode;
 
-typedef struct tacdCode_ *TacdCode_ty;
 typedef struct codegen_ {
     String dest;
     TacdGenerator tacd_gen;
     AsmNode *program;
 } CodegenDriver;
+
+/*
+   InstrArray
+*/
+
+void InstrArray_init(InstrArray *ia);
+void InstrArray_deinit(InstrArray *ia);
+void InstrArray_append(InstrArray *ia, AsmInstr in);
 
 /* Translate an AST to generated ASM instructions.  */
 void trx_ast_asm(CodegenDriver *cg, AstNode *src);
