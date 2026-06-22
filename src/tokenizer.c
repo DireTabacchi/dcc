@@ -41,9 +41,11 @@ void Tokenizer_init(Tokenizer *t, const char *src_path) {
     read(src_fd, t->src.cstr, t->src.len);
     t->src_path = String_init_cstr(src_path);
 
+#ifdef DEBUG
     puts("File src -----------------------------------------------------------------------");
     printf("%s", t->src.cstr);
     puts("--------------------------------------------------------------------------------");
+#endif
 
     TokenList_init(&t->tokens);
     ErrorList_init(&t->errors);
@@ -210,6 +212,34 @@ void tokenize(Tokenizer *t) {
 
             case '~':
                 tok.kind = TOKEN_OP_COMPLEMENT;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case '+':
+                tok.kind = TOKEN_OP_PLUS;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case '*':
+                tok.kind = TOKEN_OP_ASTERISK;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case '/':
+                tok.kind = TOKEN_OP_SLASH;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case '%':
+                tok.kind = TOKEN_OP_PERCENT;
                 tok.text = String_init_length(1);
                 memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 TokenList_append(&t->tokens, tok);
