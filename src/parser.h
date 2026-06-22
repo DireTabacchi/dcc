@@ -2,14 +2,15 @@
 #define PARSER_H
 
 #include <stddef.h>
+#include <sys/types.h>
 #include "tokenizer.h"
 #include "ast.h"
 
 typedef struct parser_ {
     Tokenizer tokenizer;
 
-    size_t prev_idx;
-    size_t curr_idx;
+    ssize_t prev_idx;
+    ssize_t curr_idx;
     AstNode *program;
     
     ErrorList errors;

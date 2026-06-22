@@ -96,6 +96,7 @@ buildRelease() {
 
     echo 'Compiling release...'
     make -f MakeRelease.mk
+    echo 'Done compiling release.'
 }
 
 if [[ $# -eq 0 ]]; then

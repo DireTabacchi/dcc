@@ -9,6 +9,7 @@
 
 TacdNode *TacdNode_create() {
     TacdNode *n = malloc(sizeof(TacdNode));
+    *n = (TacdNode){0};
     return n;
 }
 
@@ -154,7 +155,11 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
         };
         TacdCode unop = {0};
         unop.kind = TACD_CODE_UNARY;
-        unop.code.unary.op = expr->node.unary.op;
+        if (expr->node.unary.op == UNARY_COMPLEMENT) {
+            unop.code.unary.op = TACD_UNARY_COMPLEMENT;
+        } else if (expr->node.unary.op == UNARY_NEGATE) {
+            unop.code.unary.op = TACD_UNARY_NEGATE;
+        }
         unop.code.unary.src = src;
         unop.code.unary.dest = dest;
         CodeList_append(&tacd_fn->node.function.body, unop);
@@ -229,9 +234,9 @@ static void TacdCode_print(TacdCode *code, int indent_lvl) {
         break;
     case TACD_CODE_UNARY:
         TacdValue_print(code->code.unary.dest, indent_lvl);
-        if (code->code.unary.op == UNARY_NEGATE) {
+        if (code->code.unary.op == TACD_UNARY_NEGATE) {
             printf(" = -");
-        } else if (code->code.unary.op == UNARY_COMPLEMENT) {
+        } else if (code->code.unary.op == TACD_UNARY_COMPLEMENT) {
             printf(" = ~");
         }
         TacdValue_print(code->code.unary.src, 0);

@@ -27,6 +27,29 @@ void InstrArray_deinit(InstrArray *ia) {
     free(ia->instrs);
 }
 
+void InstrArray_insert(InstrArray *ia, AsmInstr in, size_t idx) {
+    if (ia == NULL) return;
+    if (ia->instrs == NULL) return;
+
+    if (ia->len == ia->cap) {
+        size_t old_cap = ia->cap;
+        size_t new_cap = (old_cap == 0) ? 2 : old_cap / 2 + old_cap;
+        AsmInstr *new_instrs = realloc(ia->instrs, new_cap*sizeof(AsmInstr));
+
+        if (new_instrs == NULL) return;
+
+        ia->instrs = new_instrs;
+        ia->cap = new_cap;
+    }
+
+    if (idx < ia->len) {
+        memmove(ia->instrs+idx+1, ia->instrs+idx, (ia->len - idx) * sizeof(AsmInstr));
+    }
+
+    ia->instrs[idx] = in;
+    ia->len += 1;
+}
+
 void InstrArray_append(InstrArray *ia, AsmInstr in) {
     if (ia == NULL) return;
     if (ia->instrs == NULL) return;
@@ -229,7 +252,7 @@ static void AsmInstr_print(AsmInstr *instr, int indent_lvl) {
         break;
 
     case ASM_ALLOCSTACK:
-        /*  TODO: printing ASM_INSTR_UNARY and ASM_ALLOCSTACK.  */
+        printf("%2$*1$s%3$d)\n", spaces+14, "AllocateStack(", instr->instr.alloc_stack);
         break;
 
     case ASM_INSTR_RET:
@@ -271,6 +294,7 @@ static void AsmNode_print(AsmNode *node, int indent_lvl) {
 /*
     trx_*   (TACD->ASM)
 */
+
 static Operand trx_operand(TacdValue val) {
     switch (val.kind) {
     case TACD_NODE_INVALID:
@@ -374,9 +398,33 @@ static AsmNode *trx_program(TacdNode *tacd_program) {
     return prog;
 }
 
-// First pass of TACD -> ASM; Generate preliminary ASM.
-void trx_asm(CodegenDriver *cgd, TacdNode *src) {
-    cgd->program = trx_program(src);
+static void resolve_function_stack(CodegenDriver *cgd, int resolved_offset) {
+    AsmNode *function = cgd->program->node.program.function;
+    AsmInstr stack_alloc = (AsmInstr){ .kind = ASM_ALLOCSTACK, .instr.alloc_stack = resolved_offset };
+    InstrArray_insert(&function->node.function.instrs, stack_alloc, 0);
+}
+
+//static void resolve_invalid_mov(InstrArray *ia){}
+
+static void resolve_invalid_instructions(CodegenDriver *cgd, AsmNode *function) {
+    InstrArray *func_instrs = &function->node.function.instrs;
+    for (size_t instr_idx = 0; instr_idx < func_instrs->len; instr_idx++) {
+        AsmInstr *instr = &func_instrs->instrs[instr_idx];
+        if (instr->kind == ASM_INSTR_MOV) {
+            if (instr->instr.mov.src.type == OPERAND_STACK && instr->instr.mov.dest.type == OPERAND_STACK) {
+                int old_dest = instr->instr.mov.dest.val.stack;
+                instr->instr.mov.dest.type = OPERAND_REG;
+                instr->instr.mov.dest.val.reg = R10;
+                AsmInstr new_instr = (AsmInstr){
+                    .kind = ASM_INSTR_MOV,
+                    .instr.mov = {
+                        .src = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
+                        .dest = (Operand){ .type = OPERAND_STACK, .val.stack = old_dest }
+                    }};
+                InstrArray_insert(func_instrs, new_instr, instr_idx + 1);
+            }
+        }
+    }
 }
 
 static void resolve_pseudo_operand(CodegenDriver *cgd, Operand *op, int *total_offset) {
@@ -433,14 +481,41 @@ int resolve_pseudo_registers(CodegenDriver *cgd) {
 
     for (size_t instr_idx = 0; instr_idx < instructions->len; instr_idx++) {
         AsmInstr *instr = &instructions->instrs[instr_idx];
-
         resolve_instr_pseudo_ops(cgd, instr, &total_offset);
     }
 
     return total_offset;
 }
 
-void CodegenDriver_print_gen_asm(CodegenDriver *cgd) {
-    puts("Generated ASM Structure\n=======================");
+void emit_asm(CodegenDriver *cgd, TacdNode *src) {
+    // First pass of TACD -> ASM; Generate preliminary ASM.
+    cgd->program = trx_program(src);
+
+#ifdef DEBUG
+    puts("Generated ASM Structure ([1] Initial Generation)\n================================================");
     AsmNode_print(cgd->program, 0);
+#endif
+
+    // Second pass of TACD -> ASM; Replace Pseudo registers with stack offsets.
+    int resolved_offset = resolve_pseudo_registers(cgd);
+#ifdef DEBUG
+    puts("Generated ASM Structure ([2] Resolve Pseudo Registers)\n======================================================");
+    AsmNode_print(cgd->program, 0);
+    printf("resolved offset: %d\n", resolved_offset);
+#endif
+
+    // Third pass Resolve the function stack and invalid instructions
+    resolve_function_stack(cgd, resolved_offset);
+#ifdef DEBUG
+    puts("Generated ASM Structure ([3] Add Stack Allocation)\n==================================================");
+    AsmNode_print(cgd->program, 0);
+#endif
+
+    resolve_invalid_instructions(cgd, cgd->program->node.program.function);
+#ifdef DEBUG
+    puts("Generated ASM Structure ([4] Fix Bad Instructions)\n==================================================");
+    AsmNode_print(cgd->program, 0);
+#endif
+
 }
+

@@ -25,6 +25,7 @@ static Token advance_token(Parser* p) {
 }
 
 static Token peek_token(Parser *p) {
+    if (p->curr_idx < 0) return (Token){0};
     return p->tokenizer.tokens.toks[p->curr_idx];
 }
 
@@ -34,7 +35,7 @@ static Token expect_token(Parser *p, TokenKind expected_kind) {
     }
 
     if (p->tokenizer.tokens.toks[p->curr_idx].kind == TOKEN_EOF && expected_kind != TOKEN_EOF) {
-        Token err_token = p->tokenizer.tokens.toks[p->prev_idx];
+        Token err_token = p->tokenizer.tokens.toks[p->curr_idx];
         Error err = {0};
         err.file = String_init_cstr(p->tokenizer.src_path.cstr);
         err.pos = err_token.pos;
@@ -160,7 +161,7 @@ static AstNode *parse_statement(Parser *p) {
 
     AstNode *stmt = AstNode_create();
     stmt->kind = ASTNODE_RETURN;
-    stmt->node.ret.constant = exp;
+    stmt->node.ret.expr = exp;
 
     return stmt;
 }

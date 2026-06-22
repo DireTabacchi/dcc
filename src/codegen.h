@@ -110,6 +110,7 @@ typedef struct codegen_ {
 void InstrArray_init(InstrArray *ia);
 void InstrArray_deinit(InstrArray *ia);
 void InstrArray_append(InstrArray *ia, AsmInstr in);
+void InstrArray_insert(InstrArray *ia, AsmInstr in, size_t idx);
 
 /*
    PseudoSymMap
@@ -121,7 +122,7 @@ void PseudoSymMap_append(PseudoSymMap *map, PseudoStackMapping item);
 bool PseudoSymMap_contains(PseudoSymMap *map, String key, int *val);
 
 /* Translate TACD to generated ASM instructions. First pass.    */
-void trx_asm(CodegenDriver *cgd, TacdNode *src);
+void emit_asm(CodegenDriver *cgd, TacdNode *src);
 
 /* Resolve Pseudo registers to Stack offsets. Returns total stack offset. Second pass.  */
 int resolve_pseudo_registers(CodegenDriver *cgd);
@@ -135,6 +136,5 @@ void AsmNode_destroy(AsmNode *node);
 
 void CodegenDriver_init(CodegenDriver *cgd);
 void CodegenDriver_deinit(CodegenDriver *cgd);
-void CodegenDriver_print_gen_asm(CodegenDriver *cgd);
 
 #endif // CODEGEN_H

@@ -9,6 +9,7 @@ OBJS = $(patsubst src/%.c,$(OBJS_DIR)/%.o,$(SRCS))
 all: $(TARGET)
 
 CFLAGS += -g
+CFLAGS += -DDEBUG
 
 $(TARGET): $(OBJS)
 	@echo "Building" $@

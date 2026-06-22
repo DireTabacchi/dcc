@@ -222,12 +222,16 @@ int main(int argc, char *argv[]) {
     bool compiler_erred = false;
     if (opts.dbf >= DBF_LEX || opts.dbf == DBF_NONE) {
         tokenize(&driver.tokenizer);
+#ifdef DEBUG
         TokenList_print(&driver.tokenizer.tokens);
+#endif
     }
 
     if (opts.dbf >= DBF_PARSE || opts.dbf == DBF_NONE) {
         parse(&driver);
+#ifdef DEBUG
         Parser_print_ast(&driver);
+#endif
     }
 
     if (driver.tokenizer.errors.len > 0) {
@@ -244,16 +248,13 @@ int main(int argc, char *argv[]) {
     CodegenDriver_init(&cgd);
     if (!compiler_erred && (opts.dbf >= DBF_TACD || opts.dbf == DBF_NONE)) {
         generate_tacd(&cgd.tacd_gen, driver.program);
+#ifdef DEBUG
         Tacd_print(cgd.tacd_gen.program, 0);
+#endif
     }
 
     if (!compiler_erred && (opts.dbf >= DBF_CODEGEN || opts.dbf == DBF_NONE)) {
-        // TODO: creates a whole compiler-driver structure and clean up main
-        trx_asm(&cgd, cgd.tacd_gen.program);
-        CodegenDriver_print_gen_asm(&cgd);
-        int resolved_offset = resolve_pseudo_registers(&cgd);
-        printf("resolved offset: %d\n", resolved_offset);
-        CodegenDriver_print_gen_asm(&cgd);
+        emit_asm(&cgd, cgd.tacd_gen.program);
     }
 
     cgd.dest = String_init_length(basename_len+2);
@@ -269,7 +270,7 @@ int main(int argc, char *argv[]) {
         remove(preproc_filename.cstr);
     }
 
-    if (opts.dbf < DBF_LEX && opts.bf < BF_EMIT_PREPROCESSOR) {
+    if (!compiler_erred && opts.dbf < DBF_LEX && opts.bf < BF_EMIT_PREPROCESSOR) {
         // allocate space for command: 8 characters ((3)exe, (2)flags, (3)spaces) + strlen(src) + strlen(preproc_filename)
         String assemble_command = String_init_length(8 + cgd.dest.len + file_basename.len);
         sprintf(assemble_command.cstr, "gcc %s -o %s", cgd.dest.cstr, file_basename.cstr);
