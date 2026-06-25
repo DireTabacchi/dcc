@@ -144,7 +144,7 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
     case ASTNODE_CONSTANT:
         return (TacdValue){
             .kind = TACD_VALUE_CONSTANT,
-            .val.constant = expr->node.constant.c
+            .val.constant = expr->node.constant
         };
     case ASTNODE_UNARY: {
         TacdValue src = trx_expression(tg, tacd_fn, expr->node.unary.exp);

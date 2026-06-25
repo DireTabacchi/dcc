@@ -5,6 +5,10 @@
 #include "dd_string.h"
 #include "token.h"
 
+bool Token_is_operator(Token t) {
+    return t.kind >= TOKEN_OP_COMPLEMENT && t.kind <= TOKEN_OP_PERCENT;
+}
+
 void TokenList_init(TokenList* tl) {
     tl->cap = 2;
     tl->len = 0;

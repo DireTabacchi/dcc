@@ -14,6 +14,33 @@
 
 // Parser Utilities
 
+typedef enum {
+    // Highest precedence
+    PREC_MDM,   // Multiply-Divide-Modulo
+    PREC_AS,    // Add-Subtract
+    // Lowest precedence
+    PREC_LENGTH
+} PrecedenceKind;
+
+static int precedence_table[PREC_LENGTH] = {
+    130,    // PREC_MDM
+    120     // PREC_AS
+};
+
+static int precedence(Token tok) {
+    switch (tok.kind) {
+    case TOKEN_OP_MINUS:
+    case TOKEN_OP_PLUS:
+        return precedence_table[PREC_AS];
+    case TOKEN_OP_ASTERISK:
+    case TOKEN_OP_SLASH:
+    case TOKEN_OP_PERCENT:
+        return precedence_table[PREC_MDM];
+    default:
+        return 0;
+    }
+}
+
 static Token advance_token(Parser* p) {
     p->prev_idx = p->curr_idx;
     p->curr_idx++;
@@ -106,7 +133,34 @@ static UnaryOpKind parse_unop(Parser *p) {
     return UNARY_INVALID;
 }
 
-static AstNode *parse_expression(Parser *p) {
+static BinaryOpKind parse_binop(Parser *p) {
+    Token tok = advance_token(p);
+    switch (tok.kind) {
+    case TOKEN_OP_PLUS:
+        return BINARY_ADD;
+
+    case TOKEN_OP_MINUS:
+        return BINARY_SUBTRACT;
+
+    case TOKEN_OP_ASTERISK:
+        return BINARY_MULTIPLY;
+
+    case TOKEN_OP_SLASH:
+        return BINARY_DIVIDE;
+
+    case TOKEN_OP_PERCENT:
+        return BINARY_REMAINDER;
+
+    default:
+        break;
+    }
+
+    return BINARY_INVALID;
+}
+
+static AstNode *parse_expression(Parser *p, int min_prec);
+
+static AstNode *parse_factor(Parser *p) {
     Token tok = peek_token(p);
     switch (tok.kind) {
     case TOKEN_CONSTANT: {
@@ -117,14 +171,14 @@ static AstNode *parse_expression(Parser *p) {
 
         AstNode *constant = AstNode_create();
         constant->kind = ASTNODE_CONSTANT;
-        constant->node.constant.c = constant_val;
+        constant->node.constant = constant_val;
 
         return constant;
     }
     case TOKEN_OP_MINUS:
     case TOKEN_OP_COMPLEMENT: {
         UnaryOpKind op = parse_unop(p);
-        AstNode *exp = parse_expression(p);
+        AstNode *exp = parse_factor(p);
 
         AstNode *unary = AstNode_create();
         unary->kind = ASTNODE_UNARY;
@@ -135,7 +189,7 @@ static AstNode *parse_expression(Parser *p) {
     }
     case TOKEN_LEFT_PAREN: {
         advance_token(p);
-        AstNode *exp = parse_expression(p);
+        AstNode *exp = parse_expression(p, 0);
         expect_token(p, TOKEN_RIGHT_PAREN);
         return exp;
     }
@@ -146,17 +200,38 @@ static AstNode *parse_expression(Parser *p) {
         snprintf(exp_err.desc.cstr, exp_err.desc.len+1, "expected an expression, got \"%s\"", token_literal_list[tok.kind]);
         exp_err.pos = tok.pos;
         ErrorList_append(&p->errors, exp_err);
+    }
+    }
 
-        AstNode *inv = AstNode_create();
-        inv->kind = ASTNODE_INVALID;
-        return inv;
+    AstNode *inv = AstNode_create();
+    inv->kind = ASTNODE_INVALID;
+    return inv;
+}
+
+static AstNode *parse_expression(Parser *p, int min_prec) {
+    AstNode *left = parse_factor(p);
+    Token next_tok = peek_token(p);
+    while (Token_is_operator(next_tok) && precedence(next_tok) >= min_prec) {
+        BinaryOpKind binop = parse_binop(p);
+        AstNode *right = parse_expression(p, precedence(next_tok)+1);
+
+        AstNode *new_left = AstNode_create();
+        new_left->kind = ASTNODE_BINARY;
+        new_left->node.binary.op = binop;
+        new_left->node.binary.left = left;
+        new_left->node.binary.right = right;
+
+        left = new_left;
+
+        next_tok = peek_token(p);
     }
-    }
+
+    return left;
 }
 
 static AstNode *parse_statement(Parser *p) {
     expect_token(p, TOKEN_KW_RETURN);
-    AstNode *exp = parse_expression(p);
+    AstNode *exp = parse_expression(p, 0);
     expect_token(p, TOKEN_SEMICOLON);
 
     AstNode *stmt = AstNode_create();

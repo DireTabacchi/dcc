@@ -33,6 +33,7 @@ typedef enum tokenKind_ {
     TOKENKIND_LEN           // length of this list of TokenKinds
 } TokenKind;
 
+
 typedef struct pos_ {
     int offset;
     int line;
@@ -44,6 +45,8 @@ typedef struct token_ {
     TokenPos pos;
     String text;
 } Token;
+
+bool Token_is_operator(Token t);
 
 typedef struct tokenList_ {
     Token *toks;

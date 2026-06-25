@@ -10,7 +10,7 @@
 
 AstNode *AstNode_create() {
     AstNode *n = malloc(sizeof(AstNode));
-
+    *n = (AstNode){0};
     return n;
 }
 
@@ -21,28 +21,47 @@ void AstNode_destroy(AstNode *node) {
     case ASTNODE_INVALID:
         free(node);
         break;
+
     case ASTNODE_PROGRAM:
         AstNode_destroy(node->node.program.function);
         free(node);
         break;
+
     case ASTNODE_FUNCTION:
         String_free(&node->node.function.name);
         AstNode_destroy(node->node.function.statement);
         free(node);
         break;
+
     case ASTNODE_RETURN:
         AstNode_destroy(node->node.ret.expr);
         free(node);
         break;
+
     case ASTNODE_CONSTANT:
         free(node);
         break;
+
     case ASTNODE_UNARY:
         AstNode_destroy(node->node.unary.exp);
         free(node);
         break;
+
+    case ASTNODE_BINARY:
+        AstNode_destroy(node->node.binary.left);
+        AstNode_destroy(node->node.binary.right);
+        free(node);
     }
 }
+
+char *binary_op_names[6] = {
+    (char *)"UNKNOWN",
+    (char *)"Add",
+    (char *)"Subtract",
+    (char *)"Multiply",
+    (char *)"Divide",
+    (char *)"Remainder"
+};
 
 void AstNode_print(AstNode *node, int indent_lvl) {
     int spaces = indent_lvl * SPACES_PER_INDENT;
@@ -72,8 +91,9 @@ void AstNode_print(AstNode *node, int indent_lvl) {
         printf("%2$*1$c\n", spaces+1, ')');
         break;
     case ASTNODE_CONSTANT:
-        printf("%2$*1$s%3$d)\n", spaces+9, "Constant(", node->node.constant.c);
+        printf("%2$*1$s%3$d)\n", spaces+9, "Constant(", node->node.constant);
         break;
+
     case ASTNODE_UNARY:
         printf("%2$*1$s\n", spaces+6, "Unary(");
         indent_lvl += 1;
@@ -85,5 +105,25 @@ void AstNode_print(AstNode *node, int indent_lvl) {
         indent_lvl -= 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
+    case ASTNODE_BINARY:
+        printf("%2$*1$s\n", spaces+7, "Binary(");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        // TODO: turn the strings in the ternary into a table
+        printf("%2$*1$s%3$s\n%5$*4$s\n",
+            spaces+3, "op=",
+            binary_op_names[node->node.binary.op],
+            spaces+6,
+            "left=(");
+        AstNode_print(node->node.binary.left, indent_lvl+1);
+        printf("%2$*1$c\n%4$*3$s\n", spaces+1, ')', spaces+7, "right=(");
+        AstNode_print(node->node.binary.right, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
     }
 }

@@ -9,7 +9,8 @@ typedef enum astNodeKind_ {
     ASTNODE_FUNCTION,
     ASTNODE_RETURN,
     ASTNODE_CONSTANT,
-    ASTNODE_UNARY
+    ASTNODE_UNARY,
+    ASTNODE_BINARY
 } AstNodeKind;
 
 typedef enum unaryOpKind_ {
@@ -18,6 +19,15 @@ typedef enum unaryOpKind_ {
     UNARY_NEGATE
 } UnaryOpKind;
 
+typedef enum binaryOpKind_ {
+    BINARY_INVALID,
+    BINARY_ADD,
+    BINARY_SUBTRACT,
+    BINARY_MULTIPLY,
+    BINARY_DIVIDE,
+    BINARY_REMAINDER
+} BinaryOpKind;
+
 typedef struct astNode_ *AstNode_ty;
 typedef struct astNode_ {
     AstNodeKind kind;
@@ -25,8 +35,9 @@ typedef struct astNode_ {
         struct { AstNode_ty function; } program;
         struct { String name; AstNode_ty statement; } function;
         struct { AstNode_ty expr; } ret;
-        struct { int c; } constant;
+        int constant;
         struct { UnaryOpKind op; AstNode_ty exp; } unary;
+        struct { BinaryOpKind op; AstNode_ty left; AstNode_ty right; } binary;
     } node;
 } AstNode;
 
