@@ -14,7 +14,8 @@ typedef enum tacdNodeKind_ {
 typedef enum tacdCodeKind_ {
     TACD_CODE_INVALID,
     TACD_CODE_RET,
-    TACD_CODE_UNARY
+    TACD_CODE_UNARY,
+    TACD_CODE_BINARY
 } TacdCodeKind;
 
 typedef enum tacdValueKind_ {
@@ -29,6 +30,15 @@ typedef enum tacdUnaryOp_ {
     TACD_UNARY_NEGATE
 } TacdUnaryOp;
 
+typedef enum tacdBinaryOp_ {
+    TACD_BINARY_INVALID,
+    TACD_BINARY_ADD,
+    TACD_BINARY_SUBTRACT,
+    TACD_BINARY_MULTIPLY,
+    TACD_BINARY_DIVIDE,
+    TACD_BINARY_REMAINDER
+} TacdBinaryOp;
+
 typedef struct tacdValue_ {
     TacdValueKind kind;
     union {
@@ -40,8 +50,9 @@ typedef struct tacdValue_ {
 typedef struct tacdCode_ {
     TacdCodeKind kind;
     union {
-        struct { TacdValue val; } ret;
+        TacdValue ret;
         struct { TacdUnaryOp op; TacdValue src; TacdValue dest; } unary;
+        struct { TacdBinaryOp op; TacdValue src1; TacdValue src2; TacdValue dest; } binary;
     } code;
 } TacdCode;
 

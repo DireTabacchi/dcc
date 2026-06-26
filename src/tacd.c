@@ -139,6 +139,23 @@ static String create_temporary_var(TacdGenerator *tg) {
     return var_name;
 }
 
+static TacdBinaryOp trx_binary_operator(BinaryOpKind op) {
+    switch (op) {
+    case BINARY_INVALID:
+        return TACD_BINARY_INVALID;
+    case BINARY_ADD:
+        return TACD_BINARY_ADD;
+    case BINARY_SUBTRACT:
+        return TACD_BINARY_SUBTRACT;
+    case BINARY_MULTIPLY:
+        return TACD_BINARY_MULTIPLY;
+    case BINARY_DIVIDE:
+        return TACD_BINARY_DIVIDE;
+    case BINARY_REMAINDER:
+        return TACD_BINARY_REMAINDER;
+    }
+}
+
 static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *expr) {
     switch (expr->kind) {
     case ASTNODE_CONSTANT:
@@ -166,6 +183,26 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
 
         return dest;
     }
+    case ASTNODE_BINARY: {
+        TacdValue src1 = trx_expression(tg, tacd_fn, expr->node.binary.left);
+        TacdValue src2 = trx_expression(tg, tacd_fn, expr->node.binary.right);
+
+        String dest_name = create_temporary_var(tg);
+        TacdValue dest = (TacdValue){
+            .kind = TACD_VALUE_IDENTIFIER,
+            .val.identifier = dest_name
+        };
+
+        TacdCode binop = {0};
+        binop.kind = TACD_CODE_BINARY;
+        binop.code.binary.op = trx_binary_operator(expr->node.binary.op);
+        binop.code.binary.src1 = src1;
+        binop.code.binary.src2 = src2;
+        binop.code.binary.dest = dest;
+        CodeList_append(&tacd_fn->node.function.body, binop);
+
+        return dest;
+    }
     default:
         break;
     }
@@ -179,7 +216,7 @@ static void trx_statement(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *stateme
         TacdValue val = trx_expression(tg, tacd_fn, statement->node.ret.expr);
         TacdCode ret = {0};
         ret.kind = TACD_CODE_RET;
-        ret.code.ret.val = val;
+        ret.code.ret = val;
         CodeList_append(&tacd_fn->node.function.body, ret);
         break;
     }
@@ -215,7 +252,7 @@ static void TacdValue_print(TacdValue value, int indent_lvl) {
     int spaces = indent_lvl * 4;
     switch(value.kind) {
     case TACD_VALUE_INVALID:
-        /*  Nothing to print.   */
+        printf("%2$*1$s", spaces+7, "INVALID");
         break;
     case TACD_VALUE_IDENTIFIER:
         printf("%2$*1$s", spaces+(int)value.val.identifier.len, value.val.identifier.cstr);
@@ -230,8 +267,9 @@ static void TacdCode_print(TacdCode *code, int indent_lvl) {
     int spaces = indent_lvl * 4;
     switch (code->kind) {
     case TACD_CODE_INVALID:
-        /*  nothing to print.   */
+        puts("INVALID");
         break;
+
     case TACD_CODE_UNARY:
         TacdValue_print(code->code.unary.dest, indent_lvl);
         if (code->code.unary.op == TACD_UNARY_NEGATE) {
@@ -242,9 +280,38 @@ static void TacdCode_print(TacdCode *code, int indent_lvl) {
         TacdValue_print(code->code.unary.src, 0);
         printf("\n");
         break;
+
+    case TACD_CODE_BINARY:
+        TacdValue_print(code->code.binary.dest, indent_lvl);
+        printf(" = ");
+        TacdValue_print(code->code.binary.src1, 0);
+        switch (code->code.binary.op) {
+        case TACD_BINARY_INVALID:
+            printf(" ??? ");
+            break;
+        case TACD_BINARY_ADD:
+            printf(" + ");
+            break;
+        case TACD_BINARY_SUBTRACT:
+            printf(" - ");
+            break;
+        case TACD_BINARY_MULTIPLY:
+            printf(" * ");
+            break;
+        case TACD_BINARY_DIVIDE:
+            printf(" / ");
+            break;
+        case TACD_BINARY_REMAINDER:
+            printf(" %% ");
+            break;
+        }
+        TacdValue_print(code->code.binary.src2, 0);
+        printf("\n");
+        break;
+
     case TACD_CODE_RET:
         printf("%2$*1$s", spaces+7, "return ");
-        TacdValue_print(code->code.ret.val, 0);
+        TacdValue_print(code->code.ret, 0);
         printf("\n");
         break;
     }
