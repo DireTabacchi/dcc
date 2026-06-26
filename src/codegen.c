@@ -193,12 +193,21 @@ static void Operand_print(Operand op) {
         break;
 
     case OPERAND_REG:
-        if (op.val.reg == AX) {
-            printf("%%eax");
-        } else if (op.val.reg == R10) {
-            printf("%%r10d");
-        } else {
-            printf("Register");
+        switch (op.val.reg) {
+            case AX:
+                printf("%%eax");
+                break;
+            case DX:
+                printf("%%edx");
+                break;
+            case R10:
+                printf("%%r10d");
+                break;
+            case R11:
+                printf("%%r11d");
+                break;
+            default:
+                printf("Register");
         }
         break;
 
@@ -231,6 +240,26 @@ static void UnaryOp_print(UnaryOp unop) {
     }
 }
 
+static void BinaryOp_print(BinaryOp binop) {
+    switch (binop) {
+    case BINARYOP_INVALID:
+        printf("INVALID BINARY");
+        break;
+
+    case BINARYOP_ADD:
+        printf("Add");
+        break;
+        
+    case BINARYOP_SUB:
+        printf("Sub");
+        break;
+
+    case BINARYOP_MULT:
+        printf("Mult");
+        break;
+    }
+}
+
 static void AsmInstr_print(AsmInstr *instr, int indent_lvl) {
     int spaces = indent_lvl * 4;
 
@@ -251,6 +280,26 @@ static void AsmInstr_print(AsmInstr *instr, int indent_lvl) {
         printf(")\n");
         break;
 
+    case ASM_INSTR_BINARY:
+        printf("%2$*1$s", spaces+7, "Binary(");
+        BinaryOp_print(instr->instr.binary.binop);
+        printf(",");
+        Operand_print(instr->instr.binary.src);
+        printf(",");
+        Operand_print(instr->instr.binary.dest);
+        printf(")\n");
+        break;
+
+    case ASM_INSTR_IDIV:
+        printf("%2$*1$s", spaces+5, "Idiv(");
+        Operand_print(instr->instr.idiv.divisor);
+        printf(")\n");
+        break;
+
+    case ASM_INSTR_CDQ:
+        printf("%2$*1$s\n", spaces+3, "Cdq");
+        break;
+
     case ASM_ALLOCSTACK:
         printf("%2$*1$s%3$d)\n", spaces+14, "AllocateStack(", instr->instr.alloc_stack);
         break;
@@ -258,6 +307,7 @@ static void AsmInstr_print(AsmInstr *instr, int indent_lvl) {
     case ASM_INSTR_RET:
         printf("%2$*1$s\n", spaces+3, "Ret");
         break;
+
     case ASM_INSTR_INVALID:
         printf("%2$*1$s\n", spaces+19, "INVALID INSTRUCTION");
         break;
@@ -324,11 +374,93 @@ static UnaryOp trx_unary_op(TacdUnaryOp op) {
     }
 }
 
+static BinaryOp trx_binary_op(TacdBinaryOp op) {
+    switch (op) {
+    case TACD_BINARY_INVALID:
+        return BINARYOP_INVALID;
+
+    case TACD_BINARY_ADD:
+        return BINARYOP_ADD;
+
+    case TACD_BINARY_SUBTRACT:
+        return BINARYOP_SUB;
+
+    case TACD_BINARY_MULTIPLY:
+        return BINARYOP_MULT;
+
+    default:
+        return BINARYOP_INVALID;
+    }
+}
+
+static AsmInstr trx_binary_divide(AsmNode *asm_function, TacdCode *tacd_code) {
+    Operand op_src1 = trx_operand(tacd_code->code.binary.src1);
+    Operand op_src2 = trx_operand(tacd_code->code.binary.src2);
+    Operand op_dest = trx_operand(tacd_code->code.binary.dest);
+
+    Operand op_ax = (Operand){
+        .type = OPERAND_REG,
+        .val.reg = AX
+    };
+
+    AsmInstr mov_src1_ax = {0};
+    mov_src1_ax.kind = ASM_INSTR_MOV;
+    mov_src1_ax.instr.mov.src = op_src1;
+    mov_src1_ax.instr.mov.dest = op_ax;
+    InstrArray_append(&asm_function->node.function.instrs, mov_src1_ax);
+
+    AsmInstr cdq = {0};
+    cdq.kind = ASM_INSTR_CDQ;
+    InstrArray_append(&asm_function->node.function.instrs, cdq);
+
+    AsmInstr asm_idiv = {0};
+    asm_idiv.kind = ASM_INSTR_IDIV;
+    asm_idiv.instr.idiv.divisor = op_src2;
+    InstrArray_append(&asm_function->node.function.instrs, asm_idiv);
+
+    AsmInstr mov_ax_dest = {0};
+    mov_ax_dest.kind = ASM_INSTR_MOV;
+    mov_ax_dest.instr.mov.src = op_ax;
+    mov_ax_dest.instr.mov.dest = op_dest;
+
+    return mov_ax_dest;
+}
+
+static AsmInstr trx_binary_remainder(AsmNode *asm_function, TacdCode *tacd_code) {
+    Operand op_src1 = trx_operand(tacd_code->code.binary.src1);
+    Operand op_src2 = trx_operand(tacd_code->code.binary.src2);
+    Operand op_dest = trx_operand(tacd_code->code.binary.dest);
+
+
+    AsmInstr mov_src1_ax = {0};
+    mov_src1_ax.kind = ASM_INSTR_MOV;
+    mov_src1_ax.instr.mov.src = op_src1;
+    mov_src1_ax.instr.mov.dest = (Operand){ .type = OPERAND_REG, .val.reg = AX };
+    InstrArray_append(&asm_function->node.function.instrs, mov_src1_ax);
+
+    AsmInstr cdq = {0};
+    cdq.kind = ASM_INSTR_CDQ;
+    InstrArray_append(&asm_function->node.function.instrs, cdq);
+
+    AsmInstr asm_idiv = {0};
+    asm_idiv.kind = ASM_INSTR_IDIV;
+    asm_idiv.instr.idiv.divisor = op_src2;
+    InstrArray_append(&asm_function->node.function.instrs, asm_idiv);
+
+    AsmInstr mov_dx_dest = {0};
+    mov_dx_dest.kind = ASM_INSTR_MOV;
+    mov_dx_dest.instr.mov.src = (Operand){ .type = OPERAND_REG, .val.reg = DX };
+    mov_dx_dest.instr.mov.dest = op_dest;
+
+    return mov_dx_dest;
+}
+
 static AsmInstr trx_code(AsmNode *asm_function, TacdCode *tacd_code) {
     switch (tacd_code->kind) {
     case TACD_CODE_INVALID:
         /*  TODO: should be an internal compiler error. */
         break;
+
     case TACD_CODE_UNARY: {
         UnaryOp unop = trx_unary_op(tacd_code->code.unary.op);
         Operand op_src = trx_operand(tacd_code->code.unary.src);
@@ -348,8 +480,38 @@ static AsmInstr trx_code(AsmNode *asm_function, TacdCode *tacd_code) {
         return asm_unary;
     }
 
+    case TACD_CODE_BINARY: {
+        // Division-like instructions
+        if (tacd_code->code.binary.op == TACD_BINARY_DIVIDE) {
+            return trx_binary_divide(asm_function, tacd_code);
+        } else if (tacd_code->code.binary.op == TACD_BINARY_REMAINDER) {
+            return trx_binary_remainder(asm_function, tacd_code);
+        }
+
+        // Add, Subtract, multiply instructions
+
+        BinaryOp binop = trx_binary_op(tacd_code->code.binary.op);
+        Operand op_src1 = trx_operand(tacd_code->code.binary.src1);
+        Operand op_src2 = trx_operand(tacd_code->code.binary.src2);
+        Operand op_dest = trx_operand(tacd_code->code.binary.dest);
+
+        AsmInstr mov_src_dest = {0};
+        mov_src_dest.kind = ASM_INSTR_MOV;
+        mov_src_dest.instr.mov.src = op_src1;
+        mov_src_dest.instr.mov.dest = op_dest;
+        InstrArray_append(&asm_function->node.function.instrs, mov_src_dest);
+
+        AsmInstr asm_binary = {0};
+        asm_binary.kind = ASM_INSTR_BINARY;
+        asm_binary.instr.binary.binop = binop;
+        asm_binary.instr.binary.src = op_src2;
+        asm_binary.instr.binary.dest = op_dest;
+
+        return asm_binary;
+    }
+
     case TACD_CODE_RET: {
-        Operand op_src = trx_operand(tacd_code->code.ret.val);
+        Operand op_src = trx_operand(tacd_code->code.ret);
 
         // Create the MOV instruction.
         AsmInstr asm_mov = {0};
@@ -451,6 +613,9 @@ static void resolve_pseudo_operand(CodegenDriver *cgd, Operand *op, int *total_o
 static void resolve_instr_pseudo_ops(CodegenDriver *cgd, AsmInstr *instr, int *total_offset) {
     switch (instr->kind) {
     case ASM_INSTR_INVALID:
+    case ASM_INSTR_CDQ:
+    case ASM_INSTR_RET:
+    case ASM_ALLOCSTACK:
         break;
 
     case ASM_INSTR_MOV:
@@ -466,7 +631,22 @@ static void resolve_instr_pseudo_ops(CodegenDriver *cgd, AsmInstr *instr, int *t
         if (instr->instr.unary.op.type == OPERAND_PSEUDO) {
             resolve_pseudo_operand(cgd, &instr->instr.unary.op, total_offset);
         }
+        break;
 
+    case ASM_INSTR_BINARY:
+        if (instr->instr.binary.src.type == OPERAND_PSEUDO) {
+            resolve_pseudo_operand(cgd, &instr->instr.binary.src, total_offset);
+        }
+        if (instr->instr.binary.dest.type == OPERAND_PSEUDO) {
+            resolve_pseudo_operand(cgd, &instr->instr.binary.dest, total_offset);
+        }
+        break;
+
+    case ASM_INSTR_IDIV:
+        if (instr->instr.idiv.divisor.type == OPERAND_PSEUDO) {
+            resolve_pseudo_operand(cgd, &instr->instr.idiv.divisor, total_offset);
+        }
+        break;
     }
 }
 

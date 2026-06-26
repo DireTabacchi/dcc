@@ -16,6 +16,9 @@ typedef enum asmInstrKind_ {
     ASM_ALLOCSTACK,     // instruction `subq $n, %rsp`
     ASM_INSTR_MOV,
     ASM_INSTR_UNARY,
+    ASM_INSTR_BINARY,
+    ASM_INSTR_IDIV,
+    ASM_INSTR_CDQ,
     ASM_INSTR_RET
 } AsmInstrKind;
 
@@ -24,6 +27,13 @@ typedef enum unop_ {
     UNARYOP_NEG,
     UNARYOP_NOT
 } UnaryOp;
+
+typedef enum binop_ {
+    BINARYOP_INVALID,
+    BINARYOP_ADD,
+    BINARYOP_SUB,
+    BINARYOP_MULT
+} BinaryOp;
 
 typedef enum operandType_ {
     OPERAND_INVALID,
@@ -35,7 +45,9 @@ typedef enum operandType_ {
 
 typedef enum register_ {
     AX,
-    R10
+    DX,
+    R10,
+    R11
 } Register;
 
 typedef struct operand_ {
@@ -53,6 +65,8 @@ typedef struct asmInstr_ {
     union {
         struct { Operand src; Operand dest; } mov;
         struct { UnaryOp unop; Operand op; } unary;
+        struct { BinaryOp binop; Operand src; Operand dest; } binary;
+        struct { Operand divisor; } idiv;
         int alloc_stack;
     } instr;
 } AsmInstr;
