@@ -572,19 +572,98 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmNode *function) 
     InstrArray *func_instrs = &function->node.function.instrs;
     for (size_t instr_idx = 0; instr_idx < func_instrs->len; instr_idx++) {
         AsmInstr *instr = &func_instrs->instrs[instr_idx];
-        if (instr->kind == ASM_INSTR_MOV) {
+        switch (instr->kind) {
+        case ASM_INSTR_INVALID:
+        case ASM_INSTR_UNARY:
+        case ASM_ALLOCSTACK:
+        case ASM_INSTR_CDQ:
+        case ASM_INSTR_RET:
+                break;
+
+        case ASM_INSTR_MOV: {
             if (instr->instr.mov.src.type == OPERAND_STACK && instr->instr.mov.dest.type == OPERAND_STACK) {
-                int old_dest = instr->instr.mov.dest.val.stack;
-                instr->instr.mov.dest.type = OPERAND_REG;
-                instr->instr.mov.dest.val.reg = R10;
+                int src = instr->instr.mov.src.val.stack;
+                instr->instr.mov.src.type = OPERAND_REG;
+                instr->instr.mov.src.val.reg = R10;
                 AsmInstr new_instr = (AsmInstr){
                     .kind = ASM_INSTR_MOV,
                     .instr.mov = {
-                        .src = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
-                        .dest = (Operand){ .type = OPERAND_STACK, .val.stack = old_dest }
+                        .src = (Operand){ .type = OPERAND_STACK, .val.stack = src },
+                        .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
                     }};
-                InstrArray_insert(func_instrs, new_instr, instr_idx + 1);
+                InstrArray_insert(func_instrs, new_instr, instr_idx);
             }
+            break;
+        }   // case ASM_INSTR_MOV
+
+        case ASM_INSTR_IDIV: {
+            if (instr->instr.idiv.divisor.type == OPERAND_IMM) {
+                int old_imm = instr->instr.idiv.divisor.val.imm;
+                instr->instr.idiv.divisor.type = OPERAND_REG;
+                instr->instr.idiv.divisor.val.reg = R10;
+                AsmInstr new_instr = (AsmInstr){
+                    .kind = ASM_INSTR_MOV,
+                    .instr.mov = {
+                        .src = (Operand){ .type = OPERAND_IMM, .val.imm = old_imm },
+                        .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 }
+                    }
+                };
+                InstrArray_insert(func_instrs, new_instr, instr_idx);
+            }
+            break;
+        }   // case ASM_INSTR_IDIV
+
+        case ASM_INSTR_BINARY: {
+            switch (instr->instr.binary.binop) {
+            case BINARYOP_INVALID:
+                    break;
+            case BINARYOP_ADD:
+            case BINARYOP_SUB: {
+                if (instr->instr.binary.src.type == OPERAND_STACK && instr->instr.binary.dest.type == OPERAND_STACK) {
+                    int old_src = instr->instr.binary.src.val.stack;
+                    instr->instr.binary.src.type = OPERAND_REG;
+                    instr->instr.binary.src.val.reg = R10;
+                    AsmInstr new_instr = (AsmInstr){
+                        .kind = ASM_INSTR_MOV,
+                        .instr.mov = {
+                            .src = (Operand){ .type = OPERAND_STACK, .val.stack = old_src },
+                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 }
+                        }};
+                    InstrArray_insert(func_instrs, new_instr, instr_idx);
+                }
+                break;
+            }   // case BINARYOP_ADD/SUB
+
+            case BINARYOP_MULT: {
+                if (instr->instr.binary.dest.type == OPERAND_STACK) {
+                    int dest = instr->instr.binary.dest.val.stack;
+                    instr->instr.binary.dest.type = OPERAND_REG;
+                    instr->instr.binary.dest.val.reg = R11;
+
+                    AsmInstr first_mov = (AsmInstr){
+                        .kind = ASM_INSTR_MOV,
+                        .instr.mov = {
+                            .src = (Operand){ .type = OPERAND_STACK, .val.stack = dest },
+                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R11 }
+                        }
+                    };
+                    AsmInstr second_mov = (AsmInstr){
+                        .kind = ASM_INSTR_MOV,
+                        .instr.mov = {
+                            .src = (Operand){ .type = OPERAND_REG, .val.reg = R11 },
+                            .dest = (Operand){ .type = OPERAND_STACK, .val.stack = dest }
+                        }
+                    };
+
+                    InstrArray_insert(func_instrs, second_mov, instr_idx+1);
+                    InstrArray_insert(func_instrs, first_mov, instr_idx);
+                }
+                break;
+            }   // case BINARYOP_MULT
+            }
+
+        }   // case ASM_INSTR_BINARY
+
         }
     }
 }

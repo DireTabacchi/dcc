@@ -3,14 +3,25 @@
 
 static void emit_operand(Operand *op, FILE *dest) {
     switch (op->type) {
+    case OPERAND_INVALID:
+    case OPERAND_PSEUDO:
+        break;
     case OPERAND_REG:
         switch (op->val.reg) {
         case AX:
             fprintf(dest, "%%eax");
             break;
 
+        case DX:
+            fprintf(dest, "%%edx");
+            break;
+
         case R10:
             fprintf(dest, "%%r10d");
+            break;
+
+        case R11:
+            fprintf(dest, "%%r11d");
             break;
         }
         break;
@@ -38,6 +49,8 @@ static void emit_mov(AsmInstr *mov, FILE *dest) {
 
 static void emit_unary(AsmInstr *unary, FILE *dest) {
     switch (unary->instr.unary.unop) {
+    case UNARYOP_INVALID:
+        break;
     case UNARYOP_NOT:
 #ifdef DEBUG
         fprintf(dest, "# Unary Not\n");
@@ -61,6 +74,10 @@ static void emit_function(AsmNode *func, FILE *dest) {
     for (size_t instr_idx = 0; instr_idx < func->node.function.instrs.len; instr_idx++) {
         AsmInstr *instr = &func->node.function.instrs.instrs[instr_idx];
         switch (instr->kind) {
+        case ASM_INSTR_INVALID:
+            fprintf(dest, "# ERROR: INVALID INSTRUCTION\n");
+            break;
+
         case ASM_INSTR_MOV:
 #ifdef DEBUG
             fprintf(dest, "# Mov\n");
@@ -84,6 +101,41 @@ static void emit_function(AsmNode *func, FILE *dest) {
 
         case ASM_INSTR_UNARY:
             emit_unary(instr, dest);
+            break;
+
+        case ASM_INSTR_IDIV:
+            fprintf(dest, "# Divide\n\tidivl\t");
+            emit_operand(&instr->instr.idiv.divisor, dest);
+            fprintf(dest, "\n");
+            break;
+
+        case ASM_INSTR_CDQ:
+            fprintf(dest, "\tcdq\n");
+            break;
+
+        case ASM_INSTR_BINARY: 
+            switch (instr->instr.binary.binop) {
+            case BINARYOP_INVALID:
+                break;
+
+            case BINARYOP_ADD:
+                fprintf(dest, "# Add\n\taddl\t");
+                break;
+
+            case BINARYOP_SUB:
+                fprintf(dest, "# Subtract\n\tsubl\t");
+                break;
+
+            case BINARYOP_MULT:
+                fprintf(dest, "# Multiply\n\timull\t");
+                break;
+            }
+            
+            emit_operand(&instr->instr.binary.src, dest);
+            fprintf(dest, ", ");
+            emit_operand(&instr->instr.binary.dest, dest);
+            fprintf(dest, "\n");
+
             break;
         }
     }
