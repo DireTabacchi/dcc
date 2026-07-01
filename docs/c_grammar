@@ -3,8 +3,9 @@
 <statement> ::= "return" <exp> ";"
 <exp> ::= <factor> | <exp> <binop> <exp>
 <factor> ::= <int> | <unop> <factor> | "(" <expr> ")"
-<unop> ::= "-" | "~"
+<unop> ::= "-" | "~" | "!"
 <binop> ::= "-" | "+" | "*" | "/" | "%"
-          | "&" | "|" | "^" | "<" | ">" | "<<" | ">>"
+          | "&" | "|" | "^" | "<<" | ">>" | "&&" | "||"
+          | "==" | "!=" | "<" | "<=" | ">" | ">="
 <identifier> ::= ? An identifier token ?
 <int> ::= ? A constant token ?

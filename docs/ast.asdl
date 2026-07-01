@@ -4,6 +4,7 @@ statement = Return(exp)
 exp = Constant(int)
     | Unary(unary_operator, exp)
     | Binary(binary_operator, exp, exp)
-unary_operator = Complement | Negate
+unary_operator = Complement | Negate | Not
 binary_operator = Add | subtract | Multiply | Divide | Remainder
-                | BitAnd | BitOr | BitXor | Lt | Gt | LShift | RShift
+                | BitAnd | BitOr | BitXor | LShift | RShift
+                | LogicAnd | LogicOr | Equal | NotEqual | Lt | Lte | Gt | Gte
