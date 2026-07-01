@@ -210,6 +210,20 @@ void tokenize(Tokenizer *t) {
                 TokenList_append(&t->tokens, tok);
                 break;
 
+            case '=':
+                if (peek(t) == '=') {
+                    tok.kind = TOKEN_OP_DOUBLE_EQUAL;
+                    tok.text = String_init_length(2);
+                    memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
+                tok.kind = TOKEN_OP_EQUAL;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+
             case '~':
                 tok.kind = TOKEN_OP_COMPLEMENT;
                 tok.text = String_init_length(1);
@@ -260,7 +274,30 @@ void tokenize(Tokenizer *t) {
                 TokenList_append(&t->tokens, tok);
                 break;
 
+            case '!':
+                if (peek(t) == '=') {
+                    tok.kind = TOKEN_OP_EXCLAMATION_EQUAL;
+                    tok.text = String_init_length(2);
+                    memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
+                tok.kind = TOKEN_OP_EXCLAMATION;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
             case '&':
+                if (peek(t) == '&') {
+                    tok.kind = TOKEN_OP_DOUBLE_AMP;
+                    tok.text = String_init_length(2);
+                    memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
                 tok.kind = TOKEN_OP_AMPERSAND;
                 tok.text = String_init_length(1);
                 memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
@@ -268,6 +305,14 @@ void tokenize(Tokenizer *t) {
                 break;
 
             case '|':
+                if (peek(t) == '|') {
+                    tok.kind = TOKEN_OP_DOUBLE_BAR;
+                    tok.text = String_init_length(2);
+                    memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
                 tok.kind = TOKEN_OP_BAR;
                 tok.text = String_init_length(1);
                 memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
@@ -281,9 +326,17 @@ void tokenize(Tokenizer *t) {
                 TokenList_append(&t->tokens, tok);
                 break;
 
-            case '<':
-                if (peek(t) == '<') {
+            case '<': {
+                char peeked = peek(t);
+                if (peeked == '<') {
                     tok.kind = TOKEN_OP_LSHFT;
+                    tok.text = String_init_length(2);
+                    memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                } else if (peeked == '=') {
+                    tok.kind = TOKEN_OP_LTE;
                     tok.text = String_init_length(2);
                     memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
                     TokenList_append(&t->tokens, tok);
@@ -295,10 +348,19 @@ void tokenize(Tokenizer *t) {
                 memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 TokenList_append(&t->tokens, tok);
                 break;
+            }
 
-            case '>':
-                if (peek(t) == '>') {
+            case '>': {
+                char peeked = peek(t);
+                if (peeked == '>') {
                     tok.kind = TOKEN_OP_RSHFT;
+                    tok.text = String_init_length(2);
+                    memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                } else if (peeked == '=') {
+                    tok.kind = TOKEN_OP_GTE;
                     tok.text = String_init_length(2);
                     memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
                     TokenList_append(&t->tokens, tok);
@@ -310,6 +372,7 @@ void tokenize(Tokenizer *t) {
                 memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 TokenList_append(&t->tokens, tok);
                 break;
+            }
 
             case -1:    // EOF
                 tok.kind = TOKEN_EOF;

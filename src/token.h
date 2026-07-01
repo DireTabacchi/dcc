@@ -5,45 +5,61 @@
 
 #include "dd_string.h"
 
-typedef enum tokenKind_ {
-    TOKEN_UNKOWN,           // Unkown token
-    TOKEN_EOF,              // EOF (End Of File)
-    // Punctuation
-    TOKEN_LEFT_PAREN,       // (
-    TOKEN_RIGHT_PAREN,      // )
-    TOKEN_LEFT_BRACE,       // {
-    TOKEN_RIGHT_BRACE,      // }
-    TOKEN_SEMICOLON,        // ;
-    // -- Operators
-    TOKEN_OPERATORS_BEGIN,
-    TOKEN_OP_COMPLEMENT,    // ~
-    TOKEN_OP_MINUS,         // -
-    TOKEN_OP_DECREMENT,     // --
-    TOKEN_OP_PLUS,          // +
-    TOKEN_OP_ASTERISK,      // *
-    TOKEN_OP_SLASH,         // /
-    TOKEN_OP_PERCENT,       // %
+#define TOKENKINDS \
+    TOKENKIND(TOKEN_UNKNOWN, "UNKNOWN"), \
+    TOKENKIND(TOKEN_EOF, "EOF"), \
+    TOKENKIND(TOKEN_LEFT_PAREN, "("), \
+    TOKENKIND(TOKEN_RIGHT_PAREN, ")"), \
+    TOKENKIND(TOKEN_LEFT_BRACE, "{"), \
+    TOKENKIND(TOKEN_RIGHT_BRACE, "}"), \
+    TOKENKIND(TOKEN_SEMICOLON, ";"), \
+\
+    TOKENKIND(TOKEN_OPERATORS_BEGIN, ""), \
+    TOKENKIND(TOKEN_OP_EQUAL, "="), \
+    TOKENKIND(TOKEN_OP_COMPLEMENT, "~"), \
+    TOKENKIND(TOKEN_OP_MINUS, "-"), \
+    TOKENKIND(TOKEN_OP_EXCLAMATION, "!"), \
+    TOKENKIND(TOKEN_OP_DECREMENT, "--"), \
+    TOKENKIND(TOKEN_OP_PLUS, "+"), \
+    TOKENKIND(TOKEN_OP_ASTERISK, "*"), \
+    TOKENKIND(TOKEN_OP_SLASH, "/"), \
+    TOKENKIND(TOKEN_OP_PERCENT, "%"), \
+    TOKENKIND(TOKEN_OP_DOUBLE_AMP, "&&"), \
+    TOKENKIND(TOKEN_OP_DOUBLE_BAR, "||"), \
+    TOKENKIND(TOKEN_OP_DOUBLE_EQUAL, "=="), \
+    TOKENKIND(TOKEN_OP_EXCLAMATION_EQUAL, "!="), \
+    TOKENKIND(TOKEN_OP_LT, "<"), \
+    TOKENKIND(TOKEN_OP_GT, ">"), \
+    TOKENKIND(TOKEN_OP_LTE, "<="), \
+    TOKENKIND(TOKEN_OP_GTE, ">="), \
+    TOKENKIND(TOKEN_OP_AMPERSAND, "&"), \
+    TOKENKIND(TOKEN_OP_BAR, "|"), \
+    TOKENKIND(TOKEN_OP_CARET, "^"), \
+    TOKENKIND(TOKEN_OP_LSHFT, "<<"), \
+    TOKENKIND(TOKEN_OP_RSHFT, ">>"), \
+    TOKENKIND(TOKEN_OPERATORS_END, ""), \
+\
+    TOKENKIND(TOKEN_KEYWORDS_BEGIN, ""), \
+    TOKENKIND(TOKEN_KW_INT, "int"), \
+    TOKENKIND(TOKEN_KW_VOID, "void"), \
+    TOKENKIND(TOKEN_KW_RETURN, "return"), \
+    TOKENKIND(TOKEN_KEYWORDS_END, ""), \
+\
+    TOKENKIND(TOKEN_IDENTIFIER, "identifier"), \
+    TOKENKIND(TOKEN_CONSTANT, "constant"), \
+    TOKENKIND(TOKENKIND_LEN, "")
 
-    TOKEN_OP_AMPERSAND,     // &
-    TOKEN_OP_BAR,           // |
-    TOKEN_OP_CARET,         // ^
-    TOKEN_OP_LT,            // <
-    TOKEN_OP_GT,            // >
-    TOKEN_OP_LSHFT,         // <<
-    TOKEN_OP_RSHFT,         // >>
-    TOKEN_OPERATORS_END,
-
-    // Keywords
-    TOKEN_KW_INT,           // int
-    TOKEN_KW_VOID,          // void
-    TOKEN_KW_RETURN,        // return
-    // Misc (?)
-    TOKEN_IDENTIFIER,       // _exampleIdentifier_123
-    TOKEN_CONSTANT,         // 123
-
-    TOKENKIND_LEN           // length of this list of TokenKinds
+typedef enum tokenkind_ {
+#define TOKENKIND(tk, sl) tk
+    TOKENKINDS
+#undef TOKENKIND
 } TokenKind;
 
+static char *token_literal_list[] = {
+#define TOKENKIND(tk, sl) (char *)sl
+    TOKENKINDS
+#undef TOKENKIND
+};
 
 typedef struct pos_ {
     int offset;
@@ -69,40 +85,5 @@ void TokenList_init(TokenList *tl);
 void TokenList_destroy(TokenList* tl);
 void TokenList_append(TokenList* tl, Token tok);
 void TokenList_print(TokenList *tl);
-
-static char *token_literal_list[TOKENKIND_LEN] = {
-    (char *)"UNKNOWN",
-    (char *)"EOF",
-    // Punctuation
-    (char *)"(",            // TOKEN_LEFT_PAREN
-    (char *)")",            // TOKEN_RIGHT_PAREN
-    (char *)"{",            // TOKEN_LEFT_BRACE
-    (char *)"}",            // TOKEN_RIGHT_BRACE
-    (char *)";",            // TOKEN_SEMICOLON
-    // -- Operators
-    (char *)"",             // TOKEN_OPERATORS_BEGIN
-    (char *)"~",            // TOKEN_OP_COMPLEMENT
-    (char *)"-",            // TOKEN_OP_MINUS
-    (char *)"--",           // TOKEN_OP_DECREMENT
-    (char *)"+",            // TOKEN_OP_PLUS
-    (char *)"*",            // TOKEN_OP_ASTERISK
-    (char *)"/",            // TOKEN_OP_SLASH
-    (char *)"%",            // TOKEN_OP_PERCENT
-    (char *)"&",            // TOKEN_OP_AMPERSAND
-    (char *)"|",            // TOKEN_OP_BAR
-    (char *)"^",            // TOKEN_OP_CARET
-    (char *)"<",            // TOKEN_OP_LT
-    (char *)">",            // TOKEN_OP_GT
-    (char *)"<<",           // TOKEN_OP_LSHFT
-    (char *)">>",           // TOKEN_OP_RSHFT
-    (char *)"",             // TOKEN_OPERATORS_END
-    // Keywords
-    (char *)"int",          // TOKEN_KW_INT
-    (char *)"void",         // TOKEN_KW_VOID
-    (char *)"return",       // TOKEN_KW_RETURN
-    // Misc (?)
-    (char *)"identifier",   // TOKEN_IDENTIFIER
-    (char *)"constant",     // TOKEN_CONSTANT
-};
 
 #endif // TOKEN_H
