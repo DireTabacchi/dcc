@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "codegen.h"
 
+// TODO: Create way to specify operand mnemonic sizes
+
 static void emit_operand(Operand *op, FILE *dest) {
     switch (op->type) {
     case OPERAND_INVALID:
@@ -11,15 +13,15 @@ static void emit_operand(Operand *op, FILE *dest) {
         case AX:
             fprintf(dest, "%%eax");
             break;
-
+        case CX:
+            fprintf(dest, "%%cl");
+            break;
         case DX:
             fprintf(dest, "%%edx");
             break;
-
         case R10:
             fprintf(dest, "%%r10d");
             break;
-
         case R11:
             fprintf(dest, "%%r11d");
             break;
@@ -40,7 +42,12 @@ static void emit_operand(Operand *op, FILE *dest) {
 }
 
 static void emit_mov(AsmInstr *mov, FILE *dest) {
-    fprintf(dest, "\tmovl\t");
+    fprintf(dest, "\tmov");
+    if (mov->instr.mov.dest.type == OPERAND_REG && mov->instr.mov.dest.val.reg == CX) {
+        fprintf(dest, "b\t");
+    } else {
+        fprintf(dest, "l\t");
+    }
     emit_operand(&mov->instr.mov.src, dest);
     fprintf(dest, ", ");
     emit_operand(&mov->instr.mov.dest, dest);
@@ -104,7 +111,10 @@ static void emit_function(AsmNode *func, FILE *dest) {
             break;
 
         case ASM_INSTR_IDIV:
-            fprintf(dest, "# Divide\n\tidivl\t");
+#ifdef DEBUG
+            fprintf(dest, "# Divide\n");
+#endif
+            fprintf(dest, "\tidivl\t");
             emit_operand(&instr->instr.idiv.divisor, dest);
             fprintf(dest, "\n");
             break;
@@ -117,17 +127,53 @@ static void emit_function(AsmNode *func, FILE *dest) {
             switch (instr->instr.binary.binop) {
             case BINARYOP_INVALID:
                 break;
-
             case BINARYOP_ADD:
-                fprintf(dest, "# Add\n\taddl\t");
+#ifdef DEBUG
+                fprintf(dest, "# Add\n");
+#endif
+                fprintf(dest, "\taddl\t");
                 break;
-
             case BINARYOP_SUB:
-                fprintf(dest, "# Subtract\n\tsubl\t");
+#ifdef DEBUG
+                fprintf(dest, "# Subtract\n");
+#endif
+                fprintf(dest, "\tsubl\t");
                 break;
-
             case BINARYOP_MULT:
-                fprintf(dest, "# Multiply\n\timull\t");
+#ifdef DEBUG
+                fprintf(dest, "# Multiply\n");
+#endif
+                fprintf(dest, "\timull\t");
+                break;
+            case BINARYOP_BITAND:
+#ifdef DEBUG
+                fprintf(dest, "# Bitwise AND\n");
+#endif
+                fprintf(dest, "\tandl\t");
+                break;
+            case BINARYOP_BITOR:
+#ifdef DEBUG
+                fprintf(dest, "# Bitwise OR\n");
+#endif
+                fprintf(dest, "\torl \t");
+                break;
+            case BINARYOP_BITXOR:
+#ifdef DEBUG
+                fprintf(dest, "# Bitwise XOR\n");
+#endif
+                fprintf(dest, "\txorl\t");
+                break;
+            case BINARYOP_LSHFT:
+#ifdef DEBUG
+                fprintf(dest, "# Shift Left\n");
+#endif
+                fprintf(dest, "\tsall\t");
+                break;
+            case BINARYOP_RSHFT:
+#ifdef DEBUG
+                fprintf(dest, "# Shift Right\n");
+#endif
+                fprintf(dest, "\tsarl\t");
                 break;
             }
             

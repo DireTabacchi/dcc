@@ -260,6 +260,57 @@ void tokenize(Tokenizer *t) {
                 TokenList_append(&t->tokens, tok);
                 break;
 
+            case '&':
+                tok.kind = TOKEN_OP_AMPERSAND;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case '|':
+                tok.kind = TOKEN_OP_BAR;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case '^':
+                tok.kind = TOKEN_OP_CARET;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case '<':
+                if (peek(t) == '<') {
+                    tok.kind = TOKEN_OP_LSHFT;
+                    tok.text = String_init_length(2);
+                    memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
+                tok.kind = TOKEN_OP_LT;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case '>':
+                if (peek(t) == '>') {
+                    tok.kind = TOKEN_OP_RSHFT;
+                    tok.text = String_init_length(2);
+                    memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
+                tok.kind = TOKEN_OP_GT;
+                tok.text = String_init_length(1);
+                memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                TokenList_append(&t->tokens, tok);
+                break;
+
             case -1:    // EOF
                 tok.kind = TOKEN_EOF;
                 tok.text = String_init_cstr(token_literal_list[TOKEN_EOF]);

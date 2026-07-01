@@ -6,3 +6,4 @@ exp = Constant(int)
     | Binary(binary_operator, exp, exp)
 unary_operator = Complement | Negate
 binary_operator = Add | subtract | Multiply | Divide | Remainder
+                | BitAnd | BitOr | BitXor | Lt | Gt | LShift | RShift

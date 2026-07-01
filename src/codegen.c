@@ -197,6 +197,9 @@ static void Operand_print(Operand op) {
             case AX:
                 printf("%%eax");
                 break;
+            case CX:
+                printf("%%cl");
+                break;
             case DX:
                 printf("%%edx");
                 break;
@@ -245,17 +248,29 @@ static void BinaryOp_print(BinaryOp binop) {
     case BINARYOP_INVALID:
         printf("INVALID BINARY");
         break;
-
     case BINARYOP_ADD:
         printf("Add");
         break;
-        
     case BINARYOP_SUB:
         printf("Sub");
         break;
-
     case BINARYOP_MULT:
         printf("Mult");
+        break;
+    case BINARYOP_BITAND:
+        printf("BitAnd");
+        break;
+    case BINARYOP_BITOR:
+        printf("BitOr");
+        break;
+    case BINARYOP_BITXOR:
+        printf("BitXor");
+        break;
+    case BINARYOP_LSHFT:
+        printf("Left Shift");
+        break;
+    case BINARYOP_RSHFT:
+        printf("Right Shift");
         break;
     }
 }
@@ -365,10 +380,8 @@ static UnaryOp trx_unary_op(TacdUnaryOp op) {
     switch (op) {
     case TACD_UNARY_COMPLEMENT:
         return UNARYOP_NOT;
-
     case TACD_UNARY_NEGATE:
         return UNARYOP_NEG;
-
     case TACD_UNARY_INVALID:
         return UNARYOP_INVALID;
     }
@@ -378,16 +391,22 @@ static BinaryOp trx_binary_op(TacdBinaryOp op) {
     switch (op) {
     case TACD_BINARY_INVALID:
         return BINARYOP_INVALID;
-
     case TACD_BINARY_ADD:
         return BINARYOP_ADD;
-
     case TACD_BINARY_SUBTRACT:
         return BINARYOP_SUB;
-
     case TACD_BINARY_MULTIPLY:
         return BINARYOP_MULT;
-
+    case TACD_BINARY_BITAND:
+        return BINARYOP_BITAND;
+    case TACD_BINARY_BITOR:
+        return BINARYOP_BITOR;
+    case TACD_BINARY_BITXOR:
+        return BINARYOP_BITXOR;
+    case TACD_BINARY_LSHFT:
+        return BINARYOP_LSHFT;
+    case TACD_BINARY_RSHFT:
+        return BINARYOP_RSHFT;
     default:
         return BINARYOP_INVALID;
     }
@@ -489,6 +508,7 @@ static AsmInstr trx_code(AsmNode *asm_function, TacdCode *tacd_code) {
         }
 
         // Add, Subtract, multiply instructions
+        // Bitwise-AND, -OR, -XOR instructions
 
         BinaryOp binop = trx_binary_op(tacd_code->code.binary.op);
         Operand op_src1 = trx_operand(tacd_code->code.binary.src1);
@@ -618,7 +638,10 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmNode *function) 
             case BINARYOP_INVALID:
                     break;
             case BINARYOP_ADD:
-            case BINARYOP_SUB: {
+            case BINARYOP_SUB:
+            case BINARYOP_BITAND:
+            case BINARYOP_BITOR:
+            case BINARYOP_BITXOR: {
                 if (instr->instr.binary.src.type == OPERAND_STACK && instr->instr.binary.dest.type == OPERAND_STACK) {
                     int old_src = instr->instr.binary.src.val.stack;
                     instr->instr.binary.src.type = OPERAND_REG;
@@ -632,7 +655,7 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmNode *function) 
                     InstrArray_insert(func_instrs, new_instr, instr_idx);
                 }
                 break;
-            }   // case BINARYOP_ADD/SUB
+            }   // case BINARYOP_ADD/SUB/BITAND/BITOR/BITXOR
 
             case BINARYOP_MULT: {
                 if (instr->instr.binary.dest.type == OPERAND_STACK) {
@@ -660,6 +683,26 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmNode *function) 
                 }
                 break;
             }   // case BINARYOP_MULT
+
+            case BINARYOP_LSHFT:
+            case BINARYOP_RSHFT: {
+                if (instr->instr.binary.src.type == OPERAND_STACK) {
+                    // TODO: This may have to be more detailed later, reg = CL
+                    int src = instr->instr.binary.src.val.stack;
+                    instr->instr.binary.src.type = OPERAND_REG;
+                    instr->instr.binary.src.val.reg = CX;
+
+                    AsmInstr mov_stack_cl = (AsmInstr){
+                        .kind = ASM_INSTR_MOV,
+                        .instr.mov = {
+                            .src = (Operand) { .type = OPERAND_STACK, .val.stack = src },
+                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = CX }
+                        }
+                    };
+                    InstrArray_insert(func_instrs, mov_stack_cl, instr_idx);
+                }
+                break;
+            }
             }
 
         }   // case ASM_INSTR_BINARY

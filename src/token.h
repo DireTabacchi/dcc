@@ -15,6 +15,7 @@ typedef enum tokenKind_ {
     TOKEN_RIGHT_BRACE,      // }
     TOKEN_SEMICOLON,        // ;
     // -- Operators
+    TOKEN_OPERATORS_BEGIN,
     TOKEN_OP_COMPLEMENT,    // ~
     TOKEN_OP_MINUS,         // -
     TOKEN_OP_DECREMENT,     // --
@@ -22,6 +23,16 @@ typedef enum tokenKind_ {
     TOKEN_OP_ASTERISK,      // *
     TOKEN_OP_SLASH,         // /
     TOKEN_OP_PERCENT,       // %
+
+    TOKEN_OP_AMPERSAND,     // &
+    TOKEN_OP_BAR,           // |
+    TOKEN_OP_CARET,         // ^
+    TOKEN_OP_LT,            // <
+    TOKEN_OP_GT,            // >
+    TOKEN_OP_LSHFT,         // <<
+    TOKEN_OP_RSHFT,         // >>
+    TOKEN_OPERATORS_END,
+
     // Keywords
     TOKEN_KW_INT,           // int
     TOKEN_KW_VOID,          // void
@@ -69,6 +80,7 @@ static char *token_literal_list[TOKENKIND_LEN] = {
     (char *)"}",            // TOKEN_RIGHT_BRACE
     (char *)";",            // TOKEN_SEMICOLON
     // -- Operators
+    (char *)"",             // TOKEN_OPERATORS_BEGIN
     (char *)"~",            // TOKEN_OP_COMPLEMENT
     (char *)"-",            // TOKEN_OP_MINUS
     (char *)"--",           // TOKEN_OP_DECREMENT
@@ -76,6 +88,14 @@ static char *token_literal_list[TOKENKIND_LEN] = {
     (char *)"*",            // TOKEN_OP_ASTERISK
     (char *)"/",            // TOKEN_OP_SLASH
     (char *)"%",            // TOKEN_OP_PERCENT
+    (char *)"&",            // TOKEN_OP_AMPERSAND
+    (char *)"|",            // TOKEN_OP_BAR
+    (char *)"^",            // TOKEN_OP_CARET
+    (char *)"<",            // TOKEN_OP_LT
+    (char *)">",            // TOKEN_OP_GT
+    (char *)"<<",           // TOKEN_OP_LSHFT
+    (char *)">>",           // TOKEN_OP_RSHFT
+    (char *)"",             // TOKEN_OPERATORS_END
     // Keywords
     (char *)"int",          // TOKEN_KW_INT
     (char *)"void",         // TOKEN_KW_VOID

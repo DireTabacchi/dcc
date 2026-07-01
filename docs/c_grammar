@@ -5,5 +5,6 @@
 <factor> ::= <int> | <unop> <factor> | "(" <expr> ")"
 <unop> ::= "-" | "~"
 <binop> ::= "-" | "+" | "*" | "/" | "%"
+          | "&" | "|" | "^" | "<" | ">" | "<<" | ">>"
 <identifier> ::= ? An identifier token ?
 <int> ::= ? A constant token ?

@@ -25,7 +25,15 @@ typedef enum binaryOpKind_ {
     BINARY_SUBTRACT,
     BINARY_MULTIPLY,
     BINARY_DIVIDE,
-    BINARY_REMAINDER
+    BINARY_REMAINDER,
+
+    BINARY_BITAND,
+    BINARY_BITOR,
+    BINARY_BITXOR,
+    BINARY_LT,
+    BINARY_GT,
+    BINARY_LSHFT,
+    BINARY_RSHFT
 } BinaryOpKind;
 
 typedef struct astNode_ *AstNode_ty;

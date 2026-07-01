@@ -16,15 +16,23 @@
 
 typedef enum {
     // Highest precedence
-    PREC_MDM,   // Multiply-Divide-Modulo
-    PREC_AS,    // Add-Subtract
+    PREC_MDM,       // Multiply-Divide-Modulo
+    PREC_AS,        // Add-Subtract
+    PREC_BITSHIFT,  // Left/Right Bitwise Shift
+    PREC_BAND,      // Bitwise And
+    PREC_BXOR,      // Bitwise Xor
+    PREC_BOR,       // Bitwise Or
     // Lowest precedence
     PREC_LENGTH
 } PrecedenceKind;
 
 static int precedence_table[PREC_LENGTH] = {
     130,    // PREC_MDM
-    120     // PREC_AS
+    120,    // PREC_AS
+    110,    // PREC_BITSHIFT
+    80,     // PREC_BAND
+    70,     // PREC_BXOR
+    60      // PREC_BOR
 };
 
 static int precedence(Token tok) {
@@ -36,6 +44,15 @@ static int precedence(Token tok) {
     case TOKEN_OP_SLASH:
     case TOKEN_OP_PERCENT:
         return precedence_table[PREC_MDM];
+    case TOKEN_OP_LSHFT:
+    case TOKEN_OP_RSHFT:
+        return precedence_table[PREC_BITSHIFT];
+    case TOKEN_OP_AMPERSAND:
+        return precedence_table[PREC_BAND];
+    case TOKEN_OP_BAR:
+        return precedence_table[PREC_BOR];
+    case TOKEN_OP_CARET:
+        return precedence_table[PREC_BXOR];
     default:
         return 0;
     }
@@ -150,6 +167,21 @@ static BinaryOpKind parse_binop(Parser *p) {
 
     case TOKEN_OP_PERCENT:
         return BINARY_REMAINDER;
+
+    case TOKEN_OP_AMPERSAND:
+        return BINARY_BITAND;
+
+    case TOKEN_OP_BAR:
+        return BINARY_BITOR;
+
+    case TOKEN_OP_CARET:
+        return BINARY_BITXOR;
+
+    case TOKEN_OP_LSHFT:
+        return BINARY_LSHFT;
+
+    case TOKEN_OP_RSHFT:
+        return BINARY_RSHFT;
 
     default:
         break;

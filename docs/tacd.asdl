@@ -7,3 +7,4 @@ val = Constant(int)
     | Var(identifier)
 unary_operator = Complement | Negate
 binary_operator = Add | Subtract | Multiply | Divide | Remainder
+                | BitAnd | BitOr | Lt | Gt | LShift | RShift

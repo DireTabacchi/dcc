@@ -143,16 +143,49 @@ static TacdBinaryOp trx_binary_operator(BinaryOpKind op) {
     switch (op) {
     case BINARY_INVALID:
         return TACD_BINARY_INVALID;
+
     case BINARY_ADD:
         return TACD_BINARY_ADD;
+
     case BINARY_SUBTRACT:
         return TACD_BINARY_SUBTRACT;
+        
     case BINARY_MULTIPLY:
         return TACD_BINARY_MULTIPLY;
+
     case BINARY_DIVIDE:
         return TACD_BINARY_DIVIDE;
+
     case BINARY_REMAINDER:
         return TACD_BINARY_REMAINDER;
+
+    case BINARY_BITAND:
+        return TACD_BINARY_BITAND;
+        break;
+
+    case BINARY_BITOR:
+        return TACD_BINARY_BITOR;
+        break;
+
+    case BINARY_BITXOR:
+        return TACD_BINARY_BITXOR;
+        break;
+
+    case BINARY_LT:
+        return TACD_BINARY_LT;
+        break;
+
+    case BINARY_GT:
+        return TACD_BINARY_GT;
+        break;
+
+    case BINARY_LSHFT:
+        return TACD_BINARY_LSHFT;
+        break;
+
+    case BINARY_RSHFT:
+        return TACD_BINARY_RSHFT;
+        break;
     }
 }
 
@@ -163,6 +196,7 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
             .kind = TACD_VALUE_CONSTANT,
             .val.constant = expr->node.constant
         };
+
     case ASTNODE_UNARY: {
         TacdValue src = trx_expression(tg, tacd_fn, expr->node.unary.exp);
         String dest_name = create_temporary_var(tg);
@@ -183,6 +217,7 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
 
         return dest;
     }
+
     case ASTNODE_BINARY: {
         TacdValue src1 = trx_expression(tg, tacd_fn, expr->node.binary.left);
         TacdValue src2 = trx_expression(tg, tacd_fn, expr->node.binary.right);
@@ -203,6 +238,7 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
 
         return dest;
     }
+
     default:
         break;
     }
@@ -303,6 +339,25 @@ static void TacdCode_print(TacdCode *code, int indent_lvl) {
             break;
         case TACD_BINARY_REMAINDER:
             printf(" %% ");
+            break;
+        case TACD_BINARY_BITAND:
+            printf(" & ");
+            break;
+        case TACD_BINARY_BITOR:
+            printf(" | ");
+            break;
+        case TACD_BINARY_BITXOR:
+            printf(" ^ ");
+            break;
+        case TACD_BINARY_LT:
+        case TACD_BINARY_GT:
+            printf(" Not Implemented Yet ");
+            break;
+        case TACD_BINARY_LSHFT:
+            printf(" << ");
+            break;
+        case TACD_BINARY_RSHFT:
+            printf(" >> ");
             break;
         }
         TacdValue_print(code->code.binary.src2, 0);

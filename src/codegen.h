@@ -32,7 +32,13 @@ typedef enum binop_ {
     BINARYOP_INVALID,
     BINARYOP_ADD,
     BINARYOP_SUB,
-    BINARYOP_MULT
+    BINARYOP_MULT,
+
+    BINARYOP_BITAND,
+    BINARYOP_BITOR,
+    BINARYOP_BITXOR,
+    BINARYOP_LSHFT,
+    BINARYOP_RSHFT
 } BinaryOp;
 
 typedef enum operandType_ {
@@ -45,6 +51,7 @@ typedef enum operandType_ {
 
 typedef enum register_ {
     AX,
+    CX,
     DX,
     R10,
     R11

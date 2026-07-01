@@ -36,7 +36,15 @@ typedef enum tacdBinaryOp_ {
     TACD_BINARY_SUBTRACT,
     TACD_BINARY_MULTIPLY,
     TACD_BINARY_DIVIDE,
-    TACD_BINARY_REMAINDER
+    TACD_BINARY_REMAINDER,
+
+    TACD_BINARY_BITAND,
+    TACD_BINARY_BITOR,
+    TACD_BINARY_BITXOR,
+    TACD_BINARY_LT,
+    TACD_BINARY_GT,
+    TACD_BINARY_LSHFT,
+    TACD_BINARY_RSHFT
 } TacdBinaryOp;
 
 typedef struct tacdValue_ {
@@ -52,7 +60,10 @@ typedef struct tacdCode_ {
     union {
         TacdValue ret;
         struct { TacdUnaryOp op; TacdValue src; TacdValue dest; } unary;
-        struct { TacdBinaryOp op; TacdValue src1; TacdValue src2; TacdValue dest; } binary;
+        struct {
+            TacdBinaryOp op;
+            TacdValue src1; TacdValue src2; TacdValue dest;
+        } binary;
     } code;
 } TacdCode;
 

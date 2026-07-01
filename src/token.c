@@ -6,7 +6,7 @@
 #include "token.h"
 
 bool Token_is_operator(Token t) {
-    return t.kind >= TOKEN_OP_COMPLEMENT && t.kind <= TOKEN_OP_PERCENT;
+    return t.kind >= TOKEN_OP_COMPLEMENT && t.kind <= TOKEN_OP_RSHFT;
 }
 
 void TokenList_init(TokenList* tl) {

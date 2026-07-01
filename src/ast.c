@@ -54,13 +54,21 @@ void AstNode_destroy(AstNode *node) {
     }
 }
 
-char *binary_op_names[6] = {
+char *binary_op_names[13] = {
     (char *)"UNKNOWN",
     (char *)"Add",
     (char *)"Subtract",
     (char *)"Multiply",
     (char *)"Divide",
-    (char *)"Remainder"
+    (char *)"Remainder",
+
+    (char *)"(B)AND",
+    (char *)"(B)OR",
+    (char *)"(B)XOR",
+    (char *)"Lt",
+    (char *)"Gt",
+    (char *)"Left Shift",
+    (char *)"Right Shift"
 };
 
 void AstNode_print(AstNode *node, int indent_lvl) {
