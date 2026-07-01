@@ -19,9 +19,13 @@ typedef enum {
     PREC_MDM,       // Multiply-Divide-Modulo
     PREC_AS,        // Add-Subtract
     PREC_BITSHIFT,  // Left/Right Bitwise Shift
+    PREC_LTGTE,     // Less Than (Equal), Greater Than (Equal)
+    PREC_EQ,        // Equal, Not Equal
     PREC_BAND,      // Bitwise And
     PREC_BXOR,      // Bitwise Xor
     PREC_BOR,       // Bitwise Or
+    PREC_LAND,      // Logical And
+    PREC_LOR,       // Logical Or
     // Lowest precedence
     PREC_LENGTH
 } PrecedenceKind;
@@ -30,9 +34,13 @@ static int precedence_table[PREC_LENGTH] = {
     130,    // PREC_MDM
     120,    // PREC_AS
     110,    // PREC_BITSHIFT
+    100,    // PREC_LTGTE
+    90,     // PREC_EQ
     80,     // PREC_BAND
     70,     // PREC_BXOR
-    60      // PREC_BOR
+    60,     // PREC_BOR
+    50,     // PREC_LAND
+    40      // PREC_LOR
 };
 
 static int precedence(Token tok) {
@@ -47,12 +55,24 @@ static int precedence(Token tok) {
     case TOKEN_OP_LSHFT:
     case TOKEN_OP_RSHFT:
         return precedence_table[PREC_BITSHIFT];
+    case TOKEN_OP_LT:
+    case TOKEN_OP_GT:
+    case TOKEN_OP_LTE:
+    case TOKEN_OP_GTE:
+        return precedence_table[PREC_LTGTE];
+    case TOKEN_OP_DOUBLE_EQUAL:
+    case TOKEN_OP_EXCLAMATION_EQUAL:
+        return precedence_table[PREC_EQ];
     case TOKEN_OP_AMPERSAND:
         return precedence_table[PREC_BAND];
     case TOKEN_OP_BAR:
         return precedence_table[PREC_BOR];
     case TOKEN_OP_CARET:
         return precedence_table[PREC_BXOR];
+    case TOKEN_OP_DOUBLE_AMP:
+        return precedence_table[PREC_LAND];
+    case TOKEN_OP_DOUBLE_BAR:
+        return precedence_table[PREC_LOR];
     default:
         return 0;
     }
@@ -146,6 +166,8 @@ static UnaryOpKind parse_unop(Parser *p) {
         return UNARY_NEGATE;
     } else if (tok.kind == TOKEN_OP_COMPLEMENT) {
         return UNARY_COMPLEMENT;
+    } else if (tok.kind == TOKEN_OP_EXCLAMATION) {
+        return UNARY_NOT;
     }
     return UNARY_INVALID;
 }
@@ -155,34 +177,40 @@ static BinaryOpKind parse_binop(Parser *p) {
     switch (tok.kind) {
     case TOKEN_OP_PLUS:
         return BINARY_ADD;
-
     case TOKEN_OP_MINUS:
         return BINARY_SUBTRACT;
-
     case TOKEN_OP_ASTERISK:
         return BINARY_MULTIPLY;
-
     case TOKEN_OP_SLASH:
         return BINARY_DIVIDE;
-
     case TOKEN_OP_PERCENT:
         return BINARY_REMAINDER;
-
     case TOKEN_OP_AMPERSAND:
         return BINARY_BITAND;
-
     case TOKEN_OP_BAR:
         return BINARY_BITOR;
-
     case TOKEN_OP_CARET:
         return BINARY_BITXOR;
-
     case TOKEN_OP_LSHFT:
         return BINARY_LSHFT;
-
     case TOKEN_OP_RSHFT:
         return BINARY_RSHFT;
-
+    case TOKEN_OP_EXCLAMATION_EQUAL:
+        return BINARY_NOT_EQUAL;
+    case TOKEN_OP_DOUBLE_AMP:
+        return BINARY_LOGICAND;
+    case TOKEN_OP_DOUBLE_BAR:
+        return BINARY_LOGICOR;
+    case TOKEN_OP_DOUBLE_EQUAL:
+        return BINARY_EQUAL;
+    case TOKEN_OP_LT:
+        return BINARY_LT;
+    case TOKEN_OP_LTE:
+        return BINARY_LTE;
+    case TOKEN_OP_GT:
+        return BINARY_GT;
+    case TOKEN_OP_GTE:
+        return BINARY_GTE;
     default:
         break;
     }
@@ -208,7 +236,8 @@ static AstNode *parse_factor(Parser *p) {
         return constant;
     }
     case TOKEN_OP_MINUS:
-    case TOKEN_OP_COMPLEMENT: {
+    case TOKEN_OP_COMPLEMENT:
+    case TOKEN_OP_EXCLAMATION: {
         UnaryOpKind op = parse_unop(p);
         AstNode *exp = parse_factor(p);
 

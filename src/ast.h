@@ -16,7 +16,8 @@ typedef enum astNodeKind_ {
 typedef enum unaryOpKind_ {
     UNARY_INVALID,
     UNARY_COMPLEMENT,
-    UNARY_NEGATE
+    UNARY_NEGATE,
+    UNARY_NOT
 } UnaryOpKind;
 
 typedef enum binaryOpKind_ {
@@ -30,10 +31,17 @@ typedef enum binaryOpKind_ {
     BINARY_BITAND,
     BINARY_BITOR,
     BINARY_BITXOR,
-    BINARY_LT,
-    BINARY_GT,
     BINARY_LSHFT,
-    BINARY_RSHFT
+    BINARY_RSHFT,
+
+    BINARY_LOGICAND,
+    BINARY_LOGICOR,
+    BINARY_EQUAL,
+    BINARY_NOT_EQUAL,
+    BINARY_LT,
+    BINARY_LTE,
+    BINARY_GT,
+    BINARY_GTE
 } BinaryOpKind;
 
 typedef struct astNode_ *AstNode_ty;

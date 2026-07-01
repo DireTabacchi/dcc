@@ -54,7 +54,7 @@ void AstNode_destroy(AstNode *node) {
     }
 }
 
-char *binary_op_names[13] = {
+char *binary_op_names[19] = {
     (char *)"UNKNOWN",
     (char *)"Add",
     (char *)"Subtract",
@@ -65,10 +65,17 @@ char *binary_op_names[13] = {
     (char *)"(B)AND",
     (char *)"(B)OR",
     (char *)"(B)XOR",
-    (char *)"Lt",
-    (char *)"Gt",
     (char *)"Left Shift",
-    (char *)"Right Shift"
+    (char *)"Right Shift",
+
+    (char *)"(L)AND",
+    (char *)"(L)OR",
+    (char *)"Equal",
+    (char *)"Not Equal",
+    (char *)"Lt",
+    (char *)"Lte",
+    (char *)"Gt",
+    (char *)"Gte",
 };
 
 void AstNode_print(AstNode *node, int indent_lvl) {
@@ -106,8 +113,11 @@ void AstNode_print(AstNode *node, int indent_lvl) {
         printf("%2$*1$s\n", spaces+6, "Unary(");
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", (node->node.unary.op == UNARY_NEGATE) ? "Negate" :
-            ((node->node.unary.op == UNARY_COMPLEMENT) ? "Complement" : "Invald"), spaces + 5, "exp=(");
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=",
+            (node->node.unary.op == UNARY_NEGATE) ? "Negate" :
+                (node->node.unary.op == UNARY_COMPLEMENT) ? "Complement" :
+                    (node->node.unary.op == UNARY_NOT) ? "Not" : "Invald",
+            spaces + 5, "exp=(");
         AstNode_print(node->node.unary.exp, indent_lvl+1);
         printf("%2$*1$c\n", spaces+1, ')');
         indent_lvl -= 1;
