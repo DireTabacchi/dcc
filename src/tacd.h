@@ -15,7 +15,12 @@ typedef enum tacdCodeKind_ {
     TACD_CODE_INVALID,
     TACD_CODE_RET,
     TACD_CODE_UNARY,
-    TACD_CODE_BINARY
+    TACD_CODE_BINARY,
+    TACD_CODE_COPY,
+    TACD_CODE_JUMP,
+    TACD_CODE_JUMP_IF_ZERO,
+    TACD_CODE_JUMP_IF_NOT_ZERO,
+    TACD_CODE_LABEL
 } TacdCodeKind;
 
 typedef enum tacdValueKind_ {
@@ -27,7 +32,8 @@ typedef enum tacdValueKind_ {
 typedef enum tacdUnaryOp_ {
     TACD_UNARY_INVALID,
     TACD_UNARY_COMPLEMENT,
-    TACD_UNARY_NEGATE
+    TACD_UNARY_NEGATE,
+    TACD_UNARY_NOT
 } TacdUnaryOp;
 
 typedef enum tacdBinaryOp_ {
@@ -41,11 +47,31 @@ typedef enum tacdBinaryOp_ {
     TACD_BINARY_BITAND,
     TACD_BINARY_BITOR,
     TACD_BINARY_BITXOR,
-    TACD_BINARY_LT,
-    TACD_BINARY_GT,
     TACD_BINARY_LSHFT,
-    TACD_BINARY_RSHFT
+    TACD_BINARY_RSHFT,
+
+    TACD_BINARY_EQUAL,
+    TACD_BINARY_NOT_EQUAL,
+    TACD_BINARY_LT,
+    TACD_BINARY_LTE,
+    TACD_BINARY_GT,
+    TACD_BINARY_GTE
 } TacdBinaryOp;
+
+typedef enum tacdLabelKind_ {
+    AND_FALSE,
+    AND_END,
+    OR_TRUE,
+    OR_END,
+    TACD_LABEL_KIND_LENGTH
+} TacdLabelKind;
+
+static String label_kind_table[TACD_LABEL_KIND_LENGTH] = {
+    (String){ .cstr = (char*)"and_false",   .len = 9 },
+    (String){ .cstr = (char*)"and_end",    .len = 7 },
+    (String){ .cstr = (char*)"or_true",    .len = 7 },
+    (String){ .cstr = (char*)"or_end",     .len = 6 }
+};
 
 typedef struct tacdValue_ {
     TacdValueKind kind;
@@ -64,6 +90,10 @@ typedef struct tacdCode_ {
             TacdBinaryOp op;
             TacdValue src1; TacdValue src2; TacdValue dest;
         } binary;
+        struct { TacdValue src; TacdValue dest; } copy;
+        String jump;
+        struct { TacdValue condition; String target; } jump_conditional;    // zero/not-zero encoded in kind
+        String label;
     } code;
 } TacdCode;
 
@@ -93,6 +123,8 @@ typedef struct tacdGenerator_ {
     String func_name;   // Current function generating code for.
                         // These two will be used to generate tmp var
                         // names, e.g. "main.tmp.0". (func_name.tmp.tmpvar_count)
+    int label_count;    // Like tmpvar_count, but for ASM labels.
+
     TacdSymTable symbols;
     TacdNode *program;
 } TacdGenerator;

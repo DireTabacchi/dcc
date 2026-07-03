@@ -139,53 +139,58 @@ static String create_temporary_var(TacdGenerator *tg) {
     return var_name;
 }
 
+static String create_label(TacdGenerator *tg, TacdLabelKind kind) {
+    int digit_len = integer_len(tg->label_count);
+
+    String label_kind = label_kind_table[kind];
+
+    // label length: func_name.len + (1) "." + label_kind.len + (1) "." + digit_len
+    String label = String_init_length(tg->func_name.len + 2 + label_kind.len + digit_len);
+    snprintf(label.cstr, label.len+1, "%s.%s.%d", tg->func_name.cstr, label_kind.cstr, tg->label_count);
+    tg->label_count += 1;
+    TacdSymTable_append(&tg->symbols, label);
+    return label;
+}
+
 static TacdBinaryOp trx_binary_operator(BinaryOpKind op) {
     switch (op) {
     case BINARY_INVALID:
         return TACD_BINARY_INVALID;
-
     case BINARY_ADD:
         return TACD_BINARY_ADD;
-
     case BINARY_SUBTRACT:
         return TACD_BINARY_SUBTRACT;
-        
     case BINARY_MULTIPLY:
         return TACD_BINARY_MULTIPLY;
-
     case BINARY_DIVIDE:
         return TACD_BINARY_DIVIDE;
-
     case BINARY_REMAINDER:
         return TACD_BINARY_REMAINDER;
-
     case BINARY_BITAND:
         return TACD_BINARY_BITAND;
-        break;
-
     case BINARY_BITOR:
         return TACD_BINARY_BITOR;
-        break;
-
     case BINARY_BITXOR:
         return TACD_BINARY_BITXOR;
-        break;
-
-    case BINARY_LT:
-        return TACD_BINARY_LT;
-        break;
-
-    case BINARY_GT:
-        return TACD_BINARY_GT;
-        break;
-
     case BINARY_LSHFT:
         return TACD_BINARY_LSHFT;
-        break;
-
     case BINARY_RSHFT:
         return TACD_BINARY_RSHFT;
-        break;
+    case BINARY_EQUAL:
+        return TACD_BINARY_EQUAL;
+    case BINARY_NOT_EQUAL:
+        return TACD_BINARY_NOT_EQUAL;
+    case BINARY_LT:
+        return TACD_BINARY_LT;
+    case BINARY_LTE:
+        return TACD_BINARY_LTE;
+    case BINARY_GT:
+        return TACD_BINARY_GT;
+    case BINARY_GTE:
+        return TACD_BINARY_GTE;
+    case BINARY_LOGICAND:   // These shouldn't be converted here.
+    case BINARY_LOGICOR:
+        return TACD_BINARY_INVALID;
     }
 }
 
@@ -210,6 +215,8 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
             unop.code.unary.op = TACD_UNARY_COMPLEMENT;
         } else if (expr->node.unary.op == UNARY_NEGATE) {
             unop.code.unary.op = TACD_UNARY_NEGATE;
+        } else if (expr->node.unary.op == UNARY_NOT) {
+            unop.code.unary.op = TACD_UNARY_NOT;
         }
         unop.code.unary.src = src;
         unop.code.unary.dest = dest;
@@ -219,6 +226,61 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
     }
 
     case ASTNODE_BINARY: {
+        if (expr->node.binary.op == BINARY_LOGICAND || expr->node.binary.op == BINARY_LOGICOR) {
+            TacdValue result = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(tg)
+            };
+            TacdValue left_result = trx_expression(tg, tacd_fn, expr->node.binary.left);
+            String jump_condition_label = {0};
+            TacdCode jump_conditional = {0};
+            TacdCode copy_res = {
+                .kind = TACD_CODE_COPY,
+                .code.copy = {
+                    .src.kind = TACD_VALUE_CONSTANT, .dest = result
+                }
+            };
+            String end_label = {0};
+            TacdCode jump_end = { .kind = TACD_CODE_JUMP };
+            TacdCode condition_label_code = { .kind = TACD_CODE_LABEL };
+            TacdCode end_label_code = { .kind = TACD_CODE_LABEL };
+            if (expr->node.binary.op == BINARY_LOGICAND) {
+                jump_condition_label = create_label(tg, AND_FALSE);
+                jump_conditional.kind = TACD_CODE_JUMP_IF_ZERO;
+                copy_res.code.copy.src.val.constant = 1;
+                end_label = create_label(tg, AND_END);
+            } else if (expr->node.binary.op == BINARY_LOGICOR) {
+                jump_condition_label = create_label(tg, OR_TRUE);
+                jump_conditional.kind = TACD_CODE_JUMP_IF_NOT_ZERO;
+                copy_res.code.copy.src.val.constant = 0;
+                end_label = create_label(tg, OR_END);
+            }
+
+            jump_conditional.code.jump_conditional.condition = left_result;
+            jump_conditional.code.jump_conditional.target = jump_condition_label;
+            CodeList_append(&tacd_fn->node.function.body, jump_conditional);
+            TacdValue right_result = trx_expression(tg, tacd_fn, expr->node.binary.right);
+            jump_conditional.code.jump_conditional.condition = right_result;
+            CodeList_append(&tacd_fn->node.function.body, jump_conditional);
+            CodeList_append(&tacd_fn->node.function.body, copy_res);
+            jump_end.code.jump = end_label;
+            CodeList_append(&tacd_fn->node.function.body, jump_end);
+            condition_label_code.code.label = jump_condition_label;
+            CodeList_append(&tacd_fn->node.function.body, condition_label_code);
+
+            if (expr->node.binary.op == BINARY_LOGICAND) {
+                copy_res.code.copy.src.val.constant = 0;
+            } else if (expr->node.binary.op == BINARY_LOGICOR) {
+                copy_res.code.copy.src.val.constant = 1;
+            }
+
+            CodeList_append(&tacd_fn->node.function.body, copy_res);
+            end_label_code.code.label = end_label;
+            CodeList_append(&tacd_fn->node.function.body, end_label_code);
+
+            return result;
+        }
+
         TacdValue src1 = trx_expression(tg, tacd_fn, expr->node.binary.left);
         TacdValue src2 = trx_expression(tg, tacd_fn, expr->node.binary.right);
 
@@ -312,6 +374,8 @@ static void TacdCode_print(TacdCode *code, int indent_lvl) {
             printf(" = -");
         } else if (code->code.unary.op == TACD_UNARY_COMPLEMENT) {
             printf(" = ~");
+        } else if (code->code.unary.op == TACD_UNARY_NOT) {
+            printf(" = !");
         }
         TacdValue_print(code->code.unary.src, 0);
         printf("\n");
@@ -349,19 +413,60 @@ static void TacdCode_print(TacdCode *code, int indent_lvl) {
         case TACD_BINARY_BITXOR:
             printf(" ^ ");
             break;
-        case TACD_BINARY_LT:
-        case TACD_BINARY_GT:
-            printf(" Not Implemented Yet ");
-            break;
         case TACD_BINARY_LSHFT:
             printf(" << ");
             break;
         case TACD_BINARY_RSHFT:
             printf(" >> ");
             break;
+        case TACD_BINARY_EQUAL:
+            printf(" == ");
+            break;
+        case TACD_BINARY_NOT_EQUAL:
+            printf(" != ");
+            break;
+        case TACD_BINARY_LT:
+            printf(" < ");
+            break;
+        case TACD_BINARY_LTE:
+            printf(" <= ");
+            break;
+        case TACD_BINARY_GT:
+            printf(" > ");
+            break;
+        case TACD_BINARY_GTE:
+            printf(" >= ");
+            break;
         }
         TacdValue_print(code->code.binary.src2, 0);
         printf("\n");
+        break;
+
+    case TACD_CODE_COPY:
+        TacdValue_print(code->code.copy.dest, indent_lvl);
+        printf(" = ");
+        TacdValue_print(code->code.copy.src, 0);
+        printf("\n");
+        break;
+
+    case TACD_CODE_JUMP:
+        printf("%2$*1$s(%3$s)\n", spaces+4, "jump", code->code.jump.cstr);
+        break;
+
+    case TACD_CODE_JUMP_IF_ZERO:
+        printf("%2$*1$s(", spaces+12, "jump_if_zero");
+        TacdValue_print(code->code.jump_conditional.condition, 0);
+        printf(",%s)\n", code->code.jump_conditional.target.cstr);
+        break;
+
+    case TACD_CODE_JUMP_IF_NOT_ZERO:
+        printf("%2$*1$s(", spaces+16, "jump_if_not_zero");
+        TacdValue_print(code->code.jump_conditional.condition, 0);
+        printf(",%s)\n", code->code.jump_conditional.target.cstr);
+        break;
+    
+    case TACD_CODE_LABEL:
+        printf("%s(%s)\n", "label", code->code.label.cstr);
         break;
 
     case TACD_CODE_RET:

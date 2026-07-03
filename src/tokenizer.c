@@ -223,6 +223,7 @@ void tokenize(Tokenizer *t) {
                 tok.text = String_init_length(1);
                 memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 TokenList_append(&t->tokens, tok);
+                break;
 
             case '~':
                 tok.kind = TOKEN_OP_COMPLEMENT;
