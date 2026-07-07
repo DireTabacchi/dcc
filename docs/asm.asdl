@@ -3,8 +3,13 @@ function_definition = Function(identifier name, instruction* instructions)
 instruction = Mov(operand src, operand dst)
             | Unary(unary_operator, operand)
             | Binary(binary_operator, operand, operand)
+            | Cmp(operand, operand)
             | Idiv(operand)
             | Cdq
+            | Jmp(identifier)
+            | JmpCC(cond_code, identifier)
+            | SetCC(cond_code, operand)
+            | Label(identifier)
             | AllocateStack(int)
             | Ret
 unary_operator = Neg | Not
@@ -13,4 +18,5 @@ operand = Imm(int)
         | Reg(reg)
         | Pseudo(identifier)
         | Stack(int)
+cond_code = E | NE | G | GE | L | LE
 reg = AX | DX | R10 | R11

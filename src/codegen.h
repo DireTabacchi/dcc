@@ -19,13 +19,19 @@ typedef enum asmInstrKind_ {
     ASM_INSTR_BINARY,
     ASM_INSTR_IDIV,
     ASM_INSTR_CDQ,
+    ASM_INSTR_CMP,
+    ASM_INSTR_JMP,
+    ASM_INSTR_JMPCC,
+    ASM_INSTR_SETCC,
+    ASM_INSTR_LABEL,
     ASM_INSTR_RET
 } AsmInstrKind;
 
 typedef enum unop_ {
     UNARYOP_INVALID,
     UNARYOP_NEG,
-    UNARYOP_NOT
+    UNARYOP_NOT,
+    UNARYOP_COND_NOT
 } UnaryOp;
 
 typedef enum binop_ {
@@ -38,7 +44,14 @@ typedef enum binop_ {
     BINARYOP_BITOR,
     BINARYOP_BITXOR,
     BINARYOP_LSHFT,
-    BINARYOP_RSHFT
+    BINARYOP_RSHFT,
+
+    BINARYOP_EQUAL,
+    BINARYOP_NOT_EQUAL,
+    BINARYOP_LT,
+    BINARYOP_LTE,
+    BINARYOP_GT,
+    BINARYOP_GTE
 } BinaryOp;
 
 typedef enum operandType_ {
@@ -48,6 +61,16 @@ typedef enum operandType_ {
     OPERAND_PSEUDO,
     OPERAND_STACK
 } OperandType;
+
+typedef enum conditionCode_ {
+    CC_INVALID,
+    CC_E,
+    CC_NE,
+    CC_L,
+    CC_LE,
+    CC_G,
+    CC_GE
+} ConditionCode;
 
 typedef enum register_ {
     AX,
@@ -75,6 +98,11 @@ typedef struct asmInstr_ {
         struct { BinaryOp binop; Operand src; Operand dest; } binary;
         struct { Operand divisor; } idiv;
         int alloc_stack;
+        struct { Operand src1; Operand src2; } cmp;
+        String jmp;
+        struct { ConditionCode cond_code; String target; } jmpcc;
+        struct { ConditionCode cond_code; Operand dest; } setcc;
+        String label;
     } instr;
 } AsmInstr;
 

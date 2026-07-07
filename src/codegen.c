@@ -232,14 +232,14 @@ static void UnaryOp_print(UnaryOp unop) {
     case UNARYOP_INVALID:
         printf("INVALID UNARY");
         break;
-
     case UNARYOP_NEG:
         printf("Neg");
         break;
-
     case UNARYOP_NOT:
         printf("Not");
         break;
+    default:
+        printf("INVALID UNARY");
     }
 }
 
@@ -271,6 +271,35 @@ static void BinaryOp_print(BinaryOp binop) {
         break;
     case BINARYOP_RSHFT:
         printf("Right Shift");
+        break;
+    default:
+        printf("INVALID BINARY");
+        break;
+    }
+}
+
+static void ConditionCode_print(ConditionCode cond) {
+    switch (cond) {
+    case CC_INVALID:
+        printf("INVALID");
+        break;
+    case CC_E:
+        printf("E");
+        break;
+    case CC_NE:
+        printf("NE");
+        break;
+    case CC_L:
+        printf("L");
+        break;
+    case CC_LE:
+        printf("LE");
+        break;
+    case CC_G:
+        printf("G");
+        break;
+    case CC_GE:
+        printf("GE");
         break;
     }
 }
@@ -313,6 +342,36 @@ static void AsmInstr_print(AsmInstr *instr, int indent_lvl) {
 
     case ASM_INSTR_CDQ:
         printf("%2$*1$s\n", spaces+3, "Cdq");
+        break;
+
+    case ASM_INSTR_CMP:
+        printf("%2$*1$s", spaces+4, "Cmp(");
+        Operand_print(instr->instr.cmp.src1);
+        printf(",");
+        Operand_print(instr->instr.cmp.src2);
+        printf(")\n");
+        break;
+
+    case ASM_INSTR_JMP:
+        printf("%2$*1$s%3$s)\n", spaces+4, "Jmp(", instr->instr.jmp.cstr);
+        break;
+
+    case ASM_INSTR_JMPCC:
+        printf("%2$*1$s", spaces+6, "JmpCC(");
+        ConditionCode_print(instr->instr.jmpcc.cond_code);
+        printf(",%s)\n", instr->instr.jmpcc.target.cstr);
+        break;
+
+    case ASM_INSTR_SETCC:
+        printf("%2$*1$s", spaces+6, "SetCC(");
+        ConditionCode_print(instr->instr.setcc.cond_code);
+        printf(",");
+        Operand_print(instr->instr.setcc.dest);
+        printf(")\n");
+        break;
+
+    case ASM_INSTR_LABEL:
+        printf("%2$*1$s%3$s)\n", spaces+6-4, "Label(", instr->instr.label.cstr);
         break;
 
     case ASM_ALLOCSTACK:
@@ -384,6 +443,8 @@ static UnaryOp trx_unary_op(TacdUnaryOp op) {
         return UNARYOP_NEG;
     case TACD_UNARY_INVALID:
         return UNARYOP_INVALID;
+    case TACD_UNARY_NOT:
+        return UNARYOP_COND_NOT;
     }
 }
 
@@ -407,6 +468,18 @@ static BinaryOp trx_binary_op(TacdBinaryOp op) {
         return BINARYOP_LSHFT;
     case TACD_BINARY_RSHFT:
         return BINARYOP_RSHFT;
+    case TACD_BINARY_EQUAL:
+        return BINARYOP_EQUAL;
+    case TACD_BINARY_NOT_EQUAL:
+        return BINARYOP_NOT_EQUAL;
+    case TACD_BINARY_LT:
+        return BINARYOP_LT;
+    case TACD_BINARY_LTE:
+        return BINARYOP_LTE;
+    case TACD_BINARY_GT:
+        return BINARYOP_GT;
+    case TACD_BINARY_GTE:
+        return BINARYOP_GTE;
     default:
         return BINARYOP_INVALID;
     }
@@ -474,6 +547,32 @@ static AsmInstr trx_binary_remainder(AsmNode *asm_function, TacdCode *tacd_code)
     return mov_dx_dest;
 }
 
+static ConditionCode trx_binary_cond(BinaryOp cond_op) {
+    switch (cond_op) {
+    case BINARYOP_EQUAL: return CC_E;
+    case BINARYOP_NOT_EQUAL: return CC_NE;
+    case BINARYOP_LT: return CC_L;
+    case BINARYOP_LTE: return CC_LE;
+    case BINARYOP_GT: return CC_G;
+    case BINARYOP_GTE: return CC_GE;
+    default: return CC_INVALID;
+    }
+}
+
+static bool is_conditional_op(BinaryOp cond_op) {
+    switch (cond_op) {
+    case BINARYOP_EQUAL:
+    case BINARYOP_NOT_EQUAL:
+    case BINARYOP_LT:
+    case BINARYOP_LTE:
+    case BINARYOP_GT:
+    case BINARYOP_GTE:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static AsmInstr trx_code(AsmNode *asm_function, TacdCode *tacd_code) {
     switch (tacd_code->kind) {
     case TACD_CODE_INVALID:
@@ -487,14 +586,28 @@ static AsmInstr trx_code(AsmNode *asm_function, TacdCode *tacd_code) {
 
         AsmInstr asm_mov = {0};
         asm_mov.kind = ASM_INSTR_MOV;
-        asm_mov.instr.mov.src = op_src;
+        if (unop == UNARYOP_COND_NOT) {
+            AsmInstr cmp = { .kind = ASM_INSTR_CMP };
+            cmp.instr.cmp.src1 = (Operand){ .type = OPERAND_IMM, .val.imm = 0 };
+            cmp.instr.cmp.src2 = op_src;
+            InstrArray_append(&asm_function->node.function.instrs, cmp);
+            asm_mov.instr.mov.src = (Operand){ .type = OPERAND_IMM, .val.imm = 0 };
+        } else {
+            asm_mov.instr.mov.src = op_src;
+        }
         asm_mov.instr.mov.dest = op_dest;
         InstrArray_append(&asm_function->node.function.instrs, asm_mov);
 
         AsmInstr asm_unary = {0};
-        asm_unary.kind = ASM_INSTR_UNARY;
-        asm_unary.instr.unary.unop = unop;
-        asm_unary.instr.unary.op = op_dest;
+        if (unop == UNARYOP_COND_NOT) {
+            asm_unary.kind = ASM_INSTR_SETCC;
+            asm_unary.instr.setcc.cond_code = CC_E;
+            asm_unary.instr.setcc.dest = op_dest;
+        } else {
+            asm_unary.kind = ASM_INSTR_UNARY;
+            asm_unary.instr.unary.unop = unop;
+            asm_unary.instr.unary.op = op_dest;
+        }
 
         return asm_unary;
     }
@@ -507,13 +620,30 @@ static AsmInstr trx_code(AsmNode *asm_function, TacdCode *tacd_code) {
             return trx_binary_remainder(asm_function, tacd_code);
         }
 
-        // Add, Subtract, multiply instructions
-        // Bitwise-AND, -OR, -XOR instructions
-
         BinaryOp binop = trx_binary_op(tacd_code->code.binary.op);
         Operand op_src1 = trx_operand(tacd_code->code.binary.src1);
         Operand op_src2 = trx_operand(tacd_code->code.binary.src2);
         Operand op_dest = trx_operand(tacd_code->code.binary.dest);
+
+        // conditional instructions
+        if (is_conditional_op(binop)) {
+            ConditionCode cond_code = trx_binary_cond(binop);
+            AsmInstr cmp = { .kind = ASM_INSTR_CMP };
+            cmp.instr.cmp.src1 = op_src2;
+            cmp.instr.cmp.src2 = op_src1;
+            InstrArray_append(&asm_function->node.function.instrs, cmp);
+            AsmInstr mov_zero = { .kind = ASM_INSTR_MOV };
+            mov_zero.instr.mov.src = (Operand){ .type = OPERAND_IMM, .val.imm = 0 };
+            mov_zero.instr.mov.dest = op_dest;
+            InstrArray_append(&asm_function->node.function.instrs, mov_zero);
+            AsmInstr setcc = { .kind = ASM_INSTR_SETCC };
+            setcc.instr.setcc.cond_code = cond_code;
+            setcc.instr.setcc.dest = op_dest;
+            return setcc;
+        }
+
+        // Add, Subtract, multiply instructions
+        // Bitwise-AND, -OR, -XOR instructions
 
         AsmInstr mov_src_dest = {0};
         mov_src_dest.kind = ASM_INSTR_MOV;
@@ -528,6 +658,54 @@ static AsmInstr trx_code(AsmNode *asm_function, TacdCode *tacd_code) {
         asm_binary.instr.binary.dest = op_dest;
 
         return asm_binary;
+    }
+
+    case TACD_CODE_COPY: {
+        Operand src = trx_operand(tacd_code->code.copy.src);
+        Operand dest = trx_operand(tacd_code->code.copy.dest);
+        AsmInstr cpy_mov = { 0 };
+        cpy_mov.kind = ASM_INSTR_MOV;
+        cpy_mov.instr.mov.src = src;
+        cpy_mov.instr.mov.dest = dest;
+        return cpy_mov;
+    }
+
+    case TACD_CODE_JUMP: {
+        AsmInstr jmp = (AsmInstr){ .kind = ASM_INSTR_JMP, .instr.jmp = tacd_code->code.jump };
+        return jmp;
+    }
+
+    case TACD_CODE_JUMP_IF_ZERO: {
+        Operand cond = trx_operand(tacd_code->code.jump_conditional.condition);
+        AsmInstr comp = (AsmInstr){ .kind = ASM_INSTR_CMP };
+        comp.instr.cmp.src1 = (Operand){ .type = OPERAND_IMM, .val.imm = 0 };
+        comp.instr.cmp.src2 = cond;
+        InstrArray_append(&asm_function->node.function.instrs, comp);
+
+        AsmInstr jmp = (AsmInstr){ .kind = ASM_INSTR_JMPCC };
+        jmp.instr.jmpcc.cond_code = CC_E;
+        jmp.instr.jmpcc.target = tacd_code->code.jump_conditional.target;
+
+        return jmp;
+    }
+
+    case TACD_CODE_JUMP_IF_NOT_ZERO: {
+        Operand cond = trx_operand(tacd_code->code.jump_conditional.condition);
+        AsmInstr comp = (AsmInstr){ .kind = ASM_INSTR_CMP };
+        comp.instr.cmp.src1 = (Operand){ .type = OPERAND_IMM, .val.imm = 0 };
+        comp.instr.cmp.src2 = cond;
+        InstrArray_append(&asm_function->node.function.instrs, comp);
+
+        AsmInstr jmp = (AsmInstr){ .kind = ASM_INSTR_JMPCC };
+        jmp.instr.jmpcc.cond_code = CC_NE;
+        jmp.instr.jmpcc.target = tacd_code->code.jump_conditional.target;
+
+        return jmp;
+    }
+
+    case TACD_CODE_LABEL: {
+        AsmInstr lbl = (AsmInstr){ .kind = ASM_INSTR_LABEL, .instr.label = tacd_code->code.label };
+        return lbl;
     }
 
     case TACD_CODE_RET: {
@@ -707,6 +885,23 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmNode *function) 
 
         }   // case ASM_INSTR_BINARY
 
+        case ASM_INSTR_CMP: {
+            if (instr->instr.cmp.src1.type == OPERAND_STACK && instr->instr.cmp.src2.type == OPERAND_STACK) {
+                AsmInstr mov = (AsmInstr){ .kind = ASM_INSTR_MOV };
+                mov.instr.mov.src = instr->instr.cmp.src1;
+                mov.instr.mov.dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 };
+                instr->instr.cmp.src1 = (Operand){ .type = OPERAND_REG, .val.reg = R10 };
+                InstrArray_insert(func_instrs, mov, instr_idx);
+            } else if (instr->instr.cmp.src2.type == OPERAND_IMM) {
+                AsmInstr mov = (AsmInstr){ .kind = ASM_INSTR_MOV };
+                mov.instr.mov.src = instr->instr.cmp.src2;
+                mov.instr.mov.dest = (Operand){ .type = OPERAND_REG, .val.reg = R11 };
+                instr->instr.cmp.src2 = (Operand){ .type = OPERAND_REG, .val.reg = R11 };
+                InstrArray_insert(func_instrs, mov, instr_idx);
+            }
+            break;
+        } // case ASM_INSTR_CMP
+
         }
     }
 }
@@ -746,6 +941,22 @@ static void resolve_instr_pseudo_ops(CodegenDriver *cgd, AsmInstr *instr, int *t
         }
         if (instr->instr.mov.dest.type == OPERAND_PSEUDO) {
             resolve_pseudo_operand(cgd, &instr->instr.mov.dest, total_offset);
+        }
+        break;
+
+    case ASM_INSTR_CMP:
+        if (instr->instr.cmp.src1.type == OPERAND_PSEUDO) {
+            resolve_pseudo_operand(cgd, &instr->instr.cmp.src1, total_offset);
+        }
+        if (instr->instr.cmp.src2.type == OPERAND_PSEUDO) {
+            resolve_pseudo_operand(cgd, &instr->instr.cmp.src2, total_offset);
+
+        }
+        break;
+
+    case ASM_INSTR_SETCC:
+        if (instr->instr.setcc.dest.type == OPERAND_PSEUDO) {
+            resolve_pseudo_operand(cgd, &instr->instr.setcc.dest, total_offset);
         }
         break;
 
