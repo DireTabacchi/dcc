@@ -218,9 +218,9 @@ static BinaryOpKind parse_binop(Parser *p) {
     return BINARY_INVALID;
 }
 
-static AstNode *parse_expression(Parser *p, int min_prec);
+static Expr *parse_expression(Parser *p, int min_prec);
 
-static AstNode *parse_factor(Parser *p) {
+static Expr *parse_factor(Parser *p) {
     Token tok = peek_token(p);
     switch (tok.kind) {
     case TOKEN_CONSTANT: {
@@ -229,9 +229,8 @@ static AstNode *parse_factor(Parser *p) {
 
         int constant_val = strtol(constant_tok.text.cstr, NULL, 10);
 
-        AstNode *constant = AstNode_create();
-        constant->kind = ASTNODE_CONSTANT;
-        constant->node.constant = constant_val;
+        Expr *constant = Expr_create(EXPR_CONSTANT);
+        constant->as.constant = constant_val;
 
         return constant;
     }
@@ -239,18 +238,17 @@ static AstNode *parse_factor(Parser *p) {
     case TOKEN_OP_COMPLEMENT:
     case TOKEN_OP_EXCLAMATION: {
         UnaryOpKind op = parse_unop(p);
-        AstNode *exp = parse_factor(p);
+        Expr *expr = parse_factor(p);
 
-        AstNode *unary = AstNode_create();
-        unary->kind = ASTNODE_UNARY;
-        unary->node.unary.op = op;
-        unary->node.unary.exp = exp;
+        Expr *unary = Expr_create(EXPR_UNARY);
+        unary->as.unary.op = op;
+        unary->as.unary.expr = expr;
 
         return unary;
     }
     case TOKEN_LEFT_PAREN: {
         advance_token(p);
-        AstNode *exp = parse_expression(p, 0);
+        Expr *exp = parse_expression(p, 0);
         expect_token(p, TOKEN_RIGHT_PAREN);
         return exp;
     }
@@ -264,23 +262,21 @@ static AstNode *parse_factor(Parser *p) {
     }
     }
 
-    AstNode *inv = AstNode_create();
-    inv->kind = ASTNODE_INVALID;
+    Expr *inv = Expr_create(EXPR_INVALID);
     return inv;
 }
 
-static AstNode *parse_expression(Parser *p, int min_prec) {
-    AstNode *left = parse_factor(p);
+static Expr *parse_expression(Parser *p, int min_prec) {
+    Expr *left = parse_factor(p);
     Token next_tok = peek_token(p);
     while (Token_is_operator(next_tok) && precedence(next_tok) >= min_prec) {
         BinaryOpKind binop = parse_binop(p);
-        AstNode *right = parse_expression(p, precedence(next_tok)+1);
+        Expr *right = parse_expression(p, precedence(next_tok)+1);
 
-        AstNode *new_left = AstNode_create();
-        new_left->kind = ASTNODE_BINARY;
-        new_left->node.binary.op = binop;
-        new_left->node.binary.left = left;
-        new_left->node.binary.right = right;
+        Expr *new_left = Expr_create(EXPR_BINARY);
+        new_left->as.binary.op = binop;
+        new_left->as.binary.left = left;
+        new_left->as.binary.right = right;
 
         left = new_left;
 
@@ -290,41 +286,45 @@ static AstNode *parse_expression(Parser *p, int min_prec) {
     return left;
 }
 
-static AstNode *parse_statement(Parser *p) {
+static Stmt *parse_statement(Parser *p) {
     expect_token(p, TOKEN_KW_RETURN);
-    AstNode *exp = parse_expression(p, 0);
+    Expr *exp = parse_expression(p, 0);
     expect_token(p, TOKEN_SEMICOLON);
 
-    AstNode *stmt = AstNode_create();
-    stmt->kind = ASTNODE_RETURN;
-    stmt->node.ret.expr = exp;
+    Stmt *stmt = Stmt_create(STMT_RET);
+    stmt->as.ret = exp;
 
     return stmt;
 }
 
-static AstNode *parse_function(Parser *p) {
+static Function *parse_function(Parser *p) {
     expect_token(p, TOKEN_KW_INT);
     String name = parse_identifier(p);
     expect_token(p, TOKEN_LEFT_PAREN);
     expect_token(p, TOKEN_KW_VOID);
     expect_token(p, TOKEN_RIGHT_PAREN);
     expect_token(p, TOKEN_LEFT_BRACE);
-    AstNode *stmt = parse_statement(p);
+    Stmt *stmt = parse_statement(p);
     expect_token(p, TOKEN_RIGHT_BRACE);
 
-    AstNode *f = AstNode_create();
-    f->kind = ASTNODE_FUNCTION;
-    f->node.function.name = name;
-    f->node.function.statement = stmt;
+    Function *func = Function_create();
 
-    return f;
+    BlockItem item = {
+        .kind = BLOCKITEM_STATEMENT,
+        .as.statement = stmt
+    };
+
+    func->name = name;
+    Block_append(&func->block, item);
+
+    return func;
 }
 
 void parse(Parser *p) {
-    AstNode *func = parse_function(p);
+    Function *func = parse_function(p);
     expect_token(p, TOKEN_EOF);
 
-    p->program->node.program.function = func;
+    p->program->func = func;
 }
 
 // Parser management
@@ -332,8 +332,8 @@ void parse(Parser *p) {
 void Parser_init(Parser *p, const char *path) {
     Tokenizer_init(&p->tokenizer, path);
     ErrorList_init(&p->errors);
-    p->program = AstNode_create();
-    p->program->kind = ASTNODE_PROGRAM;
+    p->program = (Program *)malloc(sizeof(Program));
+    Program_init(p->program);
     p->curr_idx = 0;
     p->prev_idx = p->curr_idx-1;
 }
@@ -341,11 +341,12 @@ void Parser_init(Parser *p, const char *path) {
 void Parser_destroy(Parser *p) {
     Tokenizer_destroy(&p->tokenizer);
     ErrorList_destroy(&p->errors);
-    AstNode_destroy(p->program);
+    Program_deinit(p->program);
+    free(p->program);
 }
 
 void Parser_print_ast(Parser *p) {
     puts("Generated AST Structure\n=======================");
-    AstNode_print(p->program, 0);
+    Program_print(p->program);
 }
 

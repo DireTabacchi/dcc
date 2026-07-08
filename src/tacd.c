@@ -194,16 +194,16 @@ static TacdBinaryOp trx_binary_operator(BinaryOpKind op) {
     }
 }
 
-static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *expr) {
+static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, Expr *expr) {
     switch (expr->kind) {
-    case ASTNODE_CONSTANT:
+    case EXPR_CONSTANT:
         return (TacdValue){
             .kind = TACD_VALUE_CONSTANT,
-            .val.constant = expr->node.constant
+            .val.constant = expr->as.constant
         };
 
-    case ASTNODE_UNARY: {
-        TacdValue src = trx_expression(tg, tacd_fn, expr->node.unary.exp);
+    case EXPR_UNARY: {
+        TacdValue src = trx_expression(tg, tacd_fn, expr->as.unary.expr);
         String dest_name = create_temporary_var(tg);
         TacdValue dest = (TacdValue){
             .kind = TACD_VALUE_IDENTIFIER,
@@ -211,11 +211,11 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
         };
         TacdCode unop = {0};
         unop.kind = TACD_CODE_UNARY;
-        if (expr->node.unary.op == UNARY_COMPLEMENT) {
+        if (expr->as.unary.op == UNARY_COMPLEMENT) {
             unop.code.unary.op = TACD_UNARY_COMPLEMENT;
-        } else if (expr->node.unary.op == UNARY_NEGATE) {
+        } else if (expr->as.unary.op == UNARY_NEGATE) {
             unop.code.unary.op = TACD_UNARY_NEGATE;
-        } else if (expr->node.unary.op == UNARY_NOT) {
+        } else if (expr->as.unary.op == UNARY_NOT) {
             unop.code.unary.op = TACD_UNARY_NOT;
         }
         unop.code.unary.src = src;
@@ -225,13 +225,13 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
         return dest;
     }
 
-    case ASTNODE_BINARY: {
-        if (expr->node.binary.op == BINARY_LOGICAND || expr->node.binary.op == BINARY_LOGICOR) {
+    case EXPR_BINARY: {
+        if (expr->as.binary.op == BINARY_LOGICAND || expr->as.binary.op == BINARY_LOGICOR) {
             TacdValue result = (TacdValue){
                 .kind = TACD_VALUE_IDENTIFIER,
                 .val.identifier = create_temporary_var(tg)
             };
-            TacdValue left_result = trx_expression(tg, tacd_fn, expr->node.binary.left);
+            TacdValue left_result = trx_expression(tg, tacd_fn, expr->as.binary.left);
             String jump_condition_label = {0};
             TacdCode jump_conditional = {0};
             TacdCode copy_res = {
@@ -244,12 +244,12 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
             TacdCode jump_end = { .kind = TACD_CODE_JUMP };
             TacdCode condition_label_code = { .kind = TACD_CODE_LABEL };
             TacdCode end_label_code = { .kind = TACD_CODE_LABEL };
-            if (expr->node.binary.op == BINARY_LOGICAND) {
+            if (expr->as.binary.op == BINARY_LOGICAND) {
                 jump_condition_label = create_label(tg, AND_FALSE);
                 jump_conditional.kind = TACD_CODE_JUMP_IF_ZERO;
                 copy_res.code.copy.src.val.constant = 1;
                 end_label = create_label(tg, AND_END);
-            } else if (expr->node.binary.op == BINARY_LOGICOR) {
+            } else if (expr->as.binary.op == BINARY_LOGICOR) {
                 jump_condition_label = create_label(tg, OR_TRUE);
                 jump_conditional.kind = TACD_CODE_JUMP_IF_NOT_ZERO;
                 copy_res.code.copy.src.val.constant = 0;
@@ -259,7 +259,7 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
             jump_conditional.code.jump_conditional.condition = left_result;
             jump_conditional.code.jump_conditional.target = jump_condition_label;
             CodeList_append(&tacd_fn->node.function.body, jump_conditional);
-            TacdValue right_result = trx_expression(tg, tacd_fn, expr->node.binary.right);
+            TacdValue right_result = trx_expression(tg, tacd_fn, expr->as.binary.right);
             jump_conditional.code.jump_conditional.condition = right_result;
             CodeList_append(&tacd_fn->node.function.body, jump_conditional);
             CodeList_append(&tacd_fn->node.function.body, copy_res);
@@ -268,9 +268,9 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
             condition_label_code.code.label = jump_condition_label;
             CodeList_append(&tacd_fn->node.function.body, condition_label_code);
 
-            if (expr->node.binary.op == BINARY_LOGICAND) {
+            if (expr->as.binary.op == BINARY_LOGICAND) {
                 copy_res.code.copy.src.val.constant = 0;
-            } else if (expr->node.binary.op == BINARY_LOGICOR) {
+            } else if (expr->as.binary.op == BINARY_LOGICOR) {
                 copy_res.code.copy.src.val.constant = 1;
             }
 
@@ -281,8 +281,8 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
             return result;
         }
 
-        TacdValue src1 = trx_expression(tg, tacd_fn, expr->node.binary.left);
-        TacdValue src2 = trx_expression(tg, tacd_fn, expr->node.binary.right);
+        TacdValue src1 = trx_expression(tg, tacd_fn, expr->as.binary.left);
+        TacdValue src2 = trx_expression(tg, tacd_fn, expr->as.binary.right);
 
         String dest_name = create_temporary_var(tg);
         TacdValue dest = (TacdValue){
@@ -292,7 +292,7 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
 
         TacdCode binop = {0};
         binop.kind = TACD_CODE_BINARY;
-        binop.code.binary.op = trx_binary_operator(expr->node.binary.op);
+        binop.code.binary.op = trx_binary_operator(expr->as.binary.op);
         binop.code.binary.src1 = src1;
         binop.code.binary.src2 = src2;
         binop.code.binary.dest = dest;
@@ -308,10 +308,10 @@ static TacdValue trx_expression(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *e
     return (TacdValue){ .kind = TACD_VALUE_INVALID };
 }
 
-static void trx_statement(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *statement) {
-    switch(statement->kind) {
-    case ASTNODE_RETURN: {
-        TacdValue val = trx_expression(tg, tacd_fn, statement->node.ret.expr);
+static void trx_statement(TacdGenerator *tg, TacdNode *tacd_fn, Stmt *stmt) {
+    switch(stmt->kind) {
+    case STMT_RET: {
+        TacdValue val = trx_expression(tg, tacd_fn, stmt->as.ret);
         TacdCode ret = {0};
         ret.kind = TACD_CODE_RET;
         ret.code.ret = val;
@@ -324,25 +324,34 @@ static void trx_statement(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *stateme
     }
 }
 
-static void trx_function(TacdGenerator *tg, TacdNode *tacd_fn, AstNode *ast_fn) {
-    if (ast_fn->kind != ASTNODE_FUNCTION) return;
-
-    tg->func_name = String_copy(ast_fn->node.function.name);
-
-    tacd_fn->kind = TACD_NODE_FUNCTION;
-    tacd_fn->node.function.name = String_copy(ast_fn->node.function.name);
-     CodeList_init(&tacd_fn->node.function.body);
-
-    trx_statement(tg, tacd_fn, ast_fn->node.function.statement);
+static void trx_blockitem(TacdGenerator *tg, TacdNode *tacd_fn, BlockItem *item) {
+    switch(item->kind) {
+    case BLOCKITEM_STATEMENT:
+        trx_statement(tg, tacd_fn, item->as.statement);
+        break;
+    default:
+        break;
+    }
 }
 
-void generate_tacd(TacdGenerator *tg, AstNode *ast_prog) {
+static void trx_function(TacdGenerator *tg, TacdNode *tacd_fn, Function *ast_fn) {
+    tg->func_name = String_copy(ast_fn->name);
+
+    tacd_fn->kind = TACD_NODE_FUNCTION;
+    tacd_fn->node.function.name = String_copy(ast_fn->name);
+    CodeList_init(&tacd_fn->node.function.body);
+
+    for (size_t b_idx = 0; b_idx < ast_fn->block.len; b_idx++) {
+        trx_blockitem(tg, tacd_fn, &ast_fn->block.items[b_idx]);
+    }
+}
+
+void generate_tacd(TacdGenerator *tg, Program *ast_prog) {
     if (tg == NULL) return;
     if (ast_prog == NULL) return;
-    if (ast_prog->kind != ASTNODE_PROGRAM) return;
 
     tg->program->node.program.function = TacdNode_create();
-    trx_function(tg, tg->program->node.program.function, ast_prog->node.program.function);
+    trx_function(tg, tg->program->node.program.function, ast_prog->func);
 }
 
 // IDEA: Perhaps this should just return a String object?

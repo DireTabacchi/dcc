@@ -11,7 +11,7 @@ typedef struct parser_ {
 
     ssize_t prev_idx;
     ssize_t curr_idx;
-    AstNode *program;
+    Program *program;
     
     ErrorList errors;
 } Parser;

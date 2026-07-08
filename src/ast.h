@@ -3,16 +3,6 @@
 
 #include "dd_string.h"
 
-typedef enum astNodeKind_ {
-    ASTNODE_INVALID,
-    ASTNODE_PROGRAM,
-    ASTNODE_FUNCTION,
-    ASTNODE_RETURN,
-    ASTNODE_CONSTANT,
-    ASTNODE_UNARY,
-    ASTNODE_BINARY
-} AstNodeKind;
-
 typedef enum unaryOpKind_ {
     UNARY_INVALID,
     UNARY_COMPLEMENT,
@@ -44,21 +34,103 @@ typedef enum binaryOpKind_ {
     BINARY_GTE
 } BinaryOpKind;
 
-typedef struct astNode_ *AstNode_ty;
-typedef struct astNode_ {
-    AstNodeKind kind;
-    union {
-        struct { AstNode_ty function; } program;
-        struct { String name; AstNode_ty statement; } function;
-        struct { AstNode_ty expr; } ret;
-        int constant;
-        struct { UnaryOpKind op; AstNode_ty exp; } unary;
-        struct { BinaryOpKind op; AstNode_ty left; AstNode_ty right; } binary;
-    } node;
-} AstNode;
+typedef enum exprKind_ {
+    EXPR_INVALID,
+    EXPR_CONSTANT,
+    EXPR_UNARY,
+    EXPR_BINARY
+} ExpressionKind;
 
-AstNode *AstNode_create();
-void AstNode_destroy(AstNode *node);
-void AstNode_print(AstNode *node, int indent_lvl);
+typedef enum stmtKind_ {
+    STMT_INVALID,
+    STMT_RET
+} StatementKind;
+
+typedef enum declKind_ {
+    DECL_INVALID,
+    DECL_LCL_VAR
+} DeclarationKind;
+
+typedef enum blockItemKind_ {
+    BLOCKITEM_INVALID,
+    BLOCKITEM_DECLARATION,
+    BLOCKITEM_STATEMENT
+} BlockItemKind;
+
+typedef struct expr_ *Expr_ty;
+typedef struct expr_ {
+    ExpressionKind kind;
+    union {
+        int constant;
+        struct { UnaryOpKind op; Expr_ty expr; } unary;
+        struct { BinaryOpKind op; Expr_ty left; Expr_ty right; } binary;
+    } as;
+} Expr;
+
+Expr *Expr_create(ExpressionKind kind);
+void Expr_destroy(Expr *expr);
+void Expr_print(Expr *expr, int indent_lvl);
+
+typedef struct stmt_ {
+    StatementKind kind;
+    union {
+        Expr *ret;
+    } as;
+} Stmt;
+
+Stmt *Stmt_create(StatementKind kind);
+void Stmt_destroy(Stmt *stmt);
+void Stmt_print(Stmt *stmt, int indent_lvl);
+
+typedef struct decl_ {
+    DeclarationKind kind;
+    union {
+        struct { String identifier; Expr *init; } loc_var;
+    } as;
+} Decl;
+
+Decl *Decl_create(DeclarationKind kind);
+void Decl_destroy(Decl *decl);
+void Decl_print(Decl *decl, int indent_lvl);
+
+typedef struct blockItem_ {
+    BlockItemKind kind;
+    union {
+        Stmt *statement;
+        Decl *declaration;
+    } as;
+} BlockItem;
+
+typedef struct block_ {
+    BlockItem *items;
+    size_t len;
+    size_t cap;
+} Block;
+
+void Block_init(Block *block);
+void Block_deinit(Block *block);
+void Block_append(Block *block, BlockItem item);
+
+typedef struct func_ {
+    String name;
+    Block block;
+} Function;
+
+Function *Function_create();
+void Function_destroy(Function *func);
+void Function_print(Function *func, int indent_lvl);
+
+typedef struct program_ {
+    Function *func;
+} Program;
+
+void Program_init(Program *prog);
+void Program_deinit(Program *prog);
+void Program_print(Program *prog);
+
+// TODO: AstNode_* -> (Expr|Stmt|Decl)_*
+//AstNode *AstNode_create();
+//void AstNode_destroy(AstNode *node);
+//void AstNode_print(AstNode *node, int indent_lvl);
 
 #endif //AST_H
