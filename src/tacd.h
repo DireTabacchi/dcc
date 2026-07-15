@@ -133,7 +133,7 @@ typedef struct tacdGenerator_ {
 
 void TacdGenerator_init(TacdGenerator *tg);
 void TacdGenerator_deinit(TacdGenerator *tg);
-void generate_tacd(TacdGenerator *tg, Program *ast_prog);
+void generate_tacd(TacdGenerator *tg, AstProgram *ast_prog);
 void Tacd_print(TacdNode *program, int indent_lvl);
 
 void TacdSymTable_init(TacdSymTable *tst);

@@ -16,11 +16,12 @@ typedef struct tokenizer_ {
     long line_offset;   // offset of beginning of line
 
     TokenList tokens;
-    ErrorList errors;
 } Tokenizer;
+
+typedef struct compDriver_ CompDriver;
 
 void Tokenizer_init(Tokenizer *t, const char *path);
 void Tokenizer_destroy(Tokenizer *t);
-void tokenize(Tokenizer *t);
+void tokenize(CompDriver *t);
 
 #endif // TOKENIZER_H

@@ -9,6 +9,8 @@ typedef struct string_ {
     size_t len;     // Length of cstr (minus NULL byte)
 } String;
 
+typedef struct string_ StringView;
+
 /* Create a String object from a NULL-terminated C-string. */
 String String_init_cstr(const char *str);
 
@@ -20,6 +22,10 @@ String String_init_length(size_t len);
 String String_copy(String src);
 
 void String_free(String *str);
+
+bool String_equal(const String str1, const String str2);
+
+int String_cmp(const String str1, const String str2);
 
 static inline ssize_t dd_strlen(const char *str) {
     if (str == NULL) {

@@ -7,18 +7,19 @@
 #include "ast.h"
 
 typedef struct parser_ {
-    Tokenizer tokenizer;
-
+    // (prev_idx == curr_idx) -> end of input
     ssize_t prev_idx;
     ssize_t curr_idx;
-    Program *program;
-    
-    ErrorList errors;
+    AstProgram *program;
+
+    size_t var_count;
 } Parser;
 
-void Parser_init(Parser *p, const char *path);
+typedef struct compDriver_ CompDriver;
+
+void Parser_init(Parser *p);
 void Parser_destroy(Parser *p);
 void Parser_print_ast(Parser *p);
-void parse(Parser *p);
+void parse(CompDriver *cd);
 
 #endif // PARSER_H

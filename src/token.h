@@ -6,6 +6,7 @@
 #include "dd_string.h"
 
 #define TOKENKINDS \
+    TOKENKIND(TOKEN_INVALID, "INVALID"), \
     TOKENKIND(TOKEN_UNKNOWN, "UNKNOWN"), \
     TOKENKIND(TOKEN_EOF, "EOF"), \
     TOKENKIND(TOKEN_LEFT_PAREN, "("), \
@@ -55,8 +56,8 @@ typedef enum tokenkind_ {
 #undef TOKENKIND
 } TokenKind;
 
-static char *token_literal_list[] = {
-#define TOKENKIND(tk, sl) (char *)sl
+static String token_literals[] = {
+#define TOKENKIND(tk, sl) (String){ .cstr = (char *)sl, .len = sizeof(sl)-1 }
     TOKENKINDS
 #undef TOKENKIND
 };
@@ -70,7 +71,7 @@ typedef struct pos_ {
 typedef struct token_ {
     TokenKind kind;
     TokenPos pos;
-    String text;
+    String *text;
 } Token;
 
 bool Token_is_operator(Token t);

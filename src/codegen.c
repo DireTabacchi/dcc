@@ -22,9 +22,9 @@ void InstrArray_deinit(InstrArray *ia) {
     if (ia == NULL) return;
     if (ia->instrs == NULL) return;
 
+    free(ia->instrs);
     ia->cap = 0;
     ia->len = 0;
-    free(ia->instrs);
 }
 
 void InstrArray_insert(InstrArray *ia, AsmInstr in, size_t idx) {

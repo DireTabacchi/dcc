@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "dd_string.h"
 #include "ast.h"
 
@@ -42,9 +43,9 @@ void CodeList_deinit(CodeList* il) {
     if (il == NULL) return;
     if (il->codes == NULL) return;
 
+    free(il->codes);
     il->cap = 0;
     il->len = 0;
-    free(il->codes);
 }
 
 void CodeList_append(CodeList* cl, TacdCode code) {
@@ -78,9 +79,9 @@ void TacdSymTable_deinit(TacdSymTable *tst) {
     for (size_t sym_idx = 0; sym_idx < tst->len; sym_idx++) {
         String_free(&tst->syms[sym_idx]);
     }
+    free(tst->syms);
     tst->cap = 0;
     tst->len = 0;
-    free(tst->syms);
 }
 
 void TacdSymTable_append(TacdSymTable *tst, String symbol) {
@@ -112,20 +113,6 @@ void TacdGenerator_deinit(TacdGenerator *tg) {
     String_free(&tg->func_name);
     TacdNode_destroy(tg->program);
     TacdSymTable_deinit(&tg->symbols);
-}
-
-// Return the number of base-10 places this number contains.
-static int integer_len(int num) {
-    if (num == 0) {
-        return 1;
-    }
-
-    int digit_len = 0;
-    while (num != 0) {
-        num /= 10;
-        digit_len += 1;
-    }
-    return digit_len;
 }
 
 static String create_temporary_var(TacdGenerator *tg) {
@@ -335,10 +322,10 @@ static void trx_blockitem(TacdGenerator *tg, TacdNode *tacd_fn, BlockItem *item)
 }
 
 static void trx_function(TacdGenerator *tg, TacdNode *tacd_fn, Function *ast_fn) {
-    tg->func_name = String_copy(ast_fn->name);
+    tg->func_name = String_copy(*ast_fn->name);
 
     tacd_fn->kind = TACD_NODE_FUNCTION;
-    tacd_fn->node.function.name = String_copy(ast_fn->name);
+    tacd_fn->node.function.name = String_copy(*ast_fn->name);
     CodeList_init(&tacd_fn->node.function.body);
 
     for (size_t b_idx = 0; b_idx < ast_fn->block.len; b_idx++) {
@@ -346,7 +333,7 @@ static void trx_function(TacdGenerator *tg, TacdNode *tacd_fn, Function *ast_fn)
     }
 }
 
-void generate_tacd(TacdGenerator *tg, Program *ast_prog) {
+void generate_tacd(TacdGenerator *tg, AstProgram *ast_prog) {
     if (tg == NULL) return;
     if (ast_prog == NULL) return;
 

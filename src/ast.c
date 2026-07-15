@@ -8,7 +8,7 @@
 #include "ast.h"
 
 // How many spaces to include per indent level. Used in AstNode_print
-#define SPACES_PER_INDENT 4
+#define SPACES_PER_INDENT 2
 
 Expr *Expr_create(ExpressionKind kind) {
     Expr *e = malloc(sizeof(Expr));
@@ -35,6 +35,15 @@ void Expr_destroy(Expr *expr) {
         Expr_destroy(expr->as.binary.right);
         free(expr);
         break;
+    case EXPR_VAR:
+        //String_free(&expr->as.var);
+        free(expr);
+        break;
+    case EXPR_ASSIGN:
+        Expr_destroy(expr->as.assign.lhs);
+        Expr_destroy(expr->as.assign.rhs);
+        free(expr);
+        break;
     }
 }
 
@@ -49,10 +58,15 @@ void Stmt_destroy(Stmt *stmt) {
 
     switch (stmt->kind) {
     case STMT_INVALID:
+    case STMT_NULL:
         free(stmt);
         break;
     case STMT_RET:
         Expr_destroy(stmt->as.ret);
+        free(stmt);
+        break;
+    case STMT_EXPR:
+        Expr_destroy(stmt->as.expr);
         free(stmt);
         break;
     }
@@ -72,7 +86,7 @@ void Decl_destroy(Decl *decl) {
             free(decl);
             break;
         case DECL_LCL_VAR:
-            String_free(&decl->as.loc_var.identifier);
+            //String_free(&decl->as.loc_var.identifier);
             Expr_destroy(decl->as.loc_var.init);
             free(decl);
             break;
@@ -91,16 +105,21 @@ void Block_deinit(Block *block) {
 
     for (size_t b_idx = 0; b_idx < block->len; b_idx++) {
         switch (block->items[b_idx].kind) {
+        case BLOCKITEM_INVALID:
+            break;
         case BLOCKITEM_STATEMENT:
             Stmt_destroy(block->items[b_idx].as.statement);
+            break;
+        case BLOCKITEM_DECLARATION:
+            Decl_destroy(block->items[b_idx].as.declaration);
             break;
         }
     }
 
+    free(block->items);
+
     block->cap = 0;
     block->len = 0;
-
-    free(block->items);
 }
 
 void Block_append(Block *block, BlockItem item) {
@@ -123,24 +142,24 @@ void Block_append(Block *block, BlockItem item) {
 
 Function *Function_create() {
     Function *func = (Function *)malloc(sizeof(Function));
-    func->name = (String){0};
+    func->name = NULL;
     Block_init(&func->block);
     return func;
 }
 
 void Function_destroy(Function *func) {
     if (func == NULL) return;
-    String_free(&func->name);
+    //String_free(&func->name);
     Block_deinit(&func->block);
     free(func);
 }
 
 // TODO: Function list?
-void Program_init(Program *prog) {
-    /* NOP */
+void Program_init(AstProgram *prog) {
+    prog->func = NULL;
 }
 
-void Program_deinit(Program *prog) {
+void Program_deinit(AstProgram *prog) {
     Function_destroy(prog->func);
 }
 
@@ -181,8 +200,26 @@ void Expr_print(Expr *expr, int indent_lvl) {
     case EXPR_INVALID:
         printf("%2$*1$s\n", spaces+18, "INVALID_EXPRESSION");
         break;
+
     case EXPR_CONSTANT:
         printf("%2$*1$s%3$d)\n", spaces+9, "Constant(", expr->as.constant);
+        break;
+
+    case EXPR_VAR:
+        printf("%2$*1$s%3$s)\n", spaces+4, "Var(", expr->as.var->cstr);
+        break;
+
+    case EXPR_ASSIGN:
+        printf("%2$*1$s\n", spaces+7, "Assign(");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s\n", spaces+4, "lhs=");
+        Expr_print(expr->as.assign.lhs, indent_lvl+1);
+        printf("%2$*1$s\n", spaces+4, "rhs=");
+        Expr_print(expr->as.assign.rhs, indent_lvl+1);
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
         break;
 
     case EXPR_UNARY:
@@ -231,11 +268,45 @@ void Stmt_print(Stmt *stmt, int indent_lvl) {
         printf("%2$*1$s\n", spaces+17, "INVALID_STATEMENT");
         break;
     case STMT_RET:
-        printf("Return(\n");
+        printf("%2$*1$s(\n", spaces+6, "Return");
         Expr_print(stmt->as.ret, indent_lvl+1);
         printf("%2$*1$c\n", spaces+1, ')');
         break;
+    case STMT_EXPR:
+        printf("%2$*1$s(\n", spaces+20, "Expression Statement");
+        Expr_print(stmt->as.expr, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+    case STMT_NULL:
+        printf("%2$*1$s\n", spaces+14, "Null Statement");
+        break;
     }
+}
+
+void Decl_print(Decl *decl, int indent_lvl) {
+    if (decl == NULL) return;
+
+    int spaces = indent_lvl * SPACES_PER_INDENT;
+
+    switch (decl->kind) {
+    case DECL_INVALID:
+        printf("%2$*1$s\n", spaces+12, "INVALID DECL");
+        break;
+    case DECL_LCL_VAR:
+        printf("%2$*1$s(\n", spaces+14, "Local Var Decl");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=%3$s\n", spaces+4, "name", decl->as.loc_var.identifier->cstr);
+        printf("%2$*1$s=%3$s", spaces+4, "init", (decl->as.loc_var.init == NULL) ? "NULL\n" : "\n");
+        if (decl->as.loc_var.init != NULL) {
+            Expr_print(decl->as.loc_var.init, indent_lvl+1);
+        }
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+    }
+
 }
 
 static void BlockItem_print(BlockItem *item, int indent_lvl) {
@@ -245,7 +316,7 @@ static void BlockItem_print(BlockItem *item, int indent_lvl) {
 
     switch (item->kind) {
     case BLOCKITEM_INVALID:
-        printf("%2$*1$s\n", spaces+17, "INVALID_BLOCKITEM");
+        printf("%2$*1$s\n", spaces+17, "INVALID BLOCKITEM");
         break;
     case BLOCKITEM_STATEMENT:
         printf("%2$*1$s(\n", spaces+9, "Statement");
@@ -256,7 +327,7 @@ static void BlockItem_print(BlockItem *item, int indent_lvl) {
         printf("%2$*1$s(\n", spaces+11, "Declaration");
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
-        printf("%2$*1$s\n", spaces+38, "This is unhandled. How'd you get here?");
+        Decl_print(item->as.declaration, indent_lvl+1);
         //Stmt_print(item->as.statement, indent_lvl+1);
         indent_lvl -= 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
@@ -273,17 +344,17 @@ void Function_print(Function *func, int indent_lvl) {
     printf("%2$*1$s\n", spaces+9, "Function(");
     indent_lvl += 1;
     spaces = indent_lvl * SPACES_PER_INDENT;
-    printf("%2$*1$s\"%3$s\"\n%5$*4$s",
-        spaces+5, "name=", func->name.cstr, spaces+5, "body=");
+    printf("%2$*1$s\"%3$s\"\n%5$*4$s\n",
+        spaces+5, "name=", func->name->cstr, spaces+5, "body=");
     for (size_t b_idx = 0; b_idx < func->block.len; b_idx++) {
-        BlockItem_print(&func->block.items[b_idx], indent_lvl);
+        BlockItem_print(&func->block.items[b_idx], indent_lvl+1);
     }
     indent_lvl -= 1;
     spaces = indent_lvl * SPACES_PER_INDENT;
     printf("%2$*1$c\n", spaces+1, ')');
 }
 
-void Program_print(Program *prog) {
+void Program_print(AstProgram *prog) {
     if (prog == NULL) return;
     if (prog->func == NULL) {
         printf("NULL PROGRAM\n");

@@ -3,3 +3,5 @@ dcc
 tests
 debug
 release
+src/mem_util.c
+src/mem_util.h
