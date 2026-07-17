@@ -8,6 +8,7 @@
 
 #include "dd_string.h"
 
+#include "common.h"
 #include "comp_driver.h"
 #include "token.h"
 #include "tokenizer.h"
@@ -99,7 +100,7 @@ static bool is_keyword(String kw, long start, long rest_len, const char *rest) {
 }
 
 static void scan_identifier(CompDriver *cd, long offset) {
-    TokenPos ident_pos = {
+    Position ident_pos = {
         .offset = offset,
         .line = cd->tokenizer.line,
         .column = offset - cd->tokenizer.line_offset + 1
@@ -138,7 +139,7 @@ static void scan_identifier(CompDriver *cd, long offset) {
 }
 
 static void scan_number(CompDriver *cd, Tokenizer *t, long offset) {
-    TokenPos tok_pos = { .offset = offset, .line = t->line, .column = offset - t->line_offset + 1 };
+    Position tok_pos = { .offset = offset, .line = t->line, .column = offset - t->line_offset + 1 };
     while(ISDIGIT(t->ch)) advance(t);
     // TODO: maybe advance to the next token? like space or some non-word character?
     if (ISALPHA(t->ch)) {
@@ -177,7 +178,7 @@ void tokenize(CompDriver *cd) {
         } else {
             Token tok = {0};
             String lit = {0};
-            tok.pos = (TokenPos){ .offset = t->offset, .line = t->line, .column = t->offset - t->line_offset + 1 };
+            tok.pos = (Position){ .offset = t->offset, .line = t->line, .column = t->offset - t->line_offset + 1 };
             switch(t->ch) {
             case '(':
                 tok.kind = TOKEN_LEFT_PAREN;

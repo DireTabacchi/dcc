@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "token.h"
 #include "dcc_error.h"
 
@@ -43,21 +44,21 @@ void ErrorList_print(ErrorList *el) {
     }
 }
 
-void err_stray_char(ErrorList *el, String srcname, TokenPos pos, char stray) {
+void err_stray_char(ErrorList *el, String srcname, Position pos, char stray) {
     Error err = {0};
     err.pos = pos;
     err.file = String_copy(srcname);
     err.desc = String_init_length(20);
-    snprintf(err.desc.cstr, err.desc.len+1, "stray '%c' in program", stray);
+    snprintf(err.desc.cstr, err.desc.len+1, "stray `%c` in program", stray);
     ErrorList_append(el, err);
 }
 
-void err_invalid_const_ident(ErrorList *el, String srcname, TokenPos pos, String invalid_name) {
+void err_invalid_const_ident(ErrorList *el, String srcname, Position pos, String invalid_name) {
     Error err = {0};
     err.file = String_copy(srcname);
     err.pos = pos;
     err.desc = String_init_length(invalid_name.len + 33);
-    snprintf(err.desc.cstr, err.desc.len+1, "invalid constant or identifier '%s'", invalid_name.cstr);
+    snprintf(err.desc.cstr, err.desc.len+1, "invalid constant or identifier `%s`", invalid_name.cstr);
     ErrorList_append(el, err);
 }
 
@@ -69,10 +70,10 @@ void err_expected_token(ErrorList *el, String srcname, TokenKind expected, Token
     String found_token_kind;
     if (actual.kind == TOKEN_IDENTIFIER) {
         found_token_kind = String_init_length(actual.text->len + 13);
-        snprintf(found_token_kind.cstr, found_token_kind.len+1, "identifier '%s'", actual.text->cstr);
+        snprintf(found_token_kind.cstr, found_token_kind.len+1, "identifier `%s`", actual.text->cstr);
     } else if (actual.kind == TOKEN_CONSTANT) { 
         found_token_kind = String_init_length(actual.text->len + 11);
-        snprintf(found_token_kind.cstr, found_token_kind.len+1, "constant '%s'", actual.text->cstr);
+        snprintf(found_token_kind.cstr, found_token_kind.len+1, "constant `%s`", actual.text->cstr);
     } else if (actual.kind == TOKEN_EOF) {
         found_token_kind = String_init_cstr("end of input");
     } else {
@@ -86,10 +87,38 @@ void err_expected_token(ErrorList *el, String srcname, TokenKind expected, Token
 }
 
 void err_expected_expression(ErrorList *el, String srcname, Token actual) {
-        Error exp_err = {0};
-        exp_err.file = String_copy(srcname);
-        exp_err.pos = actual.pos;
-        exp_err.desc = String_init_length(30 + token_literals[actual.kind].len);
-        snprintf(exp_err.desc.cstr, exp_err.desc.len+1, "expected an expression, got '%s'", token_literals[actual.kind].cstr);
-        ErrorList_append(el, exp_err);
+    Error exp_err = {0};
+    exp_err.file = String_copy(srcname);
+    exp_err.pos = actual.pos;
+    exp_err.desc = String_init_length(34 + token_literals[actual.kind].len);
+    snprintf(exp_err.desc.cstr, exp_err.desc.len+1, "expected an expression, but got `%s`", token_literals[actual.kind].cstr);
+    ErrorList_append(el, exp_err);
+}
+
+void err_redeclared_variable(ErrorList *el, String srcname, Position pos, String varname) {
+    Error redec_err = {0};
+    redec_err.file = String_copy(srcname);
+    redec_err.pos = pos;
+    redec_err.desc = String_init_length(28 + varname.len);
+    snprintf(redec_err.desc.cstr, redec_err.desc.len+1,
+        "redeclaration of variable `%s`", varname.cstr);
+    ErrorList_append(el, redec_err);
+}
+
+void err_undeclared_variable(ErrorList *el, String srcname, Position pos, String varname) {
+    Error redec_err = {0};
+    redec_err.file = String_copy(srcname);
+    redec_err.pos = pos;
+    redec_err.desc = String_init_length(27 + varname.len);
+    snprintf(redec_err.desc.cstr, redec_err.desc.len+1,
+        "identifier `%s` is undeclared", varname.cstr);
+    ErrorList_append(el, redec_err);
+}
+
+void err_assign_invalid_lvalue(ErrorList *el, String srcname, Position pos) {
+    Error redec_err = {0};
+    redec_err.file = String_copy(srcname);
+    redec_err.pos = pos;
+    redec_err.desc = String_init_cstr("assignment requires a valid lvalue");
+    ErrorList_append(el, redec_err);
 }

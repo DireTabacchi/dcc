@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+#include "common.h"
 #include "dd_string.h"
 
 #define TOKENKINDS \
@@ -62,15 +63,9 @@ static String token_literals[] = {
 #undef TOKENKIND
 };
 
-typedef struct pos_ {
-    int offset;
-    int line;
-    int column;
-} TokenPos;
-
 typedef struct token_ {
     TokenKind kind;
-    TokenPos pos;
+    Position pos;
     String *text;
 } Token;
 

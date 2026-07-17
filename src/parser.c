@@ -8,6 +8,7 @@
 #include "token.h"
 #include "dcc_error.h"
 #include "ast.h"
+#include "sym_table.h"
 
 #include "parser.h"
 
@@ -211,6 +212,7 @@ static Expr *parse_factor(CompDriver *cd) {
         int constant_val = strtol(constant_tok.text->cstr, NULL, 10);
 
         Expr *constant = Expr_create(EXPR_CONSTANT);
+        constant->pos = tok.pos;
         constant->as.constant = constant_val;
 
         return constant;
@@ -220,6 +222,7 @@ static Expr *parse_factor(CompDriver *cd) {
         const String *var_name = parse_identifier(cd);
 
         Expr *var = Expr_create(EXPR_VAR);
+        var->pos = tok.pos;
         var->as.var = var_name;
 
         return var;
@@ -232,6 +235,7 @@ static Expr *parse_factor(CompDriver *cd) {
         Expr *expr = parse_factor(cd);
 
         Expr *unary = Expr_create(EXPR_UNARY);
+        unary->pos = tok.pos;
         unary->as.unary.op = op;
         unary->as.unary.expr = expr;
 
@@ -252,6 +256,7 @@ static Expr *parse_factor(CompDriver *cd) {
     }
 
     Expr *inv = Expr_create(EXPR_INVALID);
+    inv->pos = tok.pos;
     return inv;
 }
 
@@ -262,8 +267,10 @@ static Expr *parse_expression(CompDriver *cd, int min_prec) {
     while (Token_is_operator(next_tok) && precedence(next_tok) >= min_prec) {
         if (next_tok.kind == TOKEN_OP_EQUAL) {
             advance_token(cd);
+            //Token assign_expr_tok = peek_token(cd);
             Expr *right = parse_expression(cd, precedence(next_tok));
             Expr *new_left = Expr_create(EXPR_ASSIGN);
+            new_left->pos = left->pos;
             new_left->as.assign.lhs = left;
             new_left->as.assign.rhs = right;
 
@@ -273,6 +280,7 @@ static Expr *parse_expression(CompDriver *cd, int min_prec) {
             Expr *right = parse_expression(cd, precedence(next_tok)+1);
 
             Expr *new_left = Expr_create(EXPR_BINARY);
+            new_left->pos = left->pos;
             new_left->as.binary.op = binop;
             new_left->as.binary.left = left;
             new_left->as.binary.right = right;
@@ -292,32 +300,37 @@ static Stmt *parse_statement(CompDriver *cd) {
         Expr *expr = parse_expression(cd, 0);
         if (expr != NULL && expr->kind == EXPR_INVALID) {
             Stmt *bad_ret = Stmt_create(STMT_RET);
+            bad_ret->pos = next_tok.pos;
             bad_ret->as.ret = expr;
             return bad_ret;
         }
         expect_token(cd, TOKEN_SEMICOLON);
         Stmt *ret_stmt = Stmt_create(STMT_RET);
+        ret_stmt->pos = next_tok.pos;
         ret_stmt->as.ret = expr;
         return ret_stmt;
     } else if (next_tok.kind == TOKEN_SEMICOLON) {
         advance_token(cd);
         Stmt *null_stmt = Stmt_create(STMT_NULL);
+        null_stmt->pos = next_tok.pos;
         return null_stmt;
     }
 
     Expr *expr = parse_expression(cd, 0);
     expect_token(cd, TOKEN_SEMICOLON);
     Stmt *expr_stmt = Stmt_create(STMT_EXPR);
+    expr_stmt->pos = next_tok.pos;
     expr_stmt->as.expr = expr;
 
     return expr_stmt;
 }
 
 static Decl *parse_declaration(CompDriver *cd) {
-    expect_token(cd, TOKEN_KW_INT);
+    Token first_tok = expect_token(cd, TOKEN_KW_INT);
 
     const String *ident = parse_identifier(cd);
     Decl *var_decl = Decl_create(DECL_LCL_VAR);
+    var_decl->pos = first_tok.pos;
     var_decl->as.loc_var.identifier = ident;
     var_decl->as.loc_var.init = NULL;
 
@@ -384,11 +397,13 @@ void Parser_init(Parser *p) {
     Program_init(p->program);
     p->curr_idx = 0;
     p->prev_idx = p->curr_idx-1;
+    SymTable_init(&p->syms);
 }
 
 void Parser_destroy(Parser *p) {
     Program_deinit(p->program);
     free(p->program);
+    SymTable_deinit(&p->syms);
 }
 
 void Parser_print_ast(Parser *p) {

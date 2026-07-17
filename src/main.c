@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
     printf("Final Interned Strings [%ld/%ld] (load/cap):\n", driver.str_table.load, driver.str_table.cap);
     for (size_t is_idx = 0; is_idx < driver.str_table.cap; is_idx++) {
         if (driver.str_table.strs[is_idx].status == ISS_OCCUPIED) {
-            printf("\t[%2ld]`%s`\n", is_idx, driver.str_table.strs[is_idx].str->cstr);
+            printf("\t[%2ld] `%s`\n", is_idx, driver.str_table.strs[is_idx].str->cstr);
         }
     }
 

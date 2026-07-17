@@ -11,6 +11,7 @@ void CompDriver_init(CompDriver *cd) {
     cd->tokenizer = (Tokenizer){0};
     cd->parser = (Parser){0};
     cd->cgd = (CodegenDriver){0};
+    ErrorList_init(&cd->errors);
 
     for (size_t i = 0; i < TOKENKIND_LEN; i++) {
         if (i == TOKEN_OPERATORS_BEGIN || i == TOKEN_OPERATORS_END || i == TOKEN_KEYWORDS_BEGIN || i == TOKEN_KEYWORDS_END) continue;
@@ -30,6 +31,7 @@ void CompDriver_deinit(CompDriver *cd) {
     Tokenizer_destroy(&cd->tokenizer);
     Parser_destroy(&cd->parser);
     CodegenDriver_deinit(&cd->cgd);
+    ErrorList_destroy(&cd->errors);
 }
 
 // Parse command arguments.

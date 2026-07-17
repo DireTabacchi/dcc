@@ -6,6 +6,12 @@
 #define FNV_OFFSET_BASIS    0xcbf29ce484222325
 #define FNV_PRIME           0x00000100000001B3
 
+typedef struct pos_ {
+    int offset;
+    int line;
+    int column;
+} Position;
+
 // Return the number of base-10 places this number contains.
 int integer_len(int num);
 

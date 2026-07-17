@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 
+#include "common.h"
 #include "dd_string.h"
 
 typedef enum unaryOpKind_ {
@@ -64,6 +65,7 @@ typedef enum blockItemKind_ {
 typedef struct expr_ *Expr_ty;
 typedef struct expr_ {
     ExpressionKind kind;
+    Position pos;
     union {
         int constant;
         const String *var;
@@ -79,6 +81,7 @@ void Expr_print(Expr *expr, int indent_lvl);
 
 typedef struct stmt_ {
     StatementKind kind;
+    Position pos;
     union {
         Expr *ret;
         Expr *expr;
@@ -91,6 +94,7 @@ void Stmt_print(Stmt *stmt, int indent_lvl);
 
 typedef struct decl_ {
     DeclarationKind kind;
+    Position pos;
     union {
         struct { const String *identifier; Expr *init; } loc_var;
     } as;
