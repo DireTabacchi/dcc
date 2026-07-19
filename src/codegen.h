@@ -85,7 +85,7 @@ typedef struct operand_ {
     union {
         int imm;
         Register reg;
-        String pseudo;
+        const String *pseudo;
         int stack;
     } val;
 } Operand;
@@ -99,10 +99,10 @@ typedef struct asmInstr_ {
         struct { Operand divisor; } idiv;
         int alloc_stack;
         struct { Operand src1; Operand src2; } cmp;
-        String jmp;
-        struct { ConditionCode cond_code; String target; } jmpcc;
+        const String *jmp;
+        struct { ConditionCode cond_code; const String *target; } jmpcc;
         struct { ConditionCode cond_code; Operand dest; } setcc;
-        String label;
+        const String *label;
     } instr;
 } AsmInstr;
 
@@ -118,7 +118,7 @@ typedef struct asmNode_ {
     union {
         struct { AsmNode_ty function; } program;
         struct {
-            String name;
+            const String *name;
             InstrArray instrs;
         } function;
     } node;

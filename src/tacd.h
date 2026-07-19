@@ -77,7 +77,7 @@ typedef struct tacdValue_ {
     TacdValueKind kind;
     union {
         int constant;
-        String identifier;
+        const String *identifier;
     } val;
 } TacdValue;
 
@@ -91,9 +91,9 @@ typedef struct tacdCode_ {
             TacdValue src1; TacdValue src2; TacdValue dest;
         } binary;
         struct { TacdValue src; TacdValue dest; } copy;
-        String jump;
-        struct { TacdValue condition; String target; } jump_conditional;    // zero/not-zero encoded in kind
-        String label;
+        const String *jump;
+        struct { TacdValue condition; const String *target; } jump_conditional;    // zero/not-zero encoded in kind
+        const String *label;
     } code;
 } TacdCode;
 
@@ -108,24 +108,23 @@ typedef struct tacdNode_ {
     TacdNodeKind kind;
     union {
         struct { TacdNode_ty function; } program;
-        struct { String name; CodeList body; } function;
+        struct { const String *name; CodeList body; } function;
     } node;
 } TacdNode;
 
-typedef struct tacdSymbolTable_ {
-    String *syms;
-    size_t len;
-    size_t cap;
-} TacdSymTable;
+//typedef struct tacdSymbolTable_ {
+//    String **syms;
+//    size_t len;
+//    size_t cap;
+//} TacdSymTable;
 
 typedef struct tacdGenerator_ {
-    int tmpvar_count;   // Current count of temporary vars generated.
-    String func_name;   // Current function generating code for.
-                        // These two will be used to generate tmp var
-                        // names, e.g. "main.tmp.0". (func_name.tmp.tmpvar_count)
-    int label_count;    // Like tmpvar_count, but for ASM labels.
+    const String *func_name;    // Current function generating code for.
+                                // These two will be used to generate tmp var
+                                // names, e.g. "main.tmp.0". (func_name.tmp.tmpvar_count)
+    int label_count;            // Current count of ASM labels generated.
 
-    TacdSymTable symbols;
+    //TacdSymTable symbols;
     TacdNode *program;
 } TacdGenerator;
 
@@ -133,12 +132,13 @@ typedef struct tacdGenerator_ {
 
 void TacdGenerator_init(TacdGenerator *tg);
 void TacdGenerator_deinit(TacdGenerator *tg);
-void generate_tacd(TacdGenerator *tg, AstProgram *ast_prog);
+typedef struct compDriver_ CompDriver;
+void generate_tacd(CompDriver *cd, AstProgram *ast_prog);
 void Tacd_print(TacdNode *program, int indent_lvl);
 
-void TacdSymTable_init(TacdSymTable *tst);
-void TacdSymTable_deinit(TacdSymTable *tst);
-void TacdSymTable_append(TacdSymTable *tst, String symbol);
+//void TacdSymTable_init(TacdSymTable *tst);
+//void TacdSymTable_deinit(TacdSymTable *tst);
+//void TacdSymTable_append(TacdSymTable *tst, String *symbol);
 
 TacdNode *TacdNode_create();
 void TacdNode_destroy(TacdNode *node);

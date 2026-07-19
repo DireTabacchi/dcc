@@ -8,8 +8,10 @@
         - TRIGGER: simply desire to
     - Memory usage tracker (for debug builds)
     - Internal compiler errors in various places
-    - Compiler driver (holds the options, tokenizer, parser, codgen generator, etc.)
-    - String Interner
+
+### Compiler driver
+
+Currently holds the options, interner, tokenizer, parser, and codegen driver.
 
 ### String Interner
     - Find places past parser/sem-analysis where interner could be used.

@@ -36,6 +36,7 @@ typedef struct compDriver_ {
     Parser parser;
     CodegenDriver cgd;
 
+    size_t uid_count;
     ErrorList errors;
 } CompDriver;
 

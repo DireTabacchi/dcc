@@ -119,7 +119,7 @@ static void emit_unary(AsmInstr *unary, FILE *dest) {
 // TODO: encode sizes in Instructions (Operands?)
 // TODO: improve logic for binary shift with previous TODO
 static void emit_function(AsmNode *func, FILE *dest) {
-    fprintf(dest, "\t.globl %1$s\n%1$s:\n", func->node.function.name.cstr);
+    fprintf(dest, "\t.globl %1$s\n%1$s:\n", func->node.function.name->cstr);
     fprintf(dest, "\tpushq\t%%rbp\n\tmovq\t%%rsp, %%rbp\n");
     for (size_t instr_idx = 0; instr_idx < func->node.function.instrs.len; instr_idx++) {
         AsmInstr *instr = &func->node.function.instrs.instrs[instr_idx];
@@ -150,7 +150,7 @@ static void emit_function(AsmNode *func, FILE *dest) {
 //#ifdef DEBUG
 //            fprintf(dest, "# Jmp\n");
 //#endif
-            fprintf(dest, "\tjmp\t.L%s\n", instr->instr.jmp.cstr);
+            fprintf(dest, "\tjmp\t.L%s\n", instr->instr.jmp->cstr);
             break;
 
         case ASM_INSTR_JMPCC:
@@ -159,7 +159,7 @@ static void emit_function(AsmNode *func, FILE *dest) {
 //#endif
             fprintf(dest, "\tj%s\t.L%s\n",
                 cond_code_table[instr->instr.jmpcc.cond_code],
-                instr->instr.jmpcc.target.cstr);
+                instr->instr.jmpcc.target->cstr);
             break;
 
         case ASM_INSTR_SETCC:
@@ -175,7 +175,7 @@ static void emit_function(AsmNode *func, FILE *dest) {
 //#ifdef DEBUG
 //            fprintf(dest, "# Label\n");
 //#endif
-            fprintf(dest, ".L%s:\n", instr->instr.label.cstr);
+            fprintf(dest, ".L%s:\n", instr->instr.label->cstr);
             break;
 
         case ASM_INSTR_RET:

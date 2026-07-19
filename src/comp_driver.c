@@ -11,6 +11,7 @@ void CompDriver_init(CompDriver *cd) {
     cd->tokenizer = (Tokenizer){0};
     cd->parser = (Parser){0};
     cd->cgd = (CodegenDriver){0};
+    cd->uid_count = 0;
     ErrorList_init(&cd->errors);
 
     for (size_t i = 0; i < TOKENKIND_LEN; i++) {

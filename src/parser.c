@@ -401,6 +401,8 @@ void Parser_init(Parser *p) {
 }
 
 void Parser_destroy(Parser *p) {
+    if (p == NULL) return;
+    if (p->program == NULL) return;
     Program_deinit(p->program);
     free(p->program);
     SymTable_deinit(&p->syms);

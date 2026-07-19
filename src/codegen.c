@@ -134,10 +134,10 @@ AsmNode *AsmNode_create() {
     return n;
 }
 
-static AsmNode *AsmNode_function_create(String function_name) {
+static AsmNode *AsmNode_function_create(const String *function_name) {
     AsmNode *f = AsmNode_create();
     f->kind = ASMNODE_FUNCTION;
-    f->node.function.name = String_copy(function_name);
+    f->node.function.name = function_name;
     InstrArray_init(&f->node.function.instrs);
     return f;
 }
@@ -146,7 +146,7 @@ static void AsmNode_function_destroy(AsmNode *asm_function) {
     if (asm_function == NULL) return;
     if (asm_function->kind != ASMNODE_FUNCTION) return;
 
-    String_free(&asm_function->node.function.name);
+    //String_free(&asm_function->node.function.name);
     InstrArray_deinit(&asm_function->node.function.instrs);
     free(asm_function);
 }
@@ -215,7 +215,7 @@ static void Operand_print(Operand op) {
         break;
 
     case OPERAND_PSEUDO:
-        printf("%s", op.val.pseudo.cstr);
+        printf("%s", op.val.pseudo->cstr);
         break;
 
     case OPERAND_STACK:
@@ -353,13 +353,13 @@ static void AsmInstr_print(AsmInstr *instr, int indent_lvl) {
         break;
 
     case ASM_INSTR_JMP:
-        printf("%2$*1$s%3$s)\n", spaces+4, "Jmp(", instr->instr.jmp.cstr);
+        printf("%2$*1$s%3$s)\n", spaces+4, "Jmp(", instr->instr.jmp->cstr);
         break;
 
     case ASM_INSTR_JMPCC:
         printf("%2$*1$s", spaces+6, "JmpCC(");
         ConditionCode_print(instr->instr.jmpcc.cond_code);
-        printf(",%s)\n", instr->instr.jmpcc.target.cstr);
+        printf(",%s)\n", instr->instr.jmpcc.target->cstr);
         break;
 
     case ASM_INSTR_SETCC:
@@ -371,7 +371,7 @@ static void AsmInstr_print(AsmInstr *instr, int indent_lvl) {
         break;
 
     case ASM_INSTR_LABEL:
-        printf("%2$*1$s%3$s)\n", spaces+6-4, "Label(", instr->instr.label.cstr);
+        printf("%2$*1$s%3$s)\n", spaces+6-4, "Label(", instr->instr.label->cstr);
         break;
 
     case ASM_ALLOCSTACK:
@@ -403,7 +403,7 @@ static void AsmNode_print(AsmNode *node, int indent_lvl) {
         indent_lvl += 1;
         spaces = indent_lvl * 4;
         printf("%2$*1$s\"%3$s\"\n%5$*4$s\n",
-            spaces+5, "name=", node->node.function.name.cstr, spaces+6, "body=(");
+            spaces+5, "name=", node->node.function.name->cstr, spaces+6, "body=(");
         for (size_t instr_idx = 0; instr_idx < node->node.function.instrs.len; instr_idx++) {
             AsmInstr_print(&node->node.function.instrs.instrs[instr_idx], indent_lvl+1);
         }
@@ -883,6 +883,7 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmNode *function) 
             }
             }
 
+            break;
         }   // case ASM_INSTR_BINARY
 
         case ASM_INSTR_CMP: {
@@ -908,7 +909,7 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmNode *function) 
 
 static void resolve_pseudo_operand(CodegenDriver *cgd, Operand *op, int *total_offset) {
     int val = 0;
-    if (PseudoSymMap_contains(&cgd->stack_offsets, op->val.pseudo, &val)) {
+    if (PseudoSymMap_contains(&cgd->stack_offsets, *op->val.pseudo, &val)) {
         Operand new_op = {0};
         new_op.type = OPERAND_STACK;
         new_op.val.stack = val;
@@ -917,7 +918,7 @@ static void resolve_pseudo_operand(CodegenDriver *cgd, Operand *op, int *total_o
         *total_offset -= 4;
         PseudoStackMapping mapping = {0};
         mapping.stack_offset = *total_offset;
-        mapping.ident = String_copy(op->val.pseudo);
+        mapping.ident = String_copy(*op->val.pseudo);
         PseudoSymMap_append(&cgd->stack_offsets, mapping);
     
         Operand new_op = {0};

@@ -16,8 +16,6 @@ typedef struct parser_ {
     AstProgram *program;
 
     SymTable syms;
-
-    size_t var_count;
 } Parser;
 
 typedef struct compDriver_ CompDriver;

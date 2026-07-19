@@ -59,6 +59,7 @@ int main(int argc, char *argv[]) {
     CompDriver_init(&driver);
     if (parse_command(&driver.opts, argc, argv) != 0) {
         print_usage(argv[0]);
+        CompDriver_deinit(&driver);
         return EXIT_FAILURE;
     }
 
@@ -141,7 +142,7 @@ int main(int argc, char *argv[]) {
 
     CodegenDriver_init(&driver.cgd);
     if (!compiler_erred && (driver.opts.dbf >= DBF_TACD || driver.opts.dbf == DBF_NONE)) {
-        generate_tacd(&driver.cgd.tacd_gen, driver.parser.program);
+        generate_tacd(&driver, driver.parser.program);
 #ifdef DEBUG
         Tacd_print(driver.cgd.tacd_gen.program, 0);
 #endif

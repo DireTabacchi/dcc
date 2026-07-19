@@ -13,11 +13,11 @@
 // TODO: implement with interned strings
 
 static String *create_unique_varname(CompDriver *cd, String varname) {
-    int digit_len = integer_len(cd->parser.var_count);
+    int digit_len = integer_len(cd->uid_count);
 
     String uvar_string = String_init_length(varname.len + digit_len + 1);
-    snprintf(uvar_string.cstr, uvar_string.len+1, "%s.%ld", varname.cstr, cd->parser.var_count);
-    cd->parser.var_count += 1;
+    snprintf(uvar_string.cstr, uvar_string.len+1, "%s.%ld", varname.cstr, cd->uid_count);
+    cd->uid_count += 1;
     String *uvar_name = (String *)StrInterner_intern(&cd->str_table, uvar_string);
     String_free(&uvar_string);
     return uvar_name;
