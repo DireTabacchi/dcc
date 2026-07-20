@@ -196,20 +196,96 @@ static TacdValue trx_expression(CompDriver *cd, TacdNode *tacd_fn, Expr *expr) {
 
     case EXPR_UNARY: {
         TacdValue src = trx_expression(cd, tacd_fn, expr->as.unary.expr);
+        TacdCode unop = {0};
+        unop.kind = TACD_CODE_UNARY;
+        switch (expr->as.unary.op) {
+        case UNARY_INVALID:
+            break;
+        case UNARY_COMPLEMENT:
+            unop.code.unary.op = TACD_UNARY_COMPLEMENT;
+            break;
+        case UNARY_NEGATE:
+            unop.code.unary.op = TACD_UNARY_NEGATE;
+            break;
+        case UNARY_NOT:
+            unop.code.unary.op = TACD_UNARY_NOT;
+            break;
+        case UNARY_PRE_INCR: {
+            TacdCode incr = {0};
+            incr.kind = TACD_CODE_BINARY;
+            incr.code.binary.op = TACD_BINARY_ADD;
+            incr.code.binary.dest = src;
+            incr.code.binary.src1 = src;
+            incr.code.binary.src2 = (TacdValue){ .kind = TACD_VALUE_CONSTANT, .val.constant = 1 };
+            CodeList_append(&tacd_fn->node.function.body, incr);
+            return src;
+        }
+        case UNARY_PRE_DECR: {
+            TacdCode decr = {0};
+            decr.kind = TACD_CODE_BINARY;
+            decr.code.binary.op = TACD_BINARY_SUBTRACT;
+            decr.code.binary.dest = src;
+            decr.code.binary.src1 = src;
+            decr.code.binary.src2 = (TacdValue){ .kind = TACD_VALUE_CONSTANT, .val.constant = 1 };
+            CodeList_append(&tacd_fn->node.function.body, decr);
+            return src;
+        }
+        case UNARY_POST_INCR: {
+            const String *dest_name = create_temporary_var(cd);
+            TacdValue dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = dest_name
+            };
+
+            TacdCode copy = {0};
+            copy.kind = TACD_CODE_COPY;
+            copy.code.copy.src = src;
+            copy.code.copy.dest = dest;
+
+            CodeList_append(&tacd_fn->node.function.body, copy);
+
+            TacdCode incr = {0};
+            incr.kind = TACD_CODE_BINARY;
+            incr.code.binary.op = TACD_BINARY_ADD;
+            incr.code.binary.dest = src;
+            incr.code.binary.src1 = src;
+            incr.code.binary.src2 = (TacdValue){ .kind = TACD_VALUE_CONSTANT, .val.constant = 1 };
+
+            CodeList_append(&tacd_fn->node.function.body, incr);
+            return dest;
+        }
+        case UNARY_POST_DECR: {
+            const String *dest_name = create_temporary_var(cd);
+            TacdValue dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = dest_name
+            };
+
+            TacdCode copy = {0};
+            copy.kind = TACD_CODE_COPY;
+            copy.code.copy.src = src;
+            copy.code.copy.dest = dest;
+
+            CodeList_append(&tacd_fn->node.function.body, copy);
+
+            TacdCode incr = {0};
+            incr.kind = TACD_CODE_BINARY;
+            incr.code.binary.op = TACD_BINARY_SUBTRACT;
+            incr.code.binary.dest = src;
+            incr.code.binary.src1 = src;
+            incr.code.binary.src2 = (TacdValue){ .kind = TACD_VALUE_CONSTANT, .val.constant = 1 };
+
+            CodeList_append(&tacd_fn->node.function.body, incr);
+            return dest;
+        }
+        }
+
         const String *dest_name = create_temporary_var(cd);
         TacdValue dest = (TacdValue){
             .kind = TACD_VALUE_IDENTIFIER,
             .val.identifier = dest_name
         };
-        TacdCode unop = {0};
-        unop.kind = TACD_CODE_UNARY;
-        if (expr->as.unary.op == UNARY_COMPLEMENT) {
-            unop.code.unary.op = TACD_UNARY_COMPLEMENT;
-        } else if (expr->as.unary.op == UNARY_NEGATE) {
-            unop.code.unary.op = TACD_UNARY_NEGATE;
-        } else if (expr->as.unary.op == UNARY_NOT) {
-            unop.code.unary.op = TACD_UNARY_NOT;
-        }
+
         unop.code.unary.src = src;
         unop.code.unary.dest = dest;
         CodeList_append(&tacd_fn->node.function.body, unop);

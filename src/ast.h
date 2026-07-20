@@ -8,7 +8,11 @@ typedef enum unaryOpKind_ {
     UNARY_INVALID,
     UNARY_COMPLEMENT,
     UNARY_NEGATE,
-    UNARY_NOT
+    UNARY_NOT,
+    UNARY_PRE_INCR,
+    UNARY_POST_INCR,
+    UNARY_PRE_DECR,
+    UNARY_POST_DECR
 } UnaryOpKind;
 
 typedef enum binaryOpKind_ {

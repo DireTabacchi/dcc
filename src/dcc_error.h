@@ -22,6 +22,8 @@ void ErrorList_destroy(ErrorList* el);
 void ErrorList_append(ErrorList* el, Error err);
 void ErrorList_print(ErrorList *el);
 
+typedef struct compDriver_ CompDriver;
+
 // Tokenizer errors
 
 void err_stray_char(ErrorList *el, String srcname, Position pos, char stray);
@@ -37,5 +39,8 @@ void err_expected_expression(ErrorList *el, String srcname, Token actual);
 void err_redeclared_variable(ErrorList *el, String srcname, Position pos, String varname);
 void err_undeclared_variable(ErrorList *el, String srcname, Position pos, String varname);
 void err_assign_invalid_lvalue(ErrorList *el, String srcname, Position pos);
+
+void err_decr_not_lvalue(CompDriver *cd, Position pos);
+void err_incr_not_lvalue(CompDriver *cd, Position pos);
 
 #endif // DD_ERROR_H

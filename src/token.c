@@ -20,8 +20,8 @@ void TokenList_destroy(TokenList* tl) {
     for (size_t i = 0; i < tl->len; i++){
         switch (tl->toks[i].kind) {
         case TOKEN_CONSTANT:
-            String_free(tl->toks[i].text);
-            free(tl->toks[i].text);
+            String_free((String *)tl->toks[i].text);
+            free((String *)tl->toks[i].text);
             break;
         case TOKEN_KW_INT:
         case TOKEN_KW_VOID:
@@ -36,11 +36,12 @@ void TokenList_destroy(TokenList* tl) {
         case TOKEN_SEMICOLON:
         case TOKEN_OP_DOUBLE_EQUAL: case TOKEN_OP_EQUAL: case TOKEN_OP_COMPLEMENT:
         case TOKEN_OP_PLUS: case TOKEN_OP_ASTERISK: case TOKEN_OP_SLASH: case TOKEN_OP_PERCENT:
-        case TOKEN_OP_DECREMENT: case TOKEN_OP_MINUS: case TOKEN_OP_EXCLAMATION_EQUAL:
-        case TOKEN_OP_EXCLAMATION: case TOKEN_OP_DOUBLE_AMP: case TOKEN_OP_AMPERSAND:
-        case TOKEN_OP_DOUBLE_BAR: case TOKEN_OP_BAR: case TOKEN_OP_CARET: case TOKEN_OP_LSHFT:
-        case TOKEN_OP_LTE: case TOKEN_OP_LT: case TOKEN_OP_RSHFT: case TOKEN_OP_GTE:
-        case TOKEN_OP_GT: case TOKEN_EOF:
+        case TOKEN_OP_DECREMENT: case TOKEN_OP_INCREMENT: case TOKEN_OP_MINUS:
+        case TOKEN_OP_EXCLAMATION_EQUAL: case TOKEN_OP_EXCLAMATION: case TOKEN_OP_DOUBLE_AMP:
+        case TOKEN_OP_AMPERSAND: case TOKEN_OP_DOUBLE_BAR: case TOKEN_OP_BAR: case TOKEN_OP_CARET:
+        case TOKEN_OP_LSHFT: case TOKEN_OP_LTE: case TOKEN_OP_LT: case TOKEN_OP_RSHFT:
+        case TOKEN_OP_GTE: case TOKEN_OP_GT: case TOKEN_EOF:
+            /* Interned String */
             break;
         }
     }

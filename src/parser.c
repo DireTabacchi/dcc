@@ -18,22 +18,24 @@
 
 typedef enum {
     // Highest precedence
-    PREC_MDM,       // Multiply-Divide-Modulo
-    PREC_AS,        // Add-Subtract
-    PREC_BITSHIFT,  // Left/Right Bitwise Shift
-    PREC_LTGTE,     // Less Than (Equal), Greater Than (Equal)
-    PREC_EQ,        // Equal, Not Equal
-    PREC_BAND,      // Bitwise And
-    PREC_BXOR,      // Bitwise Xor
-    PREC_BOR,       // Bitwise Or
-    PREC_LAND,      // Logical And
-    PREC_LOR,       // Logical Or
-    PREC_ASSIGN,    // Assignment operations (lhs = rhs)
+    PREC_POST_INC_DEC,  // Postfix increment/decrement
+    PREC_MDM,           // Multiply-Divide-Modulo
+    PREC_AS,            // Add-Subtract
+    PREC_BITSHIFT,      // Left/Right Bitwise Shift
+    PREC_LTGTE,         // Less Than (Equal), Greater Than (Equal)
+    PREC_EQ,            // Equal, Not Equal
+    PREC_BAND,          // Bitwise And
+    PREC_BXOR,          // Bitwise Xor
+    PREC_BOR,           // Bitwise Or
+    PREC_LAND,          // Logical And
+    PREC_LOR,           // Logical Or
+    PREC_ASSIGN,        // Assignment operations (lhs = rhs)
     // Lowest precedence
     PREC_LENGTH
 } PrecedenceKind;
 
 static int precedence_table[PREC_LENGTH] = {
+    150,    // PREC_POST_INC_DEC
     130,    // PREC_MDM
     120,    // PREC_AS
     110,    // PREC_BITSHIFT
@@ -49,6 +51,7 @@ static int precedence_table[PREC_LENGTH] = {
 
 static int precedence(Token tok) {
     switch (tok.kind) {
+    //case TOKEN_OP_INCREMENT:
     case TOKEN_OP_MINUS:
     case TOKEN_OP_PLUS:
         return precedence_table[PREC_AS];
@@ -145,12 +148,19 @@ static const String *parse_identifier(CompDriver *cd) {
 
 static UnaryOpKind parse_unop(CompDriver *cd) {
     Token tok = advance_token(cd);
-    if (tok.kind == TOKEN_OP_MINUS) {
+    switch (tok.kind) {
+    case TOKEN_OP_MINUS:
         return UNARY_NEGATE;
-    } else if (tok.kind == TOKEN_OP_COMPLEMENT) {
+    case TOKEN_OP_COMPLEMENT:
         return UNARY_COMPLEMENT;
-    } else if (tok.kind == TOKEN_OP_EXCLAMATION) {
+    case TOKEN_OP_EXCLAMATION:
         return UNARY_NOT;
+    case TOKEN_OP_INCREMENT:
+        return UNARY_PRE_INCR;
+    case TOKEN_OP_DECREMENT:
+        return UNARY_PRE_DECR;
+    default:
+        break;
     }
     return UNARY_INVALID;
 }
@@ -203,7 +213,7 @@ static BinaryOpKind parse_binop(CompDriver *cd) {
 
 static Expr *parse_expression(CompDriver *cd, int min_prec);
 
-static Expr *parse_factor(CompDriver *cd) {
+static Expr *parse_primary(CompDriver *cd) {
     Token tok = peek_token(cd);
     switch (tok.kind) {
     case TOKEN_CONSTANT: {
@@ -228,20 +238,6 @@ static Expr *parse_factor(CompDriver *cd) {
         return var;
     }
 
-    case TOKEN_OP_MINUS:
-    case TOKEN_OP_COMPLEMENT:
-    case TOKEN_OP_EXCLAMATION: {
-        UnaryOpKind op = parse_unop(cd);
-        Expr *expr = parse_factor(cd);
-
-        Expr *unary = Expr_create(EXPR_UNARY);
-        unary->pos = tok.pos;
-        unary->as.unary.op = op;
-        unary->as.unary.expr = expr;
-
-        return unary;
-    }
-
     case TOKEN_LEFT_PAREN: {
         advance_token(cd);
         Expr *exp = parse_expression(cd, 0);
@@ -260,8 +256,52 @@ static Expr *parse_factor(CompDriver *cd) {
     return inv;
 }
 
+static Expr *parse_unary(CompDriver *cd) {
+    Token tok = peek_token(cd);
+    switch (tok.kind) {
+    case TOKEN_OP_MINUS:
+    case TOKEN_OP_COMPLEMENT:
+    case TOKEN_OP_EXCLAMATION:
+    case TOKEN_OP_INCREMENT:
+    case TOKEN_OP_DECREMENT: {
+        UnaryOpKind op = parse_unop(cd);
+        Expr *expr = parse_unary(cd);
+
+        Expr *unary = Expr_create(EXPR_UNARY);
+        unary->pos = tok.pos;
+        unary->as.unary.op = op;
+        unary->as.unary.expr = expr;
+
+        return unary;
+    }
+
+    default: 
+        break;
+    }
+
+    Expr *expr = parse_primary(cd);
+    if (expr->kind == EXPR_INVALID) return expr;
+
+    Token next_tok = peek_token(cd);
+    while (next_tok.kind == TOKEN_OP_INCREMENT || next_tok.kind == TOKEN_OP_DECREMENT) {
+        Token op_tok = advance_token(cd);
+
+        UnaryOpKind op_kind = (op_tok.kind == TOKEN_OP_INCREMENT) ?
+            UNARY_POST_INCR : UNARY_POST_DECR;
+        Expr *unary = Expr_create(EXPR_UNARY);
+        unary->pos = op_tok.pos;
+        unary->as.unary.op = op_kind;
+        unary->as.unary.expr = expr;
+        expr = unary;
+
+        next_tok = peek_token(cd);
+    }
+
+    return expr;
+}
+
 static Expr *parse_expression(CompDriver *cd, int min_prec) {
-    Expr *left = parse_factor(cd);
+    Expr *left = parse_unary(cd);
     if (left != NULL && left->kind == EXPR_INVALID) return left;
     Token next_tok = peek_token(cd);
     while (Token_is_operator(next_tok) && precedence(next_tok) >= min_prec) {

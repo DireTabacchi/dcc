@@ -22,6 +22,7 @@
     TOKENKIND(TOKEN_OP_MINUS, "-"), \
     TOKENKIND(TOKEN_OP_EXCLAMATION, "!"), \
     TOKENKIND(TOKEN_OP_DECREMENT, "--"), \
+    TOKENKIND(TOKEN_OP_INCREMENT, "++"), \
     TOKENKIND(TOKEN_OP_PLUS, "+"), \
     TOKENKIND(TOKEN_OP_ASTERISK, "*"), \
     TOKENKIND(TOKEN_OP_SLASH, "/"), \
@@ -66,7 +67,7 @@ static String token_literals[] = {
 typedef struct token_ {
     TokenKind kind;
     Position pos;
-    String *text;
+    const String *text;
 } Token;
 
 bool Token_is_operator(Token t);

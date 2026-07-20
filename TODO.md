@@ -15,3 +15,8 @@ Currently holds the options, interner, tokenizer, parser, and codegen driver.
 
 ### String Interner
     - Find places past parser/sem-analysis where interner could be used.
+
+## Features
+    - [ ] compound assignment
+        - [ ] arithmetic assignment (`+=`,`-=`,`*=`,`/=`,`%=`)
+        - [ ] bitwise assignment (`&=`,`|=`,`^=`,`<<=`,`>>=`)

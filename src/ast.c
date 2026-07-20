@@ -191,6 +191,41 @@ char *binary_op_names[19] = {
     (char *)"Gte",
 };
 
+void Expr_unary_print(Expr *expr, int indent_lvl) {
+    if (expr == NULL) return;
+
+    int spaces = indent_lvl * SPACES_PER_INDENT;
+
+    switch (expr->as.unary.op) {
+    case UNARY_INVALID:
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Invalid", spaces + 5, "exp=(");
+        break;
+    case UNARY_NEGATE:
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Negate", spaces + 5, "exp=(");
+        break;
+    case UNARY_COMPLEMENT:
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Complement", spaces + 5, "exp=(");
+        break;
+    case UNARY_NOT:
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Not", spaces + 5, "exp=(");
+        break;
+    case UNARY_PRE_INCR:
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Prefix Increment", spaces + 5, "exp=(");
+        break;
+    case UNARY_PRE_DECR:
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Prefix Decrement", spaces + 5, "exp=(");
+        break;
+    case UNARY_POST_INCR:
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Postfix Increment", spaces + 5, "exp=(");
+        break;
+    case UNARY_POST_DECR:
+        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Postfix Decrement", spaces + 5, "exp=(");
+        break;
+    }
+    Expr_print(expr->as.unary.expr, indent_lvl+1);
+    printf("%2$*1$c\n", spaces+1, ')');
+}
+
 void Expr_print(Expr *expr, int indent_lvl) {
     if (expr == NULL) return;
 
@@ -224,17 +259,7 @@ void Expr_print(Expr *expr, int indent_lvl) {
 
     case EXPR_UNARY:
         printf("%2$*1$s\n", spaces+6, "Unary(");
-        indent_lvl += 1;
-        spaces = indent_lvl * SPACES_PER_INDENT;
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=",
-            (expr->as.unary.op == UNARY_NEGATE) ? "Negate" :
-                (expr->as.unary.op == UNARY_COMPLEMENT) ? "Complement" :
-                    (expr->as.unary.op == UNARY_NOT) ? "Not" : "Invald",
-            spaces + 5, "exp=(");
-        Expr_print(expr->as.unary.expr, indent_lvl+1);
-        printf("%2$*1$c\n", spaces+1, ')');
-        indent_lvl -= 1;
-        spaces = indent_lvl * SPACES_PER_INDENT;
+        Expr_unary_print(expr, indent_lvl+1);
         printf("%2$*1$c\n", spaces+1, ')');
         break;
 

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "comp_driver.h"
 #include "token.h"
 #include "dcc_error.h"
 
@@ -121,4 +122,20 @@ void err_assign_invalid_lvalue(ErrorList *el, String srcname, Position pos) {
     redec_err.pos = pos;
     redec_err.desc = String_init_cstr("assignment requires a valid lvalue");
     ErrorList_append(el, redec_err);
+}
+
+void err_decr_not_lvalue(CompDriver *cd, Position pos) {
+    Error lvalue_err = {0};
+    lvalue_err.file = String_copy(cd->tokenizer.src_path);
+    lvalue_err.pos = pos;
+    lvalue_err.desc = String_init_cstr("lvalue required as decrement operand");
+    ErrorList_append(&cd->errors, lvalue_err);
+}
+
+void err_incr_not_lvalue(CompDriver *cd, Position pos) {
+    Error lvalue_err = {0};
+    lvalue_err.file = String_copy(cd->tokenizer.src_path);
+    lvalue_err.pos = pos;
+    lvalue_err.desc = String_init_cstr("lvalue required as increment operand");
+    ErrorList_append(&cd->errors, lvalue_err);
 }

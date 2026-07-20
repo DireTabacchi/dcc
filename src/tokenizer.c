@@ -258,6 +258,15 @@ void tokenize(CompDriver *cd) {
                 break;
 
             case '+':
+                if (peek(t) == '+') {
+                    tok.kind = TOKEN_OP_INCREMENT;
+                    lit.cstr = &t->src.cstr[offset];
+                    lit.len = 2;
+                    tok.text = StrInterner_intern(&cd->str_table, lit);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
                 tok.kind = TOKEN_OP_PLUS;
                 //tok.text = String_init_length(1);
                 //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);

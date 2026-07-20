@@ -23,6 +23,16 @@ static String *create_unique_varname(CompDriver *cd, String varname) {
     return uvar_name;
 }
 
+// Determine whether the expression resolves to an lvalue
+static bool resolve_lvalue(Expr *expr) {
+    switch (expr->kind) {
+    case EXPR_VAR:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static void resolve_expression(CompDriver *cd, Expr *expr) {
     if (expr == NULL) return;
 
@@ -31,7 +41,7 @@ static void resolve_expression(CompDriver *cd, Expr *expr) {
     case EXPR_CONSTANT:
         break;
     case EXPR_ASSIGN:
-        if (expr->as.assign.lhs->kind != EXPR_VAR) {
+        if (!resolve_lvalue(expr->as.assign.lhs)) {
             err_assign_invalid_lvalue(&cd->errors, cd->tokenizer.src_path, expr->pos);
         }
         resolve_expression(cd, expr->as.assign.lhs);
@@ -46,9 +56,29 @@ static void resolve_expression(CompDriver *cd, Expr *expr) {
         }
         break;
     }
-    case EXPR_UNARY:
+    case EXPR_UNARY:{
+        switch (expr->as.unary.op) {
+        case UNARY_COMPLEMENT:
+        case UNARY_NEGATE:
+        case UNARY_NOT:
+            break;
+        case UNARY_PRE_DECR:
+        case UNARY_POST_DECR:
+            if (!resolve_lvalue(expr->as.unary.expr)) {
+                err_decr_not_lvalue(cd, expr->pos);
+            }
+            break;
+        case UNARY_PRE_INCR:
+        case UNARY_POST_INCR:
+            if (!resolve_lvalue(expr->as.unary.expr)) {
+                err_incr_not_lvalue(cd, expr->pos);
+            }
+        case UNARY_INVALID:
+            break;
+        }
         resolve_expression(cd, expr->as.unary.expr);
         break;
+    }
     case EXPR_BINARY:
         resolve_expression(cd, expr->as.binary.left);
         resolve_expression(cd, expr->as.binary.right);
