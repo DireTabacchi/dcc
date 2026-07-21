@@ -191,6 +191,22 @@ char *binary_op_names[19] = {
     (char *)"Gte",
 };
 
+char *assign_op_names[12] = {
+    (char *)"UNKNOWN",
+    (char *)"Assign Simple",
+    (char *)"Assign Sum",
+    (char *)"Assign Difference",
+    (char *)"Assign Product",
+    (char *)"Assign Quotient",
+    (char *)"Assign Remainder",
+
+    (char *)"Assign Bitwise AND",
+    (char *)"Assign Bitwise OR",
+    (char *)"Assign Bitwise XOR",
+    (char *)"Assign Bitwise Left Shift",
+    (char *)"Assign Bitwise Right Shift"
+};
+
 void Expr_unary_print(Expr *expr, int indent_lvl) {
     if (expr == NULL) return;
 
@@ -248,6 +264,7 @@ void Expr_print(Expr *expr, int indent_lvl) {
         printf("%2$*1$s\n", spaces+7, "Assign(");
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s%3$s\n", spaces+3, "op=", assign_op_names[expr->as.assign.op]);
         printf("%2$*1$s\n", spaces+4, "lhs=");
         Expr_print(expr->as.assign.lhs, indent_lvl+1);
         printf("%2$*1$s\n", spaces+4, "rhs=");

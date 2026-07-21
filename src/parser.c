@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "common.h"
 #include "dd_string.h"
@@ -81,6 +82,16 @@ static int precedence(Token tok) {
     case TOKEN_OP_DOUBLE_BAR:
         return precedence_table[PREC_LOR];
     case TOKEN_OP_EQUAL:
+    case TOKEN_OP_PLUS_EQUAL:
+    case TOKEN_OP_MINUS_EQUAL:
+    case TOKEN_OP_ASTERISK_EQUAL:
+    case TOKEN_OP_SLASH_EQUAL:
+    case TOKEN_OP_PERCENT_EQUAL:
+    case TOKEN_OP_AMPERSAND_EQUAL:
+    case TOKEN_OP_BAR_EQUAL:
+    case TOKEN_OP_CARET_EQUAL:
+    case TOKEN_OP_LSHFT_EQUAL:
+    case TOKEN_OP_RSHFT_EQUAL:
         return precedence_table[PREC_ASSIGN];
     default:
         return 0;
@@ -304,13 +315,50 @@ static Expr *parse_expression(CompDriver *cd, int min_prec) {
     Expr *left = parse_unary(cd);
     if (left != NULL && left->kind == EXPR_INVALID) return left;
     Token next_tok = peek_token(cd);
-    while (Token_is_operator(next_tok) && precedence(next_tok) >= min_prec) {
-        if (next_tok.kind == TOKEN_OP_EQUAL) {
+    while (TOKENKIND_IS_OPERATOR(next_tok.kind) && precedence(next_tok) >= min_prec) {
+        if (TOKENKIND_IS_ASSIGNMENT(next_tok.kind)) {
             advance_token(cd);
-            //Token assign_expr_tok = peek_token(cd);
             Expr *right = parse_expression(cd, precedence(next_tok));
             Expr *new_left = Expr_create(EXPR_ASSIGN);
             new_left->pos = left->pos;
+            switch (next_tok.kind) {
+            case TOKEN_OP_EQUAL:
+                new_left->as.assign.op = ASSIGN_SIMPLE;
+                break;
+            case TOKEN_OP_PLUS_EQUAL:
+                new_left->as.assign.op = ASSIGN_SUM;
+                break;
+            case TOKEN_OP_MINUS_EQUAL:
+                new_left->as.assign.op = ASSIGN_DIFFERENCE;
+                break;
+            case TOKEN_OP_ASTERISK_EQUAL:
+                new_left->as.assign.op = ASSIGN_PRODUCT;
+                break;
+            case TOKEN_OP_SLASH_EQUAL:
+                new_left->as.assign.op = ASSIGN_QUOTIENT;
+                break;
+            case TOKEN_OP_PERCENT_EQUAL:
+                new_left->as.assign.op = ASSIGN_REMAINDER;
+                break;
+            case TOKEN_OP_AMPERSAND_EQUAL:
+                new_left->as.assign.op = ASSIGN_BITAND;
+                break;
+            case TOKEN_OP_BAR_EQUAL:
+                new_left->as.assign.op = ASSIGN_BITOR;
+                break;
+            case TOKEN_OP_CARET_EQUAL:
+                new_left->as.assign.op = ASSIGN_BITXOR;
+                break;
+            case TOKEN_OP_LSHFT_EQUAL:
+                new_left->as.assign.op = ASSIGN_LSHFT;
+                break;
+            case TOKEN_OP_RSHFT_EQUAL:
+                new_left->as.assign.op = ASSIGN_RSHFT;
+                break;
+            default:
+                new_left->as.assign.op = ASSIGN_INVALID;
+                break;
+            }
             new_left->as.assign.lhs = left;
             new_left->as.assign.rhs = right;
 

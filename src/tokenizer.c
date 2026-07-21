@@ -85,6 +85,10 @@ static char peek(Tokenizer *t) {
     return t->src.cstr[t->read_offset];
 }
 
+static char peek2(Tokenizer *t) {
+    return t->src.cstr[t->read_offset+1];
+}
+
 static bool is_keyword(String kw, long start, long rest_len, const char *rest) {
     long expected_len = start + rest_len;
     if (expected_len != kw.len) {
@@ -198,8 +202,6 @@ void tokenize(CompDriver *cd) {
 
             case '{':
                 tok.kind = TOKEN_LEFT_BRACE;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -257,8 +259,10 @@ void tokenize(CompDriver *cd) {
                 TokenList_append(&t->tokens, tok);
                 break;
 
-            case '+':
-                if (peek(t) == '+') {
+            case '+': {
+                char peeked = peek(t);
+
+                if (peeked == '+') {
                     tok.kind = TOKEN_OP_INCREMENT;
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
@@ -266,20 +270,35 @@ void tokenize(CompDriver *cd) {
                     TokenList_append(&t->tokens, tok);
                     advance(t);
                     break;
+                } else if (peeked == '=') {
+                    tok.kind = TOKEN_OP_PLUS_EQUAL;
+                    lit.cstr = &t->src.cstr[offset];
+                    lit.len = 2;
+                    tok.text = StrInterner_intern(&cd->str_table, lit);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
                 }
+
                 tok.kind = TOKEN_OP_PLUS;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
                 TokenList_append(&t->tokens, tok);
                 break;
+            }
 
             case '*':
+                if (peek(t) == '=') {
+                    tok.kind = TOKEN_OP_ASTERISK_EQUAL;
+                    lit.cstr = &t->src.cstr[offset];
+                    lit.len = 2;
+                    tok.text = StrInterner_intern(&cd->str_table, lit);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
                 tok.kind = TOKEN_OP_ASTERISK;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -287,6 +306,15 @@ void tokenize(CompDriver *cd) {
                 break;
 
             case '/':
+                if (peek(t) == '=') {
+                    tok.kind = TOKEN_OP_SLASH_EQUAL;
+                    lit.cstr = &t->src.cstr[offset];
+                    lit.len = 2;
+                    tok.text = StrInterner_intern(&cd->str_table, lit);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
                 tok.kind = TOKEN_OP_SLASH;
                 //tok.text = String_init_length(1);
                 //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
@@ -297,6 +325,15 @@ void tokenize(CompDriver *cd) {
                 break;
 
             case '%':
+                if (peek(t) == '=') {
+                    tok.kind = TOKEN_OP_PERCENT_EQUAL;
+                    lit.cstr = &t->src.cstr[offset];
+                    lit.len = 2;
+                    tok.text = StrInterner_intern(&cd->str_table, lit);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
                 tok.kind = TOKEN_OP_PERCENT;
                 //tok.text = String_init_length(1);
                 //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
@@ -306,26 +343,32 @@ void tokenize(CompDriver *cd) {
                 TokenList_append(&t->tokens, tok);
                 break;
 
-            case '-':
-                if (peek(t) == '-') {
+            case '-': {
+                char peeked = peek(t);
+                if (peeked == '-') {
                     tok.kind = TOKEN_OP_DECREMENT;
-                    //tok.text = String_init_length(2);
-                    //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
                     TokenList_append(&t->tokens, tok);
                     advance(t);
                     break;
+                } else if (peeked == '=') {
+                    tok.kind = TOKEN_OP_MINUS_EQUAL;
+                    lit.cstr = &t->src.cstr[offset];
+                    lit.len = 2;
+                    tok.text = StrInterner_intern(&cd->str_table, lit);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
                 }
                 tok.kind = TOKEN_OP_MINUS;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
                 TokenList_append(&t->tokens, tok);
                 break;
+            }
 
             case '!':
                 if (peek(t) == '=') {
@@ -348,11 +391,18 @@ void tokenize(CompDriver *cd) {
                 TokenList_append(&t->tokens, tok);
                 break;
 
-            case '&':
-                if (peek(t) == '&') {
+            case '&': {
+                char peeked = peek(t);
+                if (peeked == '&') {
                     tok.kind = TOKEN_OP_DOUBLE_AMP;
-                    //tok.text = String_init_length(2);
-                    //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    lit.cstr = &t->src.cstr[offset];
+                    lit.len = 2;
+                    tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                } else if (peeked == '=') {
+                    tok.kind = TOKEN_OP_AMPERSAND_EQUAL;
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -361,19 +411,25 @@ void tokenize(CompDriver *cd) {
                     break;
                 }
                 tok.kind = TOKEN_OP_AMPERSAND;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
                 TokenList_append(&t->tokens, tok);
                 break;
+            }
 
-            case '|':
-                if (peek(t) == '|') {
+            case '|': {
+                char peeked = peek(t);
+                if (peeked == '|') {
                     tok.kind = TOKEN_OP_DOUBLE_BAR;
-                    //tok.text = String_init_length(2);
-                    //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
+                    lit.cstr = &t->src.cstr[offset];
+                    lit.len = 2;
+                    tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                } else if (peeked == '=') {
+                    tok.kind = TOKEN_OP_BAR_EQUAL;
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -382,18 +438,24 @@ void tokenize(CompDriver *cd) {
                     break;
                 }
                 tok.kind = TOKEN_OP_BAR;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
                 TokenList_append(&t->tokens, tok);
                 break;
+            }
 
             case '^':
+                if (peek(t) == '=') {
+                    tok.kind = TOKEN_OP_CARET_EQUAL;
+                    lit.cstr = &t->src.cstr[offset];
+                    lit.len = 2;
+                    tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
+                    TokenList_append(&t->tokens, tok);
+                    advance(t);
+                    break;
+                }
                 tok.kind = TOKEN_OP_CARET;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -403,9 +465,17 @@ void tokenize(CompDriver *cd) {
             case '<': {
                 char peeked = peek(t);
                 if (peeked == '<') {
+                    if (peek2(t) == '=') {
+                        tok.kind = TOKEN_OP_LSHFT_EQUAL;
+                        lit.cstr = &t->src.cstr[offset];
+                        lit.len = 3;
+                        tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
+                        TokenList_append(&t->tokens, tok);
+                        advance(t);
+                        advance(t);
+                        break;
+                    }
                     tok.kind = TOKEN_OP_LSHFT;
-                    //tok.text = String_init_length(2);
-                    //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -414,8 +484,6 @@ void tokenize(CompDriver *cd) {
                     break;
                 } else if (peeked == '=') {
                     tok.kind = TOKEN_OP_LTE;
-                    //tok.text = String_init_length(2);
-                    //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -424,8 +492,6 @@ void tokenize(CompDriver *cd) {
                     break;
                 }
                 tok.kind = TOKEN_OP_LT;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -436,9 +502,17 @@ void tokenize(CompDriver *cd) {
             case '>': {
                 char peeked = peek(t);
                 if (peeked == '>') {
+                    if (peek2(t) == '=') {
+                        tok.kind = TOKEN_OP_RSHFT_EQUAL;
+                        lit.cstr = &t->src.cstr[offset];
+                        lit.len = 3;
+                        tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
+                        TokenList_append(&t->tokens, tok);
+                        advance(t);
+                        advance(t);
+                        break;
+                    }
                     tok.kind = TOKEN_OP_RSHFT;
-                    //tok.text = String_init_length(2);
-                    //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -447,8 +521,6 @@ void tokenize(CompDriver *cd) {
                     break;
                 } else if (peeked == '=') {
                     tok.kind = TOKEN_OP_GTE;
-                    //tok.text = String_init_length(2);
-                    //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -457,8 +529,6 @@ void tokenize(CompDriver *cd) {
                     break;
                 }
                 tok.kind = TOKEN_OP_GT;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -468,7 +538,6 @@ void tokenize(CompDriver *cd) {
 
             case -1:    // EOF
                 tok.kind = TOKEN_EOF;
-                //tok.text = String_copy(token_literals[TOKEN_EOF]);
                 tok.text = (String *)StrInterner_intern(&cd->str_table, token_literals[TOKEN_EOF]);
                 TokenList_append(&t->tokens, tok);
                 break;

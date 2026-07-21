@@ -382,8 +382,168 @@ static TacdValue trx_expression(CompDriver *cd, TacdNode *tacd_fn, Expr *expr) {
         TacdCode assign_copy = {0};
         assign_copy.kind = TACD_CODE_COPY;
         assign_copy.code.copy.dest = lhs;
-        assign_copy.code.copy.src = rhs;
+        switch (expr->as.assign.op) {
+        case ASSIGN_INVALID:
+            assign_copy.code.copy.src = (TacdValue){ .kind = TACD_VALUE_INVALID };
+            break;
+        case ASSIGN_SIMPLE: {
+            assign_copy.code.copy.src = rhs;
+            break;
+        }
+        case ASSIGN_SUM: {
+            TacdCode pre_add = {0};
+            pre_add.kind = TACD_CODE_BINARY;
+            pre_add.code.binary.op = TACD_BINARY_ADD;
+            TacdValue pre_add_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_add.code.binary.dest = pre_add_dest;
+            pre_add.code.binary.src1 = lhs;
+            pre_add.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_add);
+            assign_copy.code.copy.src = pre_add_dest;
+            break;
+        }
+        case ASSIGN_DIFFERENCE: {
+            TacdCode pre_sub = {0};
+            pre_sub.kind = TACD_CODE_BINARY;
+            pre_sub.code.binary.op = TACD_BINARY_SUBTRACT;
+            TacdValue pre_sub_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_sub.code.binary.dest = pre_sub_dest;
+            pre_sub.code.binary.src1 = lhs;
+            pre_sub.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_sub);
+            assign_copy.code.copy.src = pre_sub_dest;
+            break;
+        }
+        case ASSIGN_PRODUCT: {
+            TacdCode pre_mult = {0};
+            pre_mult.kind = TACD_CODE_BINARY;
+            pre_mult.code.binary.op = TACD_BINARY_MULTIPLY;
+            TacdValue pre_mult_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_mult.code.binary.dest = pre_mult_dest;
+            pre_mult.code.binary.src1 = lhs;
+            pre_mult.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_mult);
+            assign_copy.code.copy.src = pre_mult_dest;
+            break;
+        }
+        case ASSIGN_QUOTIENT: {
+            TacdCode pre_div = {0};
+            pre_div.kind = TACD_CODE_BINARY;
+            pre_div.code.binary.op = TACD_BINARY_DIVIDE;
+            TacdValue pre_div_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_div.code.binary.dest = pre_div_dest;
+            pre_div.code.binary.src1 = lhs;
+            pre_div.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_div);
+            assign_copy.code.copy.src = pre_div_dest;
+            break;
+        }
+        case ASSIGN_REMAINDER: {
+            TacdCode pre_rem = {0};
+            pre_rem.kind = TACD_CODE_BINARY;
+            pre_rem.code.binary.op = TACD_BINARY_REMAINDER;
+            TacdValue pre_rem_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_rem.code.binary.dest = pre_rem_dest;
+            pre_rem.code.binary.src1 = lhs;
+            pre_rem.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_rem);
+            assign_copy.code.copy.src = pre_rem_dest;
+            break;
+        }
+        case ASSIGN_BITAND: {
+            TacdCode pre_and = {0};
+            pre_and.kind = TACD_CODE_BINARY;
+            pre_and.code.binary.op = TACD_BINARY_BITAND;
+            TacdValue pre_and_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_and.code.binary.dest = pre_and_dest;
+            pre_and.code.binary.src1 = lhs;
+            pre_and.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_and);
+            assign_copy.code.copy.src = pre_and_dest;
+            break;
+        }
+        case ASSIGN_BITOR: {
+            TacdCode pre_or = {0};
+            pre_or.kind = TACD_CODE_BINARY;
+            pre_or.code.binary.op = TACD_BINARY_BITOR;
+            TacdValue pre_or_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_or.code.binary.dest = pre_or_dest;
+            pre_or.code.binary.src1 = lhs;
+            pre_or.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_or);
+            assign_copy.code.copy.src = pre_or_dest;
+            break;
+        }
+        case ASSIGN_BITXOR: {
+            TacdCode pre_xor = {0};
+            pre_xor.kind = TACD_CODE_BINARY;
+            pre_xor.code.binary.op = TACD_BINARY_BITXOR;
+            TacdValue pre_xor_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_xor.code.binary.dest = pre_xor_dest;
+            pre_xor.code.binary.src1 = lhs;
+            pre_xor.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_xor);
+            assign_copy.code.copy.src = pre_xor_dest;
+            break;
+        }
+        case ASSIGN_LSHFT: {
+            TacdCode pre_lshft = {0};
+            pre_lshft.kind = TACD_CODE_BINARY;
+            pre_lshft.code.binary.op = TACD_BINARY_LSHFT;
+            TacdValue pre_lshft_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_lshft.code.binary.dest = pre_lshft_dest;
+            pre_lshft.code.binary.src1 = lhs;
+            pre_lshft.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_lshft);
+            assign_copy.code.copy.src = pre_lshft_dest;
+            break;
+        }
+        case ASSIGN_RSHFT: {
+            TacdCode pre_rshft = {0};
+            pre_rshft.kind = TACD_CODE_BINARY;
+            pre_rshft.code.binary.op = TACD_BINARY_RSHFT;
+            TacdValue pre_rshft_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            pre_rshft.code.binary.dest = pre_rshft_dest;
+            pre_rshft.code.binary.src1 = lhs;
+            pre_rshft.code.binary.src2 = rhs;
+            CodeList_append(&tacd_fn->node.function.body, pre_rshft);
+            assign_copy.code.copy.src = pre_rshft_dest;
+            break;
+        }
+        }
+
         CodeList_append(&tacd_fn->node.function.body, assign_copy);
+
         return lhs;
     }
 

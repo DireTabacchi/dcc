@@ -39,6 +39,22 @@ typedef enum binaryOpKind_ {
     BINARY_GTE
 } BinaryOpKind;
 
+typedef enum assignOpKind_ {
+    ASSIGN_INVALID,
+    ASSIGN_SIMPLE,
+    ASSIGN_SUM,
+    ASSIGN_DIFFERENCE,
+    ASSIGN_PRODUCT,
+    ASSIGN_QUOTIENT,
+    ASSIGN_REMAINDER,
+
+    ASSIGN_BITAND,
+    ASSIGN_BITOR,
+    ASSIGN_BITXOR,
+    ASSIGN_LSHFT,
+    ASSIGN_RSHFT
+} AssignOpKind;
+
 typedef enum exprKind_ {
     EXPR_INVALID,
     EXPR_CONSTANT,
@@ -73,7 +89,8 @@ typedef struct expr_ {
     union {
         int constant;
         const String *var;
-        struct { Expr_ty lhs; Expr_ty rhs; } assign;
+        struct { AssignOpKind op; Expr_ty lhs; Expr_ty rhs; } assign;
+        struct { Expr_ty lhs; Expr_ty rhs; } compound_assign;
         struct { UnaryOpKind op; Expr_ty expr; } unary;
         struct { BinaryOpKind op; Expr_ty left; Expr_ty right; } binary;
     } as;

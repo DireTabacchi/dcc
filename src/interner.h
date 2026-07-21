@@ -4,7 +4,7 @@
 #include "dd_string.h"
 
 #define INTERNER_LOAD_FACTOR 0.7
-#define INTERNER_MIN_CAP 64
+#define INTERNER_MIN_CAP 128
 //#define INTERNER_MIN_CAP 16
 
 typedef enum internedStringStatus_ {
