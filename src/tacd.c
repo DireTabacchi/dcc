@@ -67,52 +67,13 @@ void CodeList_append(CodeList* cl, TacdCode code) {
     cl->len += 1;
 }
 
-//void TacdSymTable_init(TacdSymTable *tst) {
-//    tst->cap = 2;
-//    tst->len = 0;
-//    tst->syms = (String*)calloc(tst->cap, sizeof(String));
-//}
-//
-//void TacdSymTable_deinit(TacdSymTable *tst) {
-//    if (tst == NULL) return;
-//    if (tst->syms == NULL) return;
-//
-//    for (size_t sym_idx = 0; sym_idx < tst->len; sym_idx++) {
-//        String_free(&tst->syms[sym_idx]);
-//    }
-//    free(tst->syms);
-//    tst->cap = 0;
-//    tst->len = 0;
-//}
-//
-//void TacdSymTable_append(TacdSymTable *tst, String *symbol) {
-//    if (tst == NULL) return;
-//    if (tst->syms == NULL) return;
-//
-//    if (tst->len == tst->cap) {
-//        size_t old_cap = tst->cap;
-//        size_t new_cap = old_cap / 2 + old_cap;
-//        String **new_syms = calloc(new_cap, sizeof(String *));
-//        memcpy(new_syms, tst->syms, old_cap*sizeof(String));
-//        free(tst->syms);
-//        tst->syms = new_syms;
-//        tst->cap = new_cap;
-//    }
-//
-//    memcpy(&tst->syms[tst->len], &symbol, sizeof(String));
-//    tst->len += 1;
-//}
-
 void TacdGenerator_init(TacdGenerator *tg) {
     tg->program = TacdNode_create();
     tg->program->kind = TACD_NODE_PROGRAM;
-    //TacdSymTable_init(&tg->symbols);
 }
 
 void TacdGenerator_deinit(TacdGenerator *tg) {
-    //String_free(&tg->func_name);
     TacdNode_destroy(tg->program);
-    //TacdSymTable_deinit(&tg->symbols);
 }
 
 static const String *create_temporary_var(CompDriver *cd) {
@@ -125,7 +86,6 @@ static const String *create_temporary_var(CompDriver *cd) {
     cd->uid_count += 1;
     const String *canon_varname = StrInterner_intern(&cd->str_table, var_name);
     String_free(&var_name);
-    //TacdSymTable_append(&cd->cgd.tacd_gen.symbols, canon_varname);
     return canon_varname;
 }
 
@@ -135,10 +95,11 @@ static const String *create_label(CompDriver *cd, TacdLabelKind kind) {
     String label_kind = label_kind_table[kind];
 
     // label length: func_name.len + (1) "." + label_kind.len + (1) "." + digit_len
-    String label = String_init_length(cd->cgd.tacd_gen.func_name->len + 2 + label_kind.len + digit_len);
-    snprintf(label.cstr, label.len+1, "%s.%s.%d", cd->cgd.tacd_gen.func_name->cstr, label_kind.cstr, cd->cgd.tacd_gen.label_count);
+    String label =
+        String_init_length(cd->cgd.tacd_gen.func_name->len + 2 + label_kind.len + digit_len);
+    snprintf(label.cstr, label.len+1, "%s.%s.%d",
+        cd->cgd.tacd_gen.func_name->cstr, label_kind.cstr, cd->cgd.tacd_gen.label_count);
     cd->cgd.tacd_gen.label_count += 1;
-    //TacdSymTable_append(&tg->symbols, label);
     const String *canon_label = StrInterner_intern(&cd->str_table, label);
     String_free(&label);
     return canon_label;
@@ -189,10 +150,7 @@ static TacdBinaryOp trx_binary_operator(BinaryOpKind op) {
 static TacdValue trx_expression(CompDriver *cd, TacdNode *tacd_fn, Expr *expr) {
     switch (expr->kind) {
     case EXPR_CONSTANT:
-        return (TacdValue){
-            .kind = TACD_VALUE_CONSTANT,
-            .val.constant = expr->as.constant
-        };
+        return (TacdValue){ .kind = TACD_VALUE_CONSTANT, .val.constant = expr->as.constant };
 
     case EXPR_UNARY: {
         TacdValue src = trx_expression(cd, tacd_fn, expr->as.unary.expr);
@@ -281,10 +239,7 @@ static TacdValue trx_expression(CompDriver *cd, TacdNode *tacd_fn, Expr *expr) {
         }
 
         const String *dest_name = create_temporary_var(cd);
-        TacdValue dest = (TacdValue){
-            .kind = TACD_VALUE_IDENTIFIER,
-            .val.identifier = dest_name
-        };
+        TacdValue dest = (TacdValue){ .kind = TACD_VALUE_IDENTIFIER, .val.identifier = dest_name };
 
         unop.code.unary.src = src;
         unop.code.unary.dest = dest;
@@ -370,17 +325,14 @@ static TacdValue trx_expression(CompDriver *cd, TacdNode *tacd_fn, Expr *expr) {
     }
 
     case EXPR_VAR: {
-        TacdValue var = {0};
-        var.kind = TACD_VALUE_IDENTIFIER;
-        var.val.identifier = expr->as.var;
+        TacdValue var = { .kind = TACD_VALUE_IDENTIFIER, .val.identifier = expr->as.var };
         return var;
     }
 
     case EXPR_ASSIGN: {
         TacdValue lhs = trx_expression(cd, tacd_fn, expr->as.assign.lhs);
         TacdValue rhs = trx_expression(cd, tacd_fn, expr->as.assign.rhs);
-        TacdCode assign_copy = {0};
-        assign_copy.kind = TACD_CODE_COPY;
+        TacdCode assign_copy = { .kind = TACD_CODE_COPY };
         assign_copy.code.copy.dest = lhs;
         switch (expr->as.assign.op) {
         case ASSIGN_INVALID:
@@ -566,15 +518,11 @@ static TacdValue trx_expression(CompDriver *cd, TacdNode *tacd_fn, Expr *expr) {
         };
         CodeList_append(&tacd_fn->node.function.body, cond_copy);
         const String *tern_else_lbl_txt = create_label(cd, TERN_ELSE);
-        TacdCode tern_else_lbl = (TacdCode){
+        TacdCode tern_lbl = (TacdCode){
             .kind = TACD_CODE_LABEL,
             .code.label = tern_else_lbl_txt
         };
         const String *tern_end_lbl_txt = create_label(cd, TERN_END);
-        TacdCode tern_end_lbl = (TacdCode){
-            .kind = TACD_CODE_LABEL,
-            .code.label = tern_end_lbl_txt
-        };
         TacdCode jz_else = (TacdCode){
             .kind = TACD_CODE_JUMP_IF_ZERO,
             .code.jump_conditional = { .condition = cond_dest, .target = tern_else_lbl_txt }
@@ -585,40 +533,36 @@ static TacdValue trx_expression(CompDriver *cd, TacdNode *tacd_fn, Expr *expr) {
             .kind = TACD_VALUE_IDENTIFIER,
             .val.identifier = create_temporary_var(cd)
         };
-        TacdCode copy_then_res = (TacdCode){
+        TacdCode copy_res = (TacdCode){
             .kind = TACD_CODE_COPY,
             .code.copy = {
                 .src = then_res,
                 .dest = then_res_dest
             }
         };
-        CodeList_append(&tacd_fn->node.function.body, copy_then_res);
-        copy_then_res.code.copy.src = then_res_dest;
-        copy_then_res.code.copy.dest = tern_res;
-        CodeList_append(&tacd_fn->node.function.body, copy_then_res);
+        CodeList_append(&tacd_fn->node.function.body, copy_res);
+        copy_res.code.copy.src = then_res_dest;
+        copy_res.code.copy.dest = tern_res;
+        CodeList_append(&tacd_fn->node.function.body, copy_res);
         TacdCode jmp_end = (TacdCode){
             .kind = TACD_CODE_JUMP,
             .code.jump = tern_end_lbl_txt
         };
         CodeList_append(&tacd_fn->node.function.body, jmp_end);
-        CodeList_append(&tacd_fn->node.function.body, tern_else_lbl);
+        CodeList_append(&tacd_fn->node.function.body, tern_lbl);
+        tern_lbl.code.label = tern_end_lbl_txt;
         TacdValue else_res = trx_expression(cd, tacd_fn, expr->as.ternary.else_expr);
         TacdValue else_res_dest = (TacdValue){
             .kind = TACD_VALUE_IDENTIFIER,
             .val.identifier = create_temporary_var(cd)
         };
-        TacdCode copy_else_res = (TacdCode){
-            .kind = TACD_CODE_COPY,
-            .code.copy = {
-                .src = else_res,
-                .dest = else_res_dest
-            }
-        };
-        CodeList_append(&tacd_fn->node.function.body, copy_else_res);
-        copy_else_res.code.copy.src = else_res_dest;
-        copy_else_res.code.copy.dest = tern_res;
-        CodeList_append(&tacd_fn->node.function.body, copy_else_res);
-        CodeList_append(&tacd_fn->node.function.body, tern_end_lbl);
+        copy_res.code.copy.src = else_res;
+        copy_res.code.copy.dest = else_res_dest;
+        CodeList_append(&tacd_fn->node.function.body, copy_res);
+        copy_res.code.copy.src = else_res_dest;
+        copy_res.code.copy.dest = tern_res;
+        CodeList_append(&tacd_fn->node.function.body, copy_res);
+        CodeList_append(&tacd_fn->node.function.body, tern_lbl);
         return tern_res;
         break;
     }
@@ -704,7 +648,6 @@ static void trx_statement(CompDriver *cd, TacdNode *tacd_fn, Stmt *stmt) {
     case STMT_NULL:
     case STMT_INVALID: // Should err?
         break;
-
     }
 }
 
@@ -712,7 +655,10 @@ static void trx_statement(CompDriver *cd, TacdNode *tacd_fn, Stmt *stmt) {
 static void trx_declaration(CompDriver *cd, TacdNode *tacd_fn, Decl *decl) {
     if (decl->as.loc_var.init == NULL) return;
 
-    TacdValue lhs = { .kind = TACD_VALUE_IDENTIFIER, .val.identifier = decl->as.loc_var.identifier };
+    TacdValue lhs = {
+        .kind = TACD_VALUE_IDENTIFIER,
+        .val.identifier = decl->as.loc_var.identifier
+    };
     TacdValue rhs = trx_expression(cd, tacd_fn, decl->as.loc_var.init);
     TacdCode assign_copy = {0};
     assign_copy.kind = TACD_CODE_COPY;
