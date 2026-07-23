@@ -120,9 +120,24 @@ static void scan_identifier(CompDriver *cd, long offset) {
 
     // Trie to check if identifier is a keyword
     switch (ident.cstr[0]) {
+    case 'e':
+        if (is_keyword(ident, 1, 3, "lse")) {
+            tok.kind = TOKEN_KW_ELSE;
+        }
+        break;
+
     case 'i':
-        if (is_keyword(ident, 1, 2, "nt")) { // int
-            tok.kind = TOKEN_KW_INT;
+        switch (ident.cstr[1]) {
+            case 'f':
+                if (is_keyword(ident, 2, 0, "")) {
+                    tok.kind = TOKEN_KW_IF;
+                }
+                break;
+            case 'n':
+                if (is_keyword(ident, 2, 1, "t")) { // int
+                    tok.kind = TOKEN_KW_INT;
+                }
+                break;
         }
         break;
 
@@ -251,8 +266,6 @@ void tokenize(CompDriver *cd) {
 
             case '~':
                 tok.kind = TOKEN_OP_COMPLEMENT;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -535,6 +548,22 @@ void tokenize(CompDriver *cd) {
                 TokenList_append(&t->tokens, tok);
                 break;
             }
+
+            case '?':
+                tok.kind = TOKEN_OP_QUESTION;
+                lit.cstr = &t->src.cstr[offset];
+                lit.len = 1;
+                tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case ':':
+                tok.kind = TOKEN_OP_COLON;
+                lit.cstr = &t->src.cstr[offset];
+                lit.len = 1;
+                tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
+                TokenList_append(&t->tokens, tok);
+                break;
 
             case -1:    // EOF
                 tok.kind = TOKEN_EOF;

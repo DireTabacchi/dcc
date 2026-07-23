@@ -44,6 +44,12 @@ void Expr_destroy(Expr *expr) {
         Expr_destroy(expr->as.assign.rhs);
         free(expr);
         break;
+
+    case EXPR_TERNARY:
+        Expr_destroy(expr->as.ternary.cond);
+        Expr_destroy(expr->as.ternary.then_expr);
+        Expr_destroy(expr->as.ternary.else_expr);
+        free(expr);
     }
 }
 
@@ -67,6 +73,12 @@ void Stmt_destroy(Stmt *stmt) {
         break;
     case STMT_EXPR:
         Expr_destroy(stmt->as.expr);
+        free(stmt);
+        break;
+    case STMT_IF:
+        Expr_destroy(stmt->as.if_stmt.cond);
+        Stmt_destroy(stmt->as.if_stmt.then_stmt);
+        Stmt_destroy(stmt->as.if_stmt.else_stmt);
         free(stmt);
         break;
     }
@@ -214,28 +226,28 @@ void Expr_unary_print(Expr *expr, int indent_lvl) {
 
     switch (expr->as.unary.op) {
     case UNARY_INVALID:
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Invalid", spaces + 5, "exp=(");
+        printf("%2$*1$s=%3$s\n%5$*4$s=(\n", spaces+2, "op", "Invalid", spaces+3, "exp");
         break;
     case UNARY_NEGATE:
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Negate", spaces + 5, "exp=(");
+        printf("%2$*1$s=%3$s\n%5$*4$s=(\n", spaces+2, "op", "Negate", spaces+3, "exp");
         break;
     case UNARY_COMPLEMENT:
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Complement", spaces + 5, "exp=(");
+        printf("%2$*1$s=%3$s\n%5$*4$s=(\n", spaces+2, "op", "Complement", spaces+3, "exp");
         break;
     case UNARY_NOT:
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Not", spaces + 5, "exp=(");
+        printf("%2$*1$s=%3$s\n%5$*4$s=(\n", spaces+2, "op", "Not", spaces+3, "exp");
         break;
     case UNARY_PRE_INCR:
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Prefix Increment", spaces + 5, "exp=(");
+        printf("%2$*1$s=%3$s\n%5$*4$s=(\n", spaces+2, "op", "Prefix Increment", spaces+3, "exp");
         break;
     case UNARY_PRE_DECR:
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Prefix Decrement", spaces + 5, "exp=(");
+        printf("%2$*1$s=%3$s\n%5$*4$s=(\n", spaces+2, "op", "Prefix Decrement", spaces+3, "exp");
         break;
     case UNARY_POST_INCR:
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Postfix Increment", spaces + 5, "exp=(");
+        printf("%2$*1$s=%3$s\n%5$*4$s=(\n", spaces+2, "op", "Postfix Increment", spaces+3, "exp");
         break;
     case UNARY_POST_DECR:
-        printf("%2$*1$s%3$s\n%5$*4$s\n", spaces+3, "op=", "Postfix Decrement", spaces + 5, "exp=(");
+        printf("%2$*1$s=%3$s\n%5$*4$s=(\n", spaces+2, "op", "Postfix Decrement", spaces+3, "exp");
         break;
     }
     Expr_print(expr->as.unary.expr, indent_lvl+1);
@@ -253,21 +265,21 @@ void Expr_print(Expr *expr, int indent_lvl) {
         break;
 
     case EXPR_CONSTANT:
-        printf("%2$*1$s%3$d)\n", spaces+9, "Constant(", expr->as.constant);
+        printf("%2$*1$s(%3$d)\n", spaces+8, "Constant", expr->as.constant);
         break;
 
     case EXPR_VAR:
-        printf("%2$*1$s%3$s)\n", spaces+4, "Var(", expr->as.var->cstr);
+        printf("%2$*1$s(%3$s)\n", spaces+3, "Var", expr->as.var->cstr);
         break;
 
     case EXPR_ASSIGN:
         printf("%2$*1$s\n", spaces+7, "Assign(");
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
-        printf("%2$*1$s%3$s\n", spaces+3, "op=", assign_op_names[expr->as.assign.op]);
-        printf("%2$*1$s\n", spaces+4, "lhs=");
+        printf("%2$*1$s=%3$s\n", spaces+2, "op", assign_op_names[expr->as.assign.op]);
+        printf("%2$*1$s=\n", spaces+3, "lhs");
         Expr_print(expr->as.assign.lhs, indent_lvl+1);
-        printf("%2$*1$s\n", spaces+4, "rhs=");
+        printf("%2$*1$s=\n", spaces+3, "rhs");
         Expr_print(expr->as.assign.rhs, indent_lvl+1);
         indent_lvl -= 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
@@ -284,14 +296,32 @@ void Expr_print(Expr *expr, int indent_lvl) {
         printf("%2$*1$s\n", spaces+7, "Binary(");
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
-        printf("%2$*1$s%3$s\n%5$*4$s\n",
-            spaces+3, "op=",
+        printf("%2$*1$s=%3$s\n%5$*4$s=(\n",
+            spaces+2, "op",
             binary_op_names[expr->as.binary.op],
-            spaces+6,
-            "left=(");
+            spaces+4,
+            "left");
         Expr_print(expr->as.binary.left, indent_lvl+1);
-        printf("%2$*1$c\n%4$*3$s\n", spaces+1, ')', spaces+7, "right=(");
+        printf("%2$*1$c\n%4$*3$s=(\n", spaces+1, ')', spaces+5, "right");
         Expr_print(expr->as.binary.right, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
+    case EXPR_TERNARY:
+        printf("%2$*1$s(\n", spaces+7, "Ternary");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=(\n", spaces+4, "cond");
+        Expr_print(expr->as.ternary.cond, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        printf("%2$*1$s=(\n", spaces+4, "then");
+        Expr_print(expr->as.ternary.then_expr, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        printf("%2$*1$s=(\n", spaces+4, "else");
+        Expr_print(expr->as.ternary.else_expr, indent_lvl+1);
         printf("%2$*1$c\n", spaces+1, ')');
         indent_lvl -= 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
@@ -317,6 +347,25 @@ void Stmt_print(Stmt *stmt, int indent_lvl) {
     case STMT_EXPR:
         printf("%2$*1$s(\n", spaces+20, "Expression Statement");
         Expr_print(stmt->as.expr, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+    case STMT_IF:
+        printf("%2$*1$s(\n", spaces+12, "If Statement");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=(\n", spaces+4, "cond");
+        Expr_print(stmt->as.if_stmt.cond, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        printf("%2$*1$s=(\n", spaces+4, "then");
+        Stmt_print(stmt->as.if_stmt.then_stmt, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        if (stmt->as.if_stmt.else_stmt != NULL) {
+            printf("%2$*1$s=(\n", spaces+4, "else");
+            Stmt_print(stmt->as.if_stmt.else_stmt, indent_lvl+1);
+            printf("%2$*1$c\n", spaces+1, ')');
+        }
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');
         break;
     case STMT_NULL:
@@ -367,12 +416,7 @@ static void BlockItem_print(BlockItem *item, int indent_lvl) {
         break;
     case BLOCKITEM_DECLARATION:
         printf("%2$*1$s(\n", spaces+11, "Declaration");
-        indent_lvl += 1;
-        spaces = indent_lvl * SPACES_PER_INDENT;
         Decl_print(item->as.declaration, indent_lvl+1);
-        //Stmt_print(item->as.statement, indent_lvl+1);
-        indent_lvl -= 1;
-        spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');
         break;
     }
@@ -386,11 +430,12 @@ void Function_print(Function *func, int indent_lvl) {
     printf("%2$*1$s\n", spaces+9, "Function(");
     indent_lvl += 1;
     spaces = indent_lvl * SPACES_PER_INDENT;
-    printf("%2$*1$s\"%3$s\"\n%5$*4$s\n",
-        spaces+5, "name=", func->name->cstr, spaces+5, "body=");
+    printf("%2$*1$s=\"%3$s\"\n%5$*4$s=(\n",
+        spaces+4, "name", func->name->cstr, spaces+4, "body");
     for (size_t b_idx = 0; b_idx < func->block.len; b_idx++) {
         BlockItem_print(&func->block.items[b_idx], indent_lvl+1);
     }
+    printf("%2$*1$c\n", spaces+1, ')');
     indent_lvl -= 1;
     spaces = indent_lvl * SPACES_PER_INDENT;
     printf("%2$*1$c\n", spaces+1, ')');

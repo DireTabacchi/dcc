@@ -61,13 +61,15 @@ typedef enum exprKind_ {
     EXPR_VAR,
     EXPR_UNARY,
     EXPR_BINARY,
-    EXPR_ASSIGN
+    EXPR_ASSIGN,
+    EXPR_TERNARY
 } ExpressionKind;
 
 typedef enum stmtKind_ {
     STMT_INVALID,
     STMT_RET,
     STMT_EXPR,
+    STMT_IF,
     STMT_NULL
 } StatementKind;
 
@@ -93,6 +95,7 @@ typedef struct expr_ {
         struct { Expr_ty lhs; Expr_ty rhs; } compound_assign;
         struct { UnaryOpKind op; Expr_ty expr; } unary;
         struct { BinaryOpKind op; Expr_ty left; Expr_ty right; } binary;
+        struct { Expr_ty cond; Expr_ty then_expr; Expr_ty else_expr; } ternary;
     } as;
 } Expr;
 
@@ -100,12 +103,15 @@ Expr *Expr_create(ExpressionKind kind);
 void Expr_destroy(Expr *expr);
 void Expr_print(Expr *expr, int indent_lvl);
 
+typedef struct stmt_ *Stmt_ty;
+
 typedef struct stmt_ {
     StatementKind kind;
     Position pos;
     union {
         Expr *ret;
         Expr *expr;
+        struct { Expr *cond; Stmt_ty then_stmt; Stmt_ty else_stmt; } if_stmt;
     } as;
 } Stmt;
 

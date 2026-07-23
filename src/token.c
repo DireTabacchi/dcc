@@ -26,6 +26,8 @@ void TokenList_destroy(TokenList* tl) {
         case TOKEN_OPERATORS_BEGIN: case TOKEN_OPERATORS_END:
         case TOKEN_KEYWORDS_BEGIN: case TOKEN_KEYWORDS_END:
         case TOKEN_OPERATORS_ASSIGN_BEGIN: case TOKEN_OPERATORS_ASSIGN_END:
+        case TOKEN_OPERATORS_BINARY_BEGIN: case TOKEN_OPERATORS_BINARY_END:
+        case TOKEN_OPERATORS_UNARY_BEGIN: case TOKEN_OPERATORS_UNARY_END:
         case TOKENKIND_LEN:
             /* Above aren't interned, nor do they have any string memory */
         case TOKEN_INVALID: case TOKEN_UNKNOWN:
@@ -36,13 +38,17 @@ void TokenList_destroy(TokenList* tl) {
         case TOKEN_SEMICOLON:
         case TOKEN_OP_EQUAL: case TOKEN_OP_PLUS_EQUAL:
         case TOKEN_OP_MINUS_EQUAL: case TOKEN_OP_ASTERISK_EQUAL: case TOKEN_OP_SLASH_EQUAL:
-        case TOKEN_OP_PERCENT_EQUAL: case TOKEN_OP_COMPLEMENT:
+        case TOKEN_OP_PERCENT_EQUAL: case TOKEN_OP_AMPERSAND_EQUAL: case TOKEN_OP_BAR_EQUAL:
+        case TOKEN_OP_CARET_EQUAL: case TOKEN_OP_LSHFT_EQUAL: case TOKEN_OP_RSHFT_EQUAL:
+        case TOKEN_OP_COMPLEMENT:
         case TOKEN_OP_PLUS: case TOKEN_OP_ASTERISK: case TOKEN_OP_SLASH: case TOKEN_OP_PERCENT:
         case TOKEN_OP_DECREMENT: case TOKEN_OP_INCREMENT: case TOKEN_OP_MINUS:
         case TOKEN_OP_DOUBLE_EQUAL: case TOKEN_OP_EXCLAMATION_EQUAL: case TOKEN_OP_EXCLAMATION:
         case TOKEN_OP_DOUBLE_AMP: case TOKEN_OP_AMPERSAND: case TOKEN_OP_DOUBLE_BAR:
         case TOKEN_OP_BAR: case TOKEN_OP_CARET: case TOKEN_OP_LSHFT: case TOKEN_OP_LTE:
-        case TOKEN_OP_LT: case TOKEN_OP_RSHFT: case TOKEN_OP_GTE: case TOKEN_OP_GT: case TOKEN_EOF:
+        case TOKEN_OP_LT: case TOKEN_OP_RSHFT: case TOKEN_OP_GTE: case TOKEN_OP_GT:
+        case TOKEN_OP_QUESTION: case TOKEN_OP_COLON: case TOKEN_KW_IF: case TOKEN_KW_ELSE:
+        case TOKEN_EOF:
             /* Interned String */
             break;
         }

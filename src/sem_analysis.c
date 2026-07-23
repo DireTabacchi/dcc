@@ -56,7 +56,7 @@ static void resolve_expression(CompDriver *cd, Expr *expr) {
         }
         break;
     }
-    case EXPR_UNARY:{
+    case EXPR_UNARY: {
         switch (expr->as.unary.op) {
         case UNARY_COMPLEMENT:
         case UNARY_NEGATE:
@@ -82,6 +82,12 @@ static void resolve_expression(CompDriver *cd, Expr *expr) {
     case EXPR_BINARY:
         resolve_expression(cd, expr->as.binary.left);
         resolve_expression(cd, expr->as.binary.right);
+        break;
+
+    case EXPR_TERNARY:
+        resolve_expression(cd, expr->as.ternary.cond);
+        resolve_expression(cd, expr->as.ternary.then_expr);
+        resolve_expression(cd, expr->as.ternary.else_expr);
         break;
     }
 }
@@ -110,7 +116,28 @@ static void resolve_declaration(CompDriver *cd, BlockItem *item) {
     }
 }
 
-static void resolve_statement(CompDriver *cd, BlockItem *item) {
+static void resolve_statement(CompDriver *cd, Stmt *stmt) {
+    if (stmt == NULL) return;
+
+    switch (stmt->kind) {
+    case STMT_INVALID:
+    case STMT_NULL:
+        break;
+    case STMT_RET:
+        resolve_expression(cd, stmt->as.ret);
+        break;
+    case STMT_EXPR:
+        resolve_expression(cd, stmt->as.expr);
+        break;
+    case STMT_IF:
+        resolve_expression(cd, stmt->as.if_stmt.cond);
+        resolve_statement(cd, stmt->as.if_stmt.then_stmt);
+        resolve_statement(cd, stmt->as.if_stmt.else_stmt);
+        break;
+    }
+}
+
+static void resolve_blockitem_statement(CompDriver *cd, BlockItem *item) {
     if (item == NULL) return;
     if (item->kind != BLOCKITEM_STATEMENT) return;
 
@@ -124,12 +151,17 @@ static void resolve_statement(CompDriver *cd, BlockItem *item) {
     case STMT_EXPR:
         resolve_expression(cd, item->as.statement->as.expr);
         break;
+    case STMT_IF:
+        resolve_expression(cd, item->as.statement->as.if_stmt.cond);
+        resolve_statement(cd, item->as.statement->as.if_stmt.then_stmt);
+        resolve_statement(cd, item->as.statement->as.if_stmt.else_stmt);
+        break;
     }
 }
 
 void sem_analyze(CompDriver *cd) {
-    SymTable table = {0};
-    SymTable_init(&table);
+    //SymTable table = {0};
+    //SymTable_init(&table);
     Function *func = cd->parser.program->func;
     for (size_t block_idx = 0; block_idx < func->block.len; block_idx++) {
         BlockItem *item = &func->block.items[block_idx];
@@ -140,10 +172,10 @@ void sem_analyze(CompDriver *cd) {
             resolve_declaration(cd, item);
             break;
         case BLOCKITEM_STATEMENT:
-            resolve_statement(cd, item);
+            resolve_blockitem_statement(cd, item);
             break;
         }
     }
-    SymTable_print(&table);
-    SymTable_deinit(&table);
+    //SymTable_print(&table);
+    //SymTable_deinit(&table);
 }

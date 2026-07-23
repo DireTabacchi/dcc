@@ -63,6 +63,10 @@ typedef enum tacdLabelKind_ {
     AND_END,
     OR_TRUE,
     OR_END,
+    IF_ELSE,
+    IF_END,
+    TERN_ELSE,
+    TERN_END,
     TACD_LABEL_KIND_LENGTH
 } TacdLabelKind;
 
@@ -70,7 +74,11 @@ static String label_kind_table[TACD_LABEL_KIND_LENGTH] = {
     (String){ .cstr = (char*)"and_false",   .len = 9 },
     (String){ .cstr = (char*)"and_end",    .len = 7 },
     (String){ .cstr = (char*)"or_true",    .len = 7 },
-    (String){ .cstr = (char*)"or_end",     .len = 6 }
+    (String){ .cstr = (char*)"or_end",     .len = 6 },
+    (String){ .cstr = (char*)"if_else",     .len = 7 },
+    (String){ .cstr = (char*)"if_end",     .len = 6 },
+    (String){ .cstr = (char*)"tern_else",     .len = 9 },
+    (String){ .cstr = (char*)"tern_end",     .len = 8 },
 };
 
 typedef struct tacdValue_ {

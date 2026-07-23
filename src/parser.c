@@ -30,6 +30,7 @@ typedef enum {
     PREC_BOR,           // Bitwise Or
     PREC_LAND,          // Logical And
     PREC_LOR,           // Logical Or
+    PREC_TERNARY,       // Ternary conditional operator ( ? : )
     PREC_ASSIGN,        // Assignment operations (lhs = rhs)
     // Lowest precedence
     PREC_LENGTH
@@ -47,6 +48,7 @@ static int precedence_table[PREC_LENGTH] = {
     60,     // PREC_BOR
     50,     // PREC_LAND
     40,     // PREC_LOR
+    30,     // PREC_TERNARY
     20,     // PREC_ASSIGN
 };
 
@@ -81,6 +83,9 @@ static int precedence(Token tok) {
         return precedence_table[PREC_LAND];
     case TOKEN_OP_DOUBLE_BAR:
         return precedence_table[PREC_LOR];
+    case TOKEN_OP_QUESTION:
+    //case TOKEN_OP_COLON:
+        return precedence_table[PREC_TERNARY];
     case TOKEN_OP_EQUAL:
     case TOKEN_OP_PLUS_EQUAL:
     case TOKEN_OP_MINUS_EQUAL:
@@ -311,56 +316,67 @@ static Expr *parse_unary(CompDriver *cd) {
     return expr;
 }
 
+static AssignOpKind parse_assign_op(CompDriver *cd) {
+    Token tok = advance_token(cd);
+    switch (tok.kind) {
+    case TOKEN_OP_EQUAL:
+        return ASSIGN_SIMPLE;
+    case TOKEN_OP_PLUS_EQUAL:
+        return ASSIGN_SUM;
+    case TOKEN_OP_MINUS_EQUAL:
+        return ASSIGN_DIFFERENCE;
+    case TOKEN_OP_ASTERISK_EQUAL:
+        return ASSIGN_PRODUCT;
+    case TOKEN_OP_SLASH_EQUAL:
+        return ASSIGN_QUOTIENT;
+    case TOKEN_OP_PERCENT_EQUAL:
+        return ASSIGN_REMAINDER;
+    case TOKEN_OP_AMPERSAND_EQUAL:
+        return ASSIGN_BITAND;
+    case TOKEN_OP_BAR_EQUAL:
+        return ASSIGN_BITOR;
+    case TOKEN_OP_CARET_EQUAL:
+        return ASSIGN_BITXOR;
+    case TOKEN_OP_LSHFT_EQUAL:
+        return ASSIGN_LSHFT;
+    case TOKEN_OP_RSHFT_EQUAL:
+        return ASSIGN_RSHFT;
+    default:
+        return ASSIGN_INVALID;
+    }
+}
+
+static Expr *parse_conditional_then(CompDriver *cd) {
+    expect_token(cd, TOKEN_OP_QUESTION);
+    Expr *cond_then = parse_expression(cd, 0);
+    expect_token(cd, TOKEN_OP_COLON);
+    return cond_then;
+}
+
 static Expr *parse_expression(CompDriver *cd, int min_prec) {
     Expr *left = parse_unary(cd);
     if (left != NULL && left->kind == EXPR_INVALID) return left;
     Token next_tok = peek_token(cd);
-    while (TOKENKIND_IS_OPERATOR(next_tok.kind) && precedence(next_tok) >= min_prec) {
+    while (TOKENKIND_IS_BINARY_OPERATOR(next_tok.kind) && precedence(next_tok) >= min_prec) {
         if (TOKENKIND_IS_ASSIGNMENT(next_tok.kind)) {
-            advance_token(cd);
+            //advance_token(cd);
+            AssignOpKind assign_op = parse_assign_op(cd);
             Expr *right = parse_expression(cd, precedence(next_tok));
             Expr *new_left = Expr_create(EXPR_ASSIGN);
             new_left->pos = left->pos;
-            switch (next_tok.kind) {
-            case TOKEN_OP_EQUAL:
-                new_left->as.assign.op = ASSIGN_SIMPLE;
-                break;
-            case TOKEN_OP_PLUS_EQUAL:
-                new_left->as.assign.op = ASSIGN_SUM;
-                break;
-            case TOKEN_OP_MINUS_EQUAL:
-                new_left->as.assign.op = ASSIGN_DIFFERENCE;
-                break;
-            case TOKEN_OP_ASTERISK_EQUAL:
-                new_left->as.assign.op = ASSIGN_PRODUCT;
-                break;
-            case TOKEN_OP_SLASH_EQUAL:
-                new_left->as.assign.op = ASSIGN_QUOTIENT;
-                break;
-            case TOKEN_OP_PERCENT_EQUAL:
-                new_left->as.assign.op = ASSIGN_REMAINDER;
-                break;
-            case TOKEN_OP_AMPERSAND_EQUAL:
-                new_left->as.assign.op = ASSIGN_BITAND;
-                break;
-            case TOKEN_OP_BAR_EQUAL:
-                new_left->as.assign.op = ASSIGN_BITOR;
-                break;
-            case TOKEN_OP_CARET_EQUAL:
-                new_left->as.assign.op = ASSIGN_BITXOR;
-                break;
-            case TOKEN_OP_LSHFT_EQUAL:
-                new_left->as.assign.op = ASSIGN_LSHFT;
-                break;
-            case TOKEN_OP_RSHFT_EQUAL:
-                new_left->as.assign.op = ASSIGN_RSHFT;
-                break;
-            default:
-                new_left->as.assign.op = ASSIGN_INVALID;
-                break;
-            }
+            new_left->as.assign.op = assign_op;
             new_left->as.assign.lhs = left;
             new_left->as.assign.rhs = right;
+
+            left = new_left;
+        } else if (next_tok.kind == TOKEN_OP_QUESTION) {
+            Expr *cond_then = parse_conditional_then(cd);
+            Expr *cond_else = parse_expression(cd, precedence(next_tok));
+            Expr *new_left = Expr_create(EXPR_TERNARY);
+            new_left->pos = left->pos;
+            new_left->as.ternary.cond = left;
+            new_left->as.ternary.then_expr = cond_then;
+            new_left->as.ternary.else_expr = cond_else;
 
             left = new_left;
         } else {
@@ -402,6 +418,24 @@ static Stmt *parse_statement(CompDriver *cd) {
         Stmt *null_stmt = Stmt_create(STMT_NULL);
         null_stmt->pos = next_tok.pos;
         return null_stmt;
+    } else if (next_tok.kind == TOKEN_KW_IF) {
+        advance_token(cd);
+        Stmt *if_stmt = Stmt_create(STMT_IF);
+        if_stmt->pos = next_tok.pos;
+        expect_token(cd, TOKEN_LEFT_PAREN);
+        Expr *cond = parse_expression(cd, 0);
+        expect_token(cd, TOKEN_RIGHT_PAREN);
+        Stmt *then_stmt = parse_statement(cd);
+        Stmt *else_stmt = NULL;
+        Token else_tok = peek_token(cd);
+        if (else_tok.kind == TOKEN_KW_ELSE) {
+            advance_token(cd);
+            else_stmt = parse_statement(cd);
+        }
+        if_stmt->as.if_stmt.cond = cond;
+        if_stmt->as.if_stmt.then_stmt = then_stmt;
+        if_stmt->as.if_stmt.else_stmt = else_stmt;
+        return if_stmt;
     }
 
     Expr *expr = parse_expression(cd, 0);
