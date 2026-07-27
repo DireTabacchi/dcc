@@ -126,6 +126,12 @@ static void scan_identifier(CompDriver *cd, long offset) {
         }
         break;
 
+    case 'g':
+        if (is_keyword(ident, 1, 3, "oto")) {
+            tok.kind = TOKEN_KW_GOTO;
+        }
+        break;
+
     case 'i':
         switch (ident.cstr[1]) {
             case 'f':

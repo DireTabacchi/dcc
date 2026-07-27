@@ -70,7 +70,9 @@ typedef enum stmtKind_ {
     STMT_RET,
     STMT_EXPR,
     STMT_IF,
-    STMT_NULL
+    STMT_NULL,
+    STMT_LABELED,
+    STMT_GOTO
 } StatementKind;
 
 typedef enum declKind_ {
@@ -104,7 +106,6 @@ void Expr_destroy(Expr *expr);
 void Expr_print(Expr *expr, int indent_lvl);
 
 typedef struct stmt_ *Stmt_ty;
-
 typedef struct stmt_ {
     StatementKind kind;
     Position pos;
@@ -112,6 +113,8 @@ typedef struct stmt_ {
         Expr *ret;
         Expr *expr;
         struct { Expr *cond; Stmt_ty then_stmt; Stmt_ty else_stmt; } if_stmt;
+        struct { const String *lbl; Stmt_ty stmt; } labeled_stmt;
+        const String* goto_stmt;
     } as;
 } Stmt;
 

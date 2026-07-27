@@ -13,7 +13,10 @@
 
 Currently holds the options, interner, tokenizer, parser, and codegen driver.
 
-### String Interner
-    - Find places past parser/sem-analysis where interner could be used.
-
 ## Features
+
+## Improvements
+    - Error handling:
+        - tests/ch06/parser_invalid/extra/goto_without_label.c
+        - tests/ch06/parser_invalid/extra/kw_label.c
+        - tests/ch06/semantics_invalid/extra/use_label_as_variable.c

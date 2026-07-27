@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include "common.h"
 #include "dd_string.h"
@@ -84,7 +84,6 @@ static int precedence(Token tok) {
     case TOKEN_OP_DOUBLE_BAR:
         return precedence_table[PREC_LOR];
     case TOKEN_OP_QUESTION:
-    //case TOKEN_OP_COLON:
         return precedence_table[PREC_TERNARY];
     case TOKEN_OP_EQUAL:
     case TOKEN_OP_PLUS_EQUAL:
@@ -117,9 +116,28 @@ static Token advance_token(CompDriver* cd) {
     return cd->tokenizer.tokens.toks[cd->parser.prev_idx];
 }
 
+static Token advance2_token(CompDriver* cd) {
+    if (cd->parser.curr_idx == cd->parser.prev_idx)
+        return cd->tokenizer.tokens.toks[cd->parser.curr_idx];
+    //if (p->curr_idx < 0) return (Token){ .kind = TOKEN_INVALID };
+
+    cd->parser.curr_idx += 2;
+    cd->parser.prev_idx = cd->parser.curr_idx - 1;
+    if (cd->parser.curr_idx >= cd->tokenizer.tokens.len) {
+        cd->parser.curr_idx = cd->parser.prev_idx;
+    }
+
+    return cd->tokenizer.tokens.toks[cd->parser.prev_idx];
+}
+
 static Token peek_token(CompDriver *cd) {
     if (cd->parser.curr_idx < 0) return (Token){ .kind = TOKEN_INVALID };
     return cd->tokenizer.tokens.toks[cd->parser.curr_idx];
+}
+
+static Token peek2_token(CompDriver *cd) {
+    if (cd->parser.curr_idx+1 >= cd->tokenizer.tokens.len) return (Token){ .kind = TOKEN_INVALID };
+    return cd->tokenizer.tokens.toks[cd->parser.curr_idx+1];
 }
 
 static Token expect_token(CompDriver *cd, TokenKind expected_kind) {
@@ -436,6 +454,25 @@ static Stmt *parse_statement(CompDriver *cd) {
         if_stmt->as.if_stmt.then_stmt = then_stmt;
         if_stmt->as.if_stmt.else_stmt = else_stmt;
         return if_stmt;
+    } else if (next_tok.kind == TOKEN_KW_GOTO) {
+        advance_token(cd);
+        const String *lbl = parse_identifier(cd);
+        expect_token(cd, TOKEN_SEMICOLON);
+        Stmt *goto_stmt = Stmt_create(STMT_GOTO);
+        goto_stmt->pos = next_tok.pos;
+        goto_stmt->as.goto_stmt = lbl;
+        return goto_stmt;
+    } else if (next_tok.kind == TOKEN_IDENTIFIER) {
+        Token peeked2_tok = peek2_token(cd);
+        if (peeked2_tok.kind == TOKEN_OP_COLON) {
+            advance2_token(cd);
+            Stmt *stmt = parse_statement(cd);
+            Stmt *lbl_stmt = Stmt_create(STMT_LABELED);
+            lbl_stmt->pos = next_tok.pos;
+            lbl_stmt->as.labeled_stmt.stmt = stmt;
+            lbl_stmt->as.labeled_stmt.lbl = next_tok.text;
+            return lbl_stmt;
+        }
     }
 
     Expr *expr = parse_expression(cd, 0);

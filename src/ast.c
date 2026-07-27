@@ -50,6 +50,7 @@ void Expr_destroy(Expr *expr) {
         Expr_destroy(expr->as.ternary.then_expr);
         Expr_destroy(expr->as.ternary.else_expr);
         free(expr);
+        break;
     }
 }
 
@@ -79,6 +80,13 @@ void Stmt_destroy(Stmt *stmt) {
         Expr_destroy(stmt->as.if_stmt.cond);
         Stmt_destroy(stmt->as.if_stmt.then_stmt);
         Stmt_destroy(stmt->as.if_stmt.else_stmt);
+        free(stmt);
+        break;
+    case STMT_LABELED:
+        Stmt_destroy(stmt->as.labeled_stmt.stmt);
+        free(stmt);
+        break;
+    case STMT_GOTO:
         free(stmt);
         break;
     }
@@ -349,6 +357,7 @@ void Stmt_print(Stmt *stmt, int indent_lvl) {
         Expr_print(stmt->as.expr, indent_lvl+1);
         printf("%2$*1$c\n", spaces+1, ')');
         break;
+
     case STMT_IF:
         printf("%2$*1$s(\n", spaces+12, "If Statement");
         indent_lvl += 1;
@@ -368,6 +377,30 @@ void Stmt_print(Stmt *stmt, int indent_lvl) {
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');
         break;
+
+    case STMT_LABELED:
+        printf("%2$*1$s(\n", spaces+17, "Labeled Statement");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=%3$s\n", spaces+3, "lbl", stmt->as.labeled_stmt.lbl->cstr);
+        printf("%2$*1$s=(\n", spaces+4, "stmt");
+        Stmt_print(stmt->as.labeled_stmt.stmt, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
+    case STMT_GOTO:
+        printf("%2$*1$s(\n", spaces+14, "Goto Statement");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=%3$s\n", spaces+3, "lbl", stmt->as.goto_stmt->cstr);
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
     case STMT_NULL:
         printf("%2$*1$s\n", spaces+14, "Null Statement");
         break;

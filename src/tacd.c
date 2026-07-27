@@ -89,17 +89,24 @@ static const String *create_temporary_var(CompDriver *cd) {
     return canon_varname;
 }
 
-static const String *create_label(CompDriver *cd, TacdLabelKind kind) {
-    int digit_len = integer_len(cd->cgd.tacd_gen.label_count);
-
+static const String *create_label(CompDriver *cd, TacdLabelKind kind, const String *stmt_lbl) {
     String label_kind = label_kind_table[kind];
 
     // label length: func_name.len + (1) "." + label_kind.len + (1) "." + digit_len
-    String label =
-        String_init_length(cd->cgd.tacd_gen.func_name->len + 2 + label_kind.len + digit_len);
-    snprintf(label.cstr, label.len+1, "%s.%s.%d",
-        cd->cgd.tacd_gen.func_name->cstr, label_kind.cstr, cd->cgd.tacd_gen.label_count);
-    cd->cgd.tacd_gen.label_count += 1;
+    String label = {0};
+
+    if (stmt_lbl == NULL) {
+        int digit_len = integer_len(cd->cgd.tacd_gen.label_count);
+
+        label = String_init_length(cd->cgd.tacd_gen.func_name->len + 2 + label_kind.len + digit_len);
+        snprintf(label.cstr, label.len+1, "%s.%s.%d",
+            cd->cgd.tacd_gen.func_name->cstr, label_kind.cstr, cd->cgd.tacd_gen.label_count);
+        cd->cgd.tacd_gen.label_count += 1;
+    } else {
+        label = String_init_length(cd->cgd.tacd_gen.func_name->len+2+label_kind.len+stmt_lbl->len);
+        snprintf(label.cstr, label.len+1, "%s.%s.%s",
+            cd->cgd.tacd_gen.func_name->cstr, label_kind.cstr, stmt_lbl->cstr);
+    }
     const String *canon_label = StrInterner_intern(&cd->str_table, label);
     String_free(&label);
     return canon_label;
@@ -268,15 +275,15 @@ static TacdValue trx_expression(CompDriver *cd, TacdNode *tacd_fn, Expr *expr) {
             TacdCode condition_label_code = { .kind = TACD_CODE_LABEL };
             TacdCode end_label_code = { .kind = TACD_CODE_LABEL };
             if (expr->as.binary.op == BINARY_LOGICAND) {
-                jump_condition_label = create_label(cd, AND_FALSE);
+                jump_condition_label = create_label(cd, AND_FALSE, NULL);
                 jump_conditional.kind = TACD_CODE_JUMP_IF_ZERO;
                 copy_res.code.copy.src.val.constant = 1;
-                end_label = create_label(cd, AND_END);
+                end_label = create_label(cd, AND_END, NULL);
             } else if (expr->as.binary.op == BINARY_LOGICOR) {
-                jump_condition_label = create_label(cd, OR_TRUE);
+                jump_condition_label = create_label(cd, OR_TRUE, NULL);
                 jump_conditional.kind = TACD_CODE_JUMP_IF_NOT_ZERO;
                 copy_res.code.copy.src.val.constant = 0;
-                end_label = create_label(cd, OR_END);
+                end_label = create_label(cd, OR_END, NULL);
             }
 
             jump_conditional.code.jump_conditional.condition = left_result;
@@ -517,12 +524,12 @@ static TacdValue trx_expression(CompDriver *cd, TacdNode *tacd_fn, Expr *expr) {
             }
         };
         CodeList_append(&tacd_fn->node.function.body, cond_copy);
-        const String *tern_else_lbl_txt = create_label(cd, TERN_ELSE);
+        const String *tern_else_lbl_txt = create_label(cd, TERN_ELSE, NULL);
         TacdCode tern_lbl = (TacdCode){
             .kind = TACD_CODE_LABEL,
             .code.label = tern_else_lbl_txt
         };
-        const String *tern_end_lbl_txt = create_label(cd, TERN_END);
+        const String *tern_end_lbl_txt = create_label(cd, TERN_END, NULL);
         TacdCode jz_else = (TacdCode){
             .kind = TACD_CODE_JUMP_IF_ZERO,
             .code.jump_conditional = { .condition = cond_dest, .target = tern_else_lbl_txt }
@@ -603,7 +610,7 @@ static void trx_statement(CompDriver *cd, TacdNode *tacd_fn, Stmt *stmt) {
         };
         CodeList_append(&tacd_fn->node.function.body, cond_copy);
 
-        const String *if_end_lbl_txt = create_label(cd, IF_END);
+        const String *if_end_lbl_txt = create_label(cd, IF_END, NULL);
         TacdCode if_end_lbl = (TacdCode){
             .kind = TACD_CODE_LABEL,
             .code.label = if_end_lbl_txt
@@ -619,7 +626,7 @@ static void trx_statement(CompDriver *cd, TacdNode *tacd_fn, Stmt *stmt) {
             CodeList_append(&tacd_fn->node.function.body, jz_end);
             trx_statement(cd, tacd_fn, stmt->as.if_stmt.then_stmt);
         } else {
-            const String *if_else_lbl_txt = create_label(cd, IF_ELSE);
+            const String *if_else_lbl_txt = create_label(cd, IF_ELSE, NULL);
             TacdCode if_else_lbl = (TacdCode){
                 .kind = TACD_CODE_LABEL,
                 .code.label = if_else_lbl_txt
@@ -645,6 +652,24 @@ static void trx_statement(CompDriver *cd, TacdNode *tacd_fn, Stmt *stmt) {
         CodeList_append(&tacd_fn->node.function.body, if_end_lbl);
         break;
     }
+
+    case STMT_LABELED: {
+        const String *stmt_lbl_txt = create_label(cd, STMT_LABEL, stmt->as.labeled_stmt.lbl);
+        TacdCode stmt_lbl = (TacdCode){ .kind = TACD_CODE_LABEL, .code.label = stmt_lbl_txt };
+        CodeList_append(&tacd_fn->node.function.body, stmt_lbl);
+        trx_statement(cd, tacd_fn, stmt->as.labeled_stmt.stmt);
+        break;
+    }
+
+    case STMT_GOTO: {
+        const String *lbl_txt = create_label(cd, STMT_LABEL, stmt->as.goto_stmt);
+        TacdCode goto_jmp = (TacdCode){ .kind = TACD_CODE_JUMP,
+            .code.jump = lbl_txt
+        };
+        CodeList_append(&tacd_fn->node.function.body, goto_jmp);
+        break;
+    }
+
     case STMT_NULL:
     case STMT_INVALID: // Should err?
         break;

@@ -2,6 +2,7 @@
 #include <string.h>
 #include "interner.h"
 #include "token.h"
+#include "sem_analysis.h"
 #include "comp_driver.h"
 
 void CompDriver_init(CompDriver *cd) {
@@ -13,6 +14,7 @@ void CompDriver_init(CompDriver *cd) {
     cd->cgd = (CodegenDriver){0};
     cd->uid_count = 0;
     ErrorList_init(&cd->errors);
+    Sema_init(&cd->sema);
 
     for (size_t i = 0; i < TOKENKIND_LEN; i++) {
         if (i == TOKEN_OPERATORS_BEGIN || i == TOKEN_OPERATORS_END || i == TOKEN_KEYWORDS_BEGIN || i == TOKEN_KEYWORDS_END) continue;
@@ -31,6 +33,7 @@ void CompDriver_deinit(CompDriver *cd) {
     StrInterner_deinit(&cd->str_table);
     Tokenizer_destroy(&cd->tokenizer);
     Parser_destroy(&cd->parser);
+    Sema_deinit(&cd->sema);
     CodegenDriver_deinit(&cd->cgd);
     ErrorList_destroy(&cd->errors);
 }

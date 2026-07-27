@@ -4,6 +4,7 @@
 #include "interner.h"
 #include "tokenizer.h"
 #include "parser.h"
+#include "sem_analysis.h"
 #include "codegen.h"
 #include "dcc_error.h"
 
@@ -34,6 +35,7 @@ typedef struct compDriver_ {
     StrInterner str_table;
     Tokenizer tokenizer;
     Parser parser;
+    Sema sema;
     CodegenDriver cgd;
 
     size_t uid_count;

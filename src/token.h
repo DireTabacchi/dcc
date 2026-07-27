@@ -66,6 +66,7 @@
     TOKENKIND(TOKEN_KW_RETURN, "return"), \
     TOKENKIND(TOKEN_KW_IF, "if"), \
     TOKENKIND(TOKEN_KW_ELSE, "else"), \
+    TOKENKIND(TOKEN_KW_GOTO, "goto"), \
     TOKENKIND(TOKEN_KEYWORDS_END, ""), \
 \
     TOKENKIND(TOKEN_IDENTIFIER, "identifier"), \
@@ -98,6 +99,9 @@ typedef struct token_ {
 
 #define TOKENKIND_IS_ASSIGNMENT(tk) \
     ((tk) > TOKEN_OPERATORS_ASSIGN_BEGIN && (tk) < TOKEN_OPERATORS_ASSIGN_END)
+
+#define TOKENKIND_IS_KEYWORD(tk) \
+    ((tk) > TOKEN_KEYWORDS_BEGIN && (tk) < TOKEN_KEYWORDS_END)
 
 typedef struct tokenList_ {
     Token *toks;

@@ -139,3 +139,28 @@ void err_incr_not_lvalue(CompDriver *cd, Position pos) {
     lvalue_err.desc = String_init_cstr("lvalue required as increment operand");
     ErrorList_append(&cd->errors, lvalue_err);
 }
+
+void err_duplicate_label(CompDriver *cd, Position pos, const SymEntry *lbl) {
+    Error dup_lbl_err = {0};
+    dup_lbl_err.file = String_copy(cd->tokenizer.src_path);
+    dup_lbl_err.pos = pos;
+    int line_len = integer_len(lbl->pos.line);
+    int col_len = integer_len(lbl->pos.column);
+    // dup_lbl_err.desc.len = 58 (msg) + lbl.key.len + numlen(lbl.pos.line) + numlen(lbl.pos.column)
+    dup_lbl_err.desc = String_init_length(58+lbl->key->len+line_len+col_len);
+
+    snprintf(dup_lbl_err.desc.cstr, dup_lbl_err.desc.len+1,
+        "duplicate definition of label `%s`; label first defined at %d:%d",
+        lbl->key->cstr, lbl->pos.line, lbl->pos.column);
+    ErrorList_append(&cd->errors, dup_lbl_err);
+}
+
+void err_undefined_label(CompDriver *cd, Position pos, const String *lbl) {
+    Error undef_err = {0};
+    undef_err.file = String_copy(cd->tokenizer.src_path);
+    undef_err.pos = pos;
+    undef_err.desc = String_init_length(25+lbl->len);
+    snprintf(undef_err.desc.cstr, undef_err.desc.len+1,
+        "use of undefined label `%s`", lbl->cstr);
+    ErrorList_append(&cd->errors, undef_err);
+}

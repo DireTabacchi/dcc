@@ -4,6 +4,7 @@
 #include "common.h"
 #include "token.h"
 #include "dd_string.h"
+#include "sym_table.h"
 
 typedef struct error_ {
     String desc;    // Generated description of the error
@@ -42,5 +43,8 @@ void err_assign_invalid_lvalue(ErrorList *el, String srcname, Position pos);
 
 void err_decr_not_lvalue(CompDriver *cd, Position pos);
 void err_incr_not_lvalue(CompDriver *cd, Position pos);
+
+void err_duplicate_label(CompDriver *cd, Position pos, const SymEntry *lbl);
+void err_undefined_label(CompDriver *cd, Position pos, const String *lbl);
 
 #endif // DD_ERROR_H

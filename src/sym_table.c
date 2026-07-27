@@ -15,33 +15,50 @@ void SymTable_init(SymTable *table) {
 void SymTable_deinit(SymTable *table) {
     for (size_t idx = 0; idx < table->cap; idx++) {
         if (table->syms[idx].status == STE_OCCUPIED) {
-            //String_free(&table->syms[idx].key);
-            //String_free(&table->syms[idx].value);
         }
     }
     free(table->syms);
 }
 
-static void SymTable_insert_raw(SymTable *table, String *key, String *value, size_t hash) {
+static void SymTable_insert_raw(SymTable *table, SymEntry se, size_t hash) {
     size_t idx = hash % table->cap;
 
     while (table->syms[idx].status == STE_OCCUPIED) {
-        if (table->syms[idx].hash == hash && strcmp(table->syms[idx].key->cstr, key->cstr) == 0) {
-            table->syms[idx].value = value;
-            return;
+        SymEntry *table_ent = &table->syms[idx];
+        if (table_ent->type == se.type) {
+                if (table_ent->hash == hash &&
+                    strcmp(table_ent->key->cstr, se.key->cstr) == 0)
+                {
+                    switch (table_ent->type) {
+                    case SYMTYPE_MAPPING:
+                        table_ent->as.mapping.name = se.as.mapping.name;
+                        return;
+                    case SYMTYPE_LABEL:
+                        table_ent->as.lbl.status = se.as.lbl.status;
+                        return;
+                    }
+                }
         }
         idx = (idx + 1) % table->cap;
     }
 
     table->syms[idx].hash = hash;
     table->syms[idx].status = STE_OCCUPIED;
-    table->syms[idx].key = key;
-    table->syms[idx].value = value;
+    table->syms[idx].pos = se.pos;
+    table->syms[idx].key = se.key;
+    table->syms[idx].type = se.type;
+    switch (se.type) {
+    case SYMTYPE_MAPPING:
+        table->syms[idx].as.mapping.name = se.as.mapping.name;
+        break;
+    case SYMTYPE_LABEL:
+        table->syms[idx].as.lbl.status = se.as.lbl.status;
+        break;
+    }
     table->load += 1;
 }
 
-void SymTable_insert(SymTable *table, String *key, String *value) {
-    if ((float)(table->load + 1) / table->cap > TABLE_LOAD_FACTOR) {
+static void SymTable_resize(SymTable *table) {
         size_t old_cap = table->cap;
         size_t new_cap = old_cap + (old_cap >> 1);
         SymEntry *old_entries = table->syms;
@@ -50,42 +67,54 @@ void SymTable_insert(SymTable *table, String *key, String *value) {
         for (size_t se_idx = 0; se_idx < old_cap; se_idx++) {
             if (old_entries[se_idx].status == STE_OCCUPIED) {
                 SymTable_insert_raw(table,
-                    old_entries[se_idx].key,
-                    old_entries[se_idx].value,
+                    old_entries[se_idx],
                     old_entries[se_idx].hash);
             }
         }
         free(old_entries);
+}
+
+void SymTable_insert_mapping(SymTable *table, Position pos, const String *key, const String *value) {
+    if ((float)(table->load + 1) / table->cap > TABLE_LOAD_FACTOR) {
+        SymTable_resize(table);
     }
 
     size_t hash = fnv1a_hash(key->cstr);
-    SymTable_insert_raw(table, key, value, hash);
+    SymEntry se = (SymEntry){
+        .hash = hash, .status = STE_OCCUPIED, .type = SYMTYPE_MAPPING, .key = key,
+        .pos = pos, .as.mapping.name = value
+    };
+    SymTable_insert_raw(table, se, hash);
 }
 
-bool SymTable_contains(SymTable *table, char *key) {
-    size_t hash = fnv1a_hash(key);
-    size_t idx = hash % table->cap;
-    size_t start_idx = idx;
-
-    while (table->syms[idx].status == STE_OCCUPIED) {
-        if (table->syms[idx].hash == hash && strcmp(table->syms[idx].key->cstr, key) == 0) {
-            return true;
-        }
-        idx = (idx + 1) % table->cap;
-        if (start_idx == idx) break;
+void SymTable_insert_label(SymTable *table, Position pos, const String *txt, LabelStatus status) {
+    if ((float)(table->load + 1) / table->cap > TABLE_LOAD_FACTOR) {
+        SymTable_resize(table);
     }
 
-    return false;
+    size_t hash = fnv1a_hash(txt->cstr);
+    SymEntry se = (SymEntry){
+        .hash = hash, .status = STE_OCCUPIED, .type = SYMTYPE_LABEL, .key = txt,
+        .pos = pos, .as.lbl.status = status
+    };
+    SymTable_insert_raw(table, se, hash);
 }
 
-String *SymTable_get(SymTable *table, char *key) {
+bool SymTable_contains(SymTable *table, char *key, SymType type) {
+    return SymTable_get(table, key, type) != NULL;
+}
+
+SymEntry *SymTable_get(SymTable *table, char *key, SymType type) {
     size_t hash = fnv1a_hash(key);
     size_t idx = hash % table->cap;
     size_t start_idx = idx;
 
     while (table->syms[idx].status == STE_OCCUPIED) {
-        if (table->syms[idx].hash == hash && strcmp(table->syms[idx].key->cstr, key) == 0) {
-            return table->syms[idx].value;
+        if (table->syms[idx].type == type &&
+            table->syms[idx].hash == hash &&
+            strcmp(table->syms[idx].key->cstr, key) == 0)
+        {
+            return &table->syms[idx];
         }
         idx = (idx + 1) % table->cap;
         if (start_idx == idx) break;
@@ -102,7 +131,19 @@ void SymTable_print(SymTable *table) {
 
     for (size_t idx = 0; idx < table->cap; idx++) {
         if (table->syms[idx].status == STE_OCCUPIED) {
-            printf("[%03ld] -> (%s, %s), 0x%016lX\n", idx, table->syms[idx].key->cstr, table->syms[idx].value->cstr, table->syms[idx].hash);
+            SymEntry se = table->syms[idx];
+            switch (se.type) {
+            case SYMTYPE_MAPPING:
+                printf("[%03ld] -> (%s, %s), 0x%016lX\n", idx,
+                    table->syms[idx].key->cstr,
+                    table->syms[idx].as.mapping.name->cstr, table->syms[idx].hash);
+                break;
+            case SYMTYPE_LABEL:
+                printf("[%03ld] -> (%s, %d), 0x%016lX\n", idx,
+                    table->syms[idx].key->cstr,
+                    table->syms[idx].as.lbl.status, table->syms[idx].hash);
+                break;
+            }
         }
     }
 }
