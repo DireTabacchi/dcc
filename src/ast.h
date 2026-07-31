@@ -72,7 +72,8 @@ typedef enum stmtKind_ {
     STMT_IF,
     STMT_NULL,
     STMT_LABELED,
-    STMT_GOTO
+    STMT_GOTO,
+    STMT_COMPOUND
 } StatementKind;
 
 typedef enum declKind_ {
@@ -105,6 +106,13 @@ Expr *Expr_create(ExpressionKind kind);
 void Expr_destroy(Expr *expr);
 void Expr_print(Expr *expr, int indent_lvl);
 
+typedef struct blockItem_ BlockItem;
+typedef struct block_ {
+    BlockItem *items;
+    size_t len;
+    size_t cap;
+} Block;
+
 typedef struct stmt_ *Stmt_ty;
 typedef struct stmt_ {
     StatementKind kind;
@@ -115,6 +123,7 @@ typedef struct stmt_ {
         struct { Expr *cond; Stmt_ty then_stmt; Stmt_ty else_stmt; } if_stmt;
         struct { const String *lbl; Stmt_ty stmt; } labeled_stmt;
         const String* goto_stmt;
+        Block *compound_stmt;
     } as;
 } Stmt;
 
@@ -142,19 +151,13 @@ typedef struct blockItem_ {
     } as;
 } BlockItem;
 
-typedef struct block_ {
-    BlockItem *items;
-    size_t len;
-    size_t cap;
-} Block;
-
-void Block_init(Block *block);
-void Block_deinit(Block *block);
+Block *Block_create();
+void Block_destroy(Block *block);
 void Block_append(Block *block, BlockItem item);
 
 typedef struct func_ {
     const String *name;
-    Block block;
+    Block *block;
 } Function;
 
 Function *Function_create();

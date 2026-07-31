@@ -10,6 +10,55 @@
 // How many spaces to include per indent level. Used in AstNode_print
 #define SPACES_PER_INDENT 2
 
+Block *Block_create() {
+    Block *block = (Block *)malloc(sizeof(Block));
+    block->cap = 2;
+    block->len = 0;
+    block->items = (BlockItem *)calloc(block->cap, sizeof(BlockItem));
+    return block;
+}
+
+void Block_destroy(Block *block) {
+    if (block == NULL) return;
+    if (block->items == NULL) goto freeblock;
+
+    for (size_t b_idx = 0; b_idx < block->len; b_idx++) {
+        switch (block->items[b_idx].kind) {
+        case BLOCKITEM_INVALID:
+            break;
+        case BLOCKITEM_STATEMENT:
+            Stmt_destroy(block->items[b_idx].as.statement);
+            break;
+        case BLOCKITEM_DECLARATION:
+            Decl_destroy(block->items[b_idx].as.declaration);
+            break;
+        }
+    }
+
+    free(block->items);
+freeblock:
+    free(block);
+    block = NULL;
+}
+
+void Block_append(Block *block, BlockItem item) {
+    if (block == NULL) return;
+    if (block->items == NULL) return;
+
+    if (block->len == block->cap) {
+        size_t old_cap = block->cap;
+        size_t new_cap = old_cap / 2 + old_cap;
+        BlockItem *new_items = calloc(new_cap, sizeof(BlockItem));
+        memcpy(new_items, block->items, old_cap*sizeof(BlockItem));
+        free(block->items);
+        block->items = new_items;
+        block->cap = new_cap;
+    }
+
+    memcpy(&block->items[block->len], &item, sizeof(BlockItem));
+    block->len += 1;
+}
+
 Expr *Expr_create(ExpressionKind kind) {
     Expr *e = malloc(sizeof(Expr));
     e->kind = kind;
@@ -89,6 +138,10 @@ void Stmt_destroy(Stmt *stmt) {
     case STMT_GOTO:
         free(stmt);
         break;
+    case STMT_COMPOUND:
+        Block_destroy(stmt->as.compound_stmt);
+        free(stmt);
+        break;
     }
 }
 
@@ -106,71 +159,23 @@ void Decl_destroy(Decl *decl) {
             free(decl);
             break;
         case DECL_LCL_VAR:
-            //String_free(&decl->as.loc_var.identifier);
             Expr_destroy(decl->as.loc_var.init);
             free(decl);
             break;
     }
 }
 
-void Block_init(Block *block) {
-    block->cap = 2;
-    block->len = 0;
-    block->items = (BlockItem *)calloc(block->cap, sizeof(BlockItem));
-}
-
-void Block_deinit(Block *block) {
-    if (block == NULL) return;
-    if (block->items == NULL) return;
-
-    for (size_t b_idx = 0; b_idx < block->len; b_idx++) {
-        switch (block->items[b_idx].kind) {
-        case BLOCKITEM_INVALID:
-            break;
-        case BLOCKITEM_STATEMENT:
-            Stmt_destroy(block->items[b_idx].as.statement);
-            break;
-        case BLOCKITEM_DECLARATION:
-            Decl_destroy(block->items[b_idx].as.declaration);
-            break;
-        }
-    }
-
-    free(block->items);
-
-    block->cap = 0;
-    block->len = 0;
-}
-
-void Block_append(Block *block, BlockItem item) {
-    if (block == NULL) return;
-    if (block->items == NULL) return;
-
-    if (block->len == block->cap) {
-        size_t old_cap = block->cap;
-        size_t new_cap = old_cap / 2 + old_cap;
-        BlockItem *new_items = calloc(new_cap, sizeof(BlockItem));
-        memcpy(new_items, block->items, old_cap*sizeof(BlockItem));
-        free(block->items);
-        block->items = new_items;
-        block->cap = new_cap;
-    }
-
-    memcpy(&block->items[block->len], &item, sizeof(BlockItem));
-    block->len += 1;
-}
-
 Function *Function_create() {
     Function *func = (Function *)malloc(sizeof(Function));
     func->name = NULL;
-    Block_init(&func->block);
+    func->block = NULL;
+    //func->block = Block_create();
     return func;
 }
 
 void Function_destroy(Function *func) {
     if (func == NULL) return;
-    //String_free(&func->name);
-    Block_deinit(&func->block);
+    Block_destroy(func->block);
     free(func);
 }
 
@@ -226,6 +231,8 @@ char *assign_op_names[12] = {
     (char *)"Assign Bitwise Left Shift",
     (char *)"Assign Bitwise Right Shift"
 };
+
+static void Block_print(Block *block, int indent_lvl);
 
 void Expr_unary_print(Expr *expr, int indent_lvl) {
     if (expr == NULL) return;
@@ -401,6 +408,12 @@ void Stmt_print(Stmt *stmt, int indent_lvl) {
         printf("%2$*1$c\n", spaces+1, ')');
         break;
 
+    case STMT_COMPOUND:
+        printf("%2$*1$s(\n", spaces+18, "Compound Statement");
+        Block_print(stmt->as.compound_stmt, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
     case STMT_NULL:
         printf("%2$*1$s\n", spaces+14, "Null Statement");
         break;
@@ -455,6 +468,13 @@ static void BlockItem_print(BlockItem *item, int indent_lvl) {
     }
 }
 
+static void Block_print(Block *block, int indent_lvl) {
+    if (block == NULL) return;
+    for (size_t idx = 0; idx < block->len; idx++) {
+        BlockItem_print(&block->items[idx], indent_lvl);
+    }
+}
+
 void Function_print(Function *func, int indent_lvl) {
     if (func == NULL) return;
 
@@ -465,8 +485,8 @@ void Function_print(Function *func, int indent_lvl) {
     spaces = indent_lvl * SPACES_PER_INDENT;
     printf("%2$*1$s=\"%3$s\"\n%5$*4$s=(\n",
         spaces+4, "name", func->name->cstr, spaces+4, "body");
-    for (size_t b_idx = 0; b_idx < func->block.len; b_idx++) {
-        BlockItem_print(&func->block.items[b_idx], indent_lvl+1);
+    for (size_t b_idx = 0; b_idx < func->block->len; b_idx++) {
+        BlockItem_print(&func->block->items[b_idx], indent_lvl+1);
     }
     printf("%2$*1$c\n", spaces+1, ')');
     indent_lvl -= 1;

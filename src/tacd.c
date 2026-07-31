@@ -712,8 +712,8 @@ static void trx_function(CompDriver *cd, TacdNode *tacd_fn, Function *ast_fn) {
     tacd_fn->node.function.name = ast_fn->name;
     CodeList_init(&tacd_fn->node.function.body);
 
-    for (size_t b_idx = 0; b_idx < ast_fn->block.len; b_idx++) {
-        trx_blockitem(cd, tacd_fn, &ast_fn->block.items[b_idx]);
+    for (size_t b_idx = 0; b_idx < ast_fn->block->len; b_idx++) {
+        trx_blockitem(cd, tacd_fn, &ast_fn->block->items[b_idx]);
     }
 
     TacdCode implicit_ret = { .kind = TACD_CODE_RET };

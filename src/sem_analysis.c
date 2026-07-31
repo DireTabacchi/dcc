@@ -217,8 +217,8 @@ static void resolve_labels(CompDriver *cd) {
 
 void sem_analyze(CompDriver *cd) {
     Function *func = cd->parser.program->func;
-    for (size_t block_idx = 0; block_idx < func->block.len; block_idx++) {
-        BlockItem *item = &func->block.items[block_idx];
+    for (size_t block_idx = 0; block_idx < func->block->len; block_idx++) {
+        BlockItem *item = &func->block->items[block_idx];
         switch (item->kind) {
         case BLOCKITEM_INVALID:
             break;
@@ -231,6 +231,4 @@ void sem_analyze(CompDriver *cd) {
         }
     }
     resolve_labels(cd);
-    //SymTable_print(&table);
-    //SymTable_deinit(&table);
 }

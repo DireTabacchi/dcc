@@ -170,6 +170,9 @@ static Token expect_token(CompDriver *cd, TokenKind expected_kind) {
 
 // parse_* functions
 
+static Block *parse_block(CompDriver *cd);
+static Expr *parse_expression(CompDriver *cd, int min_prec);
+
 static const String *parse_identifier(CompDriver *cd) {
     Token tok;
     if ((tok = expect_token(cd, TOKEN_IDENTIFIER)), tok.kind != TOKEN_IDENTIFIER) {
@@ -244,8 +247,6 @@ static BinaryOpKind parse_binop(CompDriver *cd) {
 
     return BINARY_INVALID;
 }
-
-static Expr *parse_expression(CompDriver *cd, int min_prec);
 
 static Expr *parse_primary(CompDriver *cd) {
     Token tok = peek_token(cd);
@@ -473,6 +474,12 @@ static Stmt *parse_statement(CompDriver *cd) {
             lbl_stmt->as.labeled_stmt.lbl = next_tok.text;
             return lbl_stmt;
         }
+    } else if (next_tok.kind == TOKEN_LEFT_BRACE) {
+        Block *stmt_block = parse_block(cd);
+        Stmt *cmpnd_stmt = Stmt_create(STMT_COMPOUND);
+        cmpnd_stmt->pos = next_tok.pos;
+        cmpnd_stmt->as.compound_stmt = stmt_block;
+        return cmpnd_stmt;
     }
 
     Expr *expr = parse_expression(cd, 0);
@@ -520,24 +527,34 @@ static BlockItem parse_block_item(CompDriver *cd) {
     return item;
 }
 
+static Block *parse_block(CompDriver *cd) {
+    expect_token(cd, TOKEN_LEFT_BRACE);
+    Block *block = Block_create();
+    Token tok = peek_token(cd);
+    while (tok.kind != TOKEN_RIGHT_BRACE && tok.kind != TOKEN_EOF) {
+        BlockItem item = parse_block_item(cd);
+        Block_append(block, item);
+        tok = peek_token(cd);
+    }
+    expect_token(cd, TOKEN_RIGHT_BRACE);
+    return block;
+}
+
 static Function *parse_function(CompDriver *cd) {
     expect_token(cd, TOKEN_KW_INT);
     const String *name = parse_identifier(cd);
     expect_token(cd, TOKEN_LEFT_PAREN);
     expect_token(cd, TOKEN_KW_VOID);
     expect_token(cd, TOKEN_RIGHT_PAREN);
-    expect_token(cd, TOKEN_LEFT_BRACE);
+    Token peeked = peek_token(cd);
+    Block *fn_block = NULL;
+    if (peeked.kind == TOKEN_LEFT_BRACE) {
+        fn_block = parse_block(cd);
+    }
 
     Function *func = Function_create();
     func->name = name;
-    Token tok = peek_token(cd);
-    while (tok.kind != TOKEN_RIGHT_BRACE && tok.kind != TOKEN_EOF) {
-        BlockItem item = parse_block_item(cd);
-        Block_append(&func->block, item);
-        tok = peek_token(cd);
-    }
-
-    expect_token(cd, TOKEN_RIGHT_BRACE);
+    func->block = fn_block;
 
     return func;
 }
