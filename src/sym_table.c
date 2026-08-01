@@ -6,18 +6,25 @@
 #include "dd_string.h"
 #include "sym_table.h"
 
-void SymTable_init(SymTable *table) {
+SymTable *SymTable_create(SymTable *parent, size_t scope) {
+    SymTable *table = (SymTable *)malloc(sizeof(SymTable));
     table->cap = TABLE_MIN_CAP;
     table->load = 0;
     table->syms = (SymEntry *)calloc(table->cap, sizeof(SymEntry));
+    table->parent = parent;
+    table->scope = scope;
+    return table;
 }
 
-void SymTable_deinit(SymTable *table) {
-    for (size_t idx = 0; idx < table->cap; idx++) {
-        if (table->syms[idx].status == STE_OCCUPIED) {
-        }
-    }
+SymTable *SymTable_destroy(SymTable *table) {
+    SymTable *parent = NULL;
+    if (table == NULL) return NULL;
+    parent = table->parent;
     free(table->syms);
+    free(table);
+    table = NULL;
+
+    return parent;
 }
 
 static void SymTable_insert_raw(SymTable *table, SymEntry se, size_t hash) {
@@ -50,6 +57,7 @@ static void SymTable_insert_raw(SymTable *table, SymEntry se, size_t hash) {
     switch (se.type) {
     case SYMTYPE_MAPPING:
         table->syms[idx].as.mapping.name = se.as.mapping.name;
+        table->syms[idx].as.mapping.scope = se.as.mapping.scope;
         break;
     case SYMTYPE_LABEL:
         table->syms[idx].as.lbl.status = se.as.lbl.status;
@@ -82,7 +90,7 @@ void SymTable_insert_mapping(SymTable *table, Position pos, const String *key, c
     size_t hash = fnv1a_hash(key->cstr);
     SymEntry se = (SymEntry){
         .hash = hash, .status = STE_OCCUPIED, .type = SYMTYPE_MAPPING, .key = key,
-        .pos = pos, .as.mapping.name = value
+        .pos = pos, .as.mapping = { .name = value, .scope = table->scope }
     };
     SymTable_insert_raw(table, se, hash);
 }
@@ -104,8 +112,7 @@ bool SymTable_contains(SymTable *table, char *key, SymType type) {
     return SymTable_get(table, key, type) != NULL;
 }
 
-SymEntry *SymTable_get(SymTable *table, char *key, SymType type) {
-    size_t hash = fnv1a_hash(key);
+static SymEntry *SymTable_get_raw(SymTable *table, char *key, size_t hash, SymType type) {
     size_t idx = hash % table->cap;
     size_t start_idx = idx;
 
@@ -123,11 +130,23 @@ SymEntry *SymTable_get(SymTable *table, char *key, SymType type) {
     return NULL;
 }
 
+SymEntry *SymTable_get(SymTable *table, char *key, SymType type) {
+    size_t hash = fnv1a_hash(key);
+    SymEntry *res = SymTable_get_raw(table, key, hash, type);
+
+    if (res == NULL && table->parent != NULL)
+        return SymTable_get(table->parent, key, type);
+
+    return res;
+}
+
 void SymTable_print(SymTable *table) {
     if (table == NULL) {
         puts("table is NULL");
         return;
     }
+
+    printf("SymTable scope: %ld\n", table->scope);
 
     for (size_t idx = 0; idx < table->cap; idx++) {
         if (table->syms[idx].status == STE_OCCUPIED) {
@@ -146,5 +165,7 @@ void SymTable_print(SymTable *table) {
             }
         }
     }
+
+    if (table->parent != NULL) SymTable_print(table->parent);
 }
 

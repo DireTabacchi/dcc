@@ -41,7 +41,7 @@ void ErrorList_append(ErrorList* el, Error err) {
 void ErrorList_print(ErrorList *el) {
     for (size_t el_idx = 0; el_idx < el->len; el_idx++) {
         Error err = el->errors[el_idx];
-        printf("[%s:%d:%d] \x1B[1;31merror:\x1B[0m %s\n", err.file.cstr, err.pos.line, err.pos.column, err.desc.cstr);
+        fprintf(stderr, "[%s:%d:%d] \x1B[1;31merror:\x1B[0m %s\n", err.file.cstr, err.pos.line, err.pos.column, err.desc.cstr);
     }
 }
 

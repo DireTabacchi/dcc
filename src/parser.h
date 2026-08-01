@@ -14,8 +14,6 @@ typedef struct parser_ {
     ssize_t prev_idx;
     ssize_t curr_idx;
     AstProgram *program;
-
-    SymTable syms;
 } Parser;
 
 typedef struct compDriver_ CompDriver;

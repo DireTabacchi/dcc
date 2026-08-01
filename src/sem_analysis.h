@@ -6,13 +6,15 @@
 #include "sym_table.h"
 
 typedef struct semAnalyzer_ {
-    SymTable lbl_table;
+    SymTable *lbl_table;
+    SymTable *var_table;
 } Sema;
 
 typedef struct compDriver_ CompDriver;
 
 void Sema_init(Sema *sa);
 void Sema_deinit(Sema *sa);
+
 void sem_analyze(CompDriver *cd);
 
 #endif // SEM_ANALYSIS_H

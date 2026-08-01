@@ -10,6 +10,12 @@
 
 #include "tacd.h"
 
+// Forward declarations
+
+static void trx_block(CompDriver *cd, TacdNode *tacd_fn, Block *block);
+
+// Definitions
+
 TacdNode *TacdNode_create() {
     TacdNode *n = malloc(sizeof(TacdNode));
     *n = (TacdNode){0};
@@ -670,6 +676,11 @@ static void trx_statement(CompDriver *cd, TacdNode *tacd_fn, Stmt *stmt) {
         break;
     }
 
+    case STMT_COMPOUND: {
+        trx_block(cd, tacd_fn, stmt->as.compound_stmt);
+        break;
+    }
+
     case STMT_NULL:
     case STMT_INVALID: // Should err?
         break;
@@ -705,6 +716,12 @@ static void trx_blockitem(CompDriver *cd, TacdNode *tacd_fn, BlockItem *item) {
     }
 }
 
+static void trx_block(CompDriver *cd, TacdNode *tacd_fn, Block *block) {
+    for (size_t b_idx = 0; b_idx < block->len; b_idx++) {
+        trx_blockitem(cd, tacd_fn, &block->items[b_idx]);
+    }
+}
+
 static void trx_function(CompDriver *cd, TacdNode *tacd_fn, Function *ast_fn) {
     cd->cgd.tacd_gen.func_name = ast_fn->name;
 
@@ -712,9 +729,7 @@ static void trx_function(CompDriver *cd, TacdNode *tacd_fn, Function *ast_fn) {
     tacd_fn->node.function.name = ast_fn->name;
     CodeList_init(&tacd_fn->node.function.body);
 
-    for (size_t b_idx = 0; b_idx < ast_fn->block->len; b_idx++) {
-        trx_blockitem(cd, tacd_fn, &ast_fn->block->items[b_idx]);
-    }
+    trx_block(cd, tacd_fn, ast_fn->block);
 
     TacdCode implicit_ret = { .kind = TACD_CODE_RET };
     implicit_ret.code.ret.kind = TACD_VALUE_CONSTANT;

@@ -573,7 +573,6 @@ void Parser_init(Parser *p) {
     Program_init(p->program);
     p->curr_idx = 0;
     p->prev_idx = p->curr_idx-1;
-    SymTable_init(&p->syms);
 }
 
 void Parser_destroy(Parser *p) {
@@ -581,7 +580,6 @@ void Parser_destroy(Parser *p) {
     if (p->program == NULL) return;
     Program_deinit(p->program);
     free(p->program);
-    SymTable_deinit(&p->syms);
 }
 
 void Parser_print_ast(Parser *p) {
