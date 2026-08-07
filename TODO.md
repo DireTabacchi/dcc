@@ -8,6 +8,7 @@
         - TRIGGER: simply desire to
     - Memory usage tracker (for debug builds)
     - Internal compiler errors in various places
+    - Comment TACD Code (for Debugging TACD and ASM)
 
 ### Compiler driver
 

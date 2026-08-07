@@ -16,6 +16,7 @@ static void resolve_block(CompDriver *cd, Block *block);
 void Sema_init(Sema *sa) {
     sa->lbl_table = SymTable_create(NULL, 0);
     sa->var_table = SymTable_create(NULL, 0);
+    sa->lbl_count = 0;
 }
 
 void Sema_deinit(Sema *sa) {
@@ -23,7 +24,7 @@ void Sema_deinit(Sema *sa) {
     SymTable_destroy(sa->lbl_table);
 }
 
-static String *create_unique_varname(CompDriver *cd, String varname) {
+static const String *create_unique_varname(CompDriver *cd, String varname) {
     int digit_len = integer_len(cd->uid_count);
 
     String uvar_string = String_init_length(varname.len + digit_len + 1);
@@ -32,6 +33,20 @@ static String *create_unique_varname(CompDriver *cd, String varname) {
     String *uvar_name = (String *)StrInterner_intern(&cd->str_table, uvar_string);
     String_free(&uvar_string);
     return uvar_name;
+}
+
+static const String *create_label(CompDriver *cd, LabelKind kind) {
+    String label_kind = label_kind_table[kind];
+    int digit_len = integer_len(cd->sema.lbl_count);
+
+    // label length: func_name.len + (1) "." + label_kind.len + (1) "." + digit_len
+    String label = String_init_length(1 + label_kind.len + digit_len);
+    snprintf(label.cstr, label.len+1, "%s.%ld", label_kind.cstr, cd->sema.lbl_count);
+    cd->sema.lbl_count += 1;
+
+    const String *canon_label = StrInterner_intern(&cd->str_table, label);
+    String_free(&label);
+    return canon_label;
 }
 
 // Determine whether the expression resolves to an lvalue
@@ -104,35 +119,54 @@ static void resolve_expression(CompDriver *cd, Expr *expr) {
     }
 }
 
-static void resolve_declaration(CompDriver *cd, BlockItem *item) {
-    if (item == NULL) return;
-    if (item->kind != BLOCKITEM_DECLARATION) return;
+static void resolve_declaration(CompDriver *cd, Decl *decl) {
+    if (decl == NULL) return;
+    //if (decl->kind != BLOCKITEM_DECLARATION) return;
     
-    switch (item->as.declaration->kind) {
+    switch (decl->kind) {
     case DECL_INVALID:
         break;
     case DECL_LCL_VAR: {
-        Decl *var_decl = item->as.declaration;
         if (SymTable_contains(cd->sema.var_table,
-                var_decl->as.loc_var.identifier->cstr, 
+                decl->as.loc_var.identifier->cstr, 
                 SYMTYPE_MAPPING))
         {
             SymEntry *sym = SymTable_get(cd->sema.var_table,
-                var_decl->as.loc_var.identifier->cstr,
+                decl->as.loc_var.identifier->cstr,
                 SYMTYPE_MAPPING);
             if (sym->as.mapping.scope == cd->sema.var_table->scope)
                 err_redeclared_variable(&cd->errors, cd->tokenizer.src_path,
-                    var_decl->pos, *var_decl->as.loc_var.identifier);
+                    decl->pos, *decl->as.loc_var.identifier);
         }
-        String *new_name = create_unique_varname(cd, *var_decl->as.loc_var.identifier);
-        SymTable_insert_mapping(cd->sema.var_table, var_decl->pos,
-            (String *)var_decl->as.loc_var.identifier, new_name);
-        var_decl->as.loc_var.identifier = new_name;
-        if (var_decl->as.loc_var.init != NULL) {
-            resolve_expression(cd, var_decl->as.loc_var.init);
+        const String *new_name = create_unique_varname(cd, *decl->as.loc_var.identifier);
+        SymTable_insert_mapping(cd->sema.var_table, decl->pos,
+            (String *)decl->as.loc_var.identifier, new_name);
+        decl->as.loc_var.identifier = new_name;
+        if (decl->as.loc_var.init != NULL) {
+            resolve_expression(cd, decl->as.loc_var.init);
         }
         break;
     }
+    }
+}
+
+static void resolve_optional_expression(CompDriver *cd, Expr *expr) {
+    if (expr == NULL) return;
+
+    resolve_expression(cd, expr);
+}
+
+static void resolve_for_init(CompDriver *cd, ForInit *fi) {
+    switch (fi->kind) {
+    case FOR_INIT_INVALID:
+        break;
+    case FOR_INIT_NULL:
+    case FOR_INIT_EXP:
+        resolve_optional_expression(cd, fi->as.exp);
+        break;
+    case FOR_INIT_DECL:
+        resolve_declaration(cd, fi->as.decl);
+        break;
     }
 }
 
@@ -142,18 +176,24 @@ static void resolve_statement(CompDriver *cd, Stmt *stmt) {
     switch (stmt->kind) {
     case STMT_INVALID:
     case STMT_NULL:
+    case STMT_BREAK:
+    case STMT_CONTINUE:
         break;
+
     case STMT_RET:
         resolve_expression(cd, stmt->as.ret);
         break;
+
     case STMT_EXPR:
         resolve_expression(cd, stmt->as.expr);
         break;
+
     case STMT_IF:
         resolve_expression(cd, stmt->as.if_stmt.cond);
         resolve_statement(cd, stmt->as.if_stmt.then_stmt);
         resolve_statement(cd, stmt->as.if_stmt.else_stmt);
         break;
+
     case STMT_LABELED:
         if (SymTable_contains(cd->sema.lbl_table,
                 stmt->as.labeled_stmt.lbl->cstr, SYMTYPE_LABEL)
@@ -171,6 +211,7 @@ static void resolve_statement(CompDriver *cd, Stmt *stmt) {
         }
         resolve_statement(cd, stmt->as.labeled_stmt.stmt);
         break;
+
     case STMT_GOTO:
         if (!SymTable_contains(cd->sema.lbl_table, stmt->as.goto_stmt->cstr, SYMTYPE_LABEL)) {
             SymTable_insert_label(cd->sema.lbl_table, stmt->pos,
@@ -180,7 +221,32 @@ static void resolve_statement(CompDriver *cd, Stmt *stmt) {
 
     case STMT_COMPOUND:
         cd->sema.var_table = SymTable_create(cd->sema.var_table, cd->sema.var_table->scope+1);
+        puts("Compound Statement: symtable before resolve_block:");
+        SymTable_print(cd->sema.var_table);
         resolve_block(cd, stmt->as.compound_stmt);
+        puts("Compound Statement: symtable after resolve_block:");
+        SymTable_print(cd->sema.var_table);
+        cd->sema.var_table = SymTable_destroy(cd->sema.var_table);
+        puts("Compound Statement: symtable after destroy:");
+        SymTable_print(cd->sema.var_table);
+        break;
+
+    case STMT_WHILE:
+        resolve_expression(cd, stmt->as.while_stmt.cond);
+        resolve_statement(cd, stmt->as.while_stmt.body);
+        break;
+
+    case STMT_DOWHILE:
+        resolve_statement(cd, stmt->as.do_while_stmt.body);
+        resolve_expression(cd, stmt->as.do_while_stmt.cond);
+        break;
+
+    case STMT_FOR:
+        cd->sema.var_table = SymTable_create(cd->sema.var_table, cd->sema.var_table->scope+1);
+        resolve_for_init(cd, &stmt->as.for_stmt.init);
+        resolve_optional_expression(cd, stmt->as.for_stmt.cond);
+        resolve_optional_expression(cd, stmt->as.for_stmt.post);
+        resolve_statement(cd, stmt->as.for_stmt.body);
         cd->sema.var_table = SymTable_destroy(cd->sema.var_table);
         break;
     }
@@ -192,6 +258,8 @@ static void resolve_blockitem_statement(CompDriver *cd, BlockItem *item) {
 
     switch (item->as.statement->kind) {
     case STMT_INVALID:
+    case STMT_BREAK:
+    case STMT_CONTINUE:
     case STMT_NULL:
         break;
     case STMT_RET:
@@ -201,15 +269,12 @@ static void resolve_blockitem_statement(CompDriver *cd, BlockItem *item) {
         resolve_expression(cd, item->as.statement->as.expr);
         break;
     case STMT_IF:
-        resolve_expression(cd, item->as.statement->as.if_stmt.cond);
-        resolve_statement(cd, item->as.statement->as.if_stmt.then_stmt);
-        resolve_statement(cd, item->as.statement->as.if_stmt.else_stmt);
-        break;
     case STMT_LABELED:
     case STMT_GOTO:
-        resolve_statement(cd, item->as.statement);
-        break;
     case STMT_COMPOUND:
+    case STMT_WHILE:
+    case STMT_DOWHILE:
+    case STMT_FOR:
         resolve_statement(cd, item->as.statement);
         break;
     }
@@ -222,7 +287,7 @@ static void resolve_block(CompDriver *cd, Block *block) {
         case BLOCKITEM_INVALID:
             break;
         case BLOCKITEM_DECLARATION:
-            resolve_declaration(cd, item);
+            resolve_declaration(cd, item->as.declaration);
             break;
         case BLOCKITEM_STATEMENT:
             resolve_blockitem_statement(cd, item);
@@ -247,8 +312,76 @@ static void resolve_labels(CompDriver *cd) {
     }
 }
 
+static void label_statement(CompDriver *cd, Stmt *stmt, const String *lbl) {
+    switch (stmt->kind) {
+    case STMT_INVALID:
+    case STMT_RET:
+    case STMT_EXPR:
+    case STMT_NULL:
+    case STMT_GOTO:
+        break;
+    case STMT_IF:
+        label_statement(cd, stmt->as.if_stmt.then_stmt, lbl);
+        if (stmt->as.if_stmt.else_stmt != NULL)
+            label_statement(cd, stmt->as.if_stmt.else_stmt, lbl);
+        break;
+    case STMT_LABELED:
+        label_statement(cd, stmt->as.labeled_stmt.stmt, lbl);
+        break;
+    case STMT_COMPOUND: {
+        Block *comp_stmt = stmt->as.compound_stmt;
+        for (size_t blck_idx = 0; blck_idx < comp_stmt->len; blck_idx++) {
+            BlockItem *item = &comp_stmt->items[blck_idx];
+            if (item->kind == BLOCKITEM_STATEMENT)
+                label_statement(cd, item->as.statement, lbl);
+        }
+        break;
+    }
+    case STMT_BREAK:
+        if (lbl == NULL) {
+            err_break_not_in_loop(cd, stmt->pos);
+        }
+        stmt->as.break_stmt = lbl;
+        break;
+    case STMT_CONTINUE:
+        if (lbl == NULL) {
+            err_continue_not_in_loop(cd, stmt->pos);
+        }
+        stmt->as.continue_stmt = lbl;
+        break;
+    case STMT_WHILE: {
+        const String *new_lbl = create_label(cd, LOOP_WHILE);
+        label_statement(cd, stmt->as.while_stmt.body, new_lbl);
+        stmt->as.while_stmt.lbl = new_lbl;
+        break;
+    }
+    case STMT_DOWHILE: {
+        const String *new_lbl = create_label(cd, LOOP_DOWHILE);
+        label_statement(cd, stmt->as.do_while_stmt.body, new_lbl);
+        stmt->as.do_while_stmt.lbl = new_lbl;
+        break;
+    }
+    case STMT_FOR: {
+        const String *new_lbl = create_label(cd, LOOP_FOR);
+        label_statement(cd, stmt->as.for_stmt.body, new_lbl);
+        stmt->as.for_stmt.lbl = new_lbl;
+        break;
+    }
+    }
+}
+
+static void label_loop_statements(CompDriver *cd) {
+    for (size_t block_idx = 0; block_idx < cd->parser.program->func->block->len; block_idx++) {
+        BlockItem *item = &cd->parser.program->func->block->items[block_idx];
+        if (item->kind == BLOCKITEM_STATEMENT) {
+            label_statement(cd, item->as.statement, NULL);
+        }
+    }
+}
+
 void sem_analyze(CompDriver *cd) {
     Function *func = cd->parser.program->func;
     resolve_block(cd, func->block);
     resolve_labels(cd);
+    label_loop_statements(cd);
 }

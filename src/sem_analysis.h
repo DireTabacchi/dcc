@@ -6,6 +6,7 @@
 #include "sym_table.h"
 
 typedef struct semAnalyzer_ {
+    size_t lbl_count;
     SymTable *lbl_table;
     SymTable *var_table;
 } Sema;

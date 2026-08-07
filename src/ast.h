@@ -69,11 +69,16 @@ typedef enum stmtKind_ {
     STMT_INVALID,
     STMT_RET,
     STMT_EXPR,
-    STMT_IF,
     STMT_NULL,
+    STMT_IF,
     STMT_LABELED,
     STMT_GOTO,
-    STMT_COMPOUND
+    STMT_COMPOUND,
+    STMT_BREAK,
+    STMT_CONTINUE,
+    STMT_WHILE,
+    STMT_DOWHILE,
+    STMT_FOR
 } StatementKind;
 
 typedef enum declKind_ {
@@ -86,6 +91,13 @@ typedef enum blockItemKind_ {
     BLOCKITEM_DECLARATION,
     BLOCKITEM_STATEMENT
 } BlockItemKind;
+
+typedef enum forInitKind_ {
+    FOR_INIT_INVALID,
+    FOR_INIT_NULL,
+    FOR_INIT_DECL,
+    FOR_INIT_EXP
+} ForInitKind;
 
 typedef struct expr_ *Expr_ty;
 typedef struct expr_ {
@@ -113,24 +125,6 @@ typedef struct block_ {
     size_t cap;
 } Block;
 
-typedef struct stmt_ *Stmt_ty;
-typedef struct stmt_ {
-    StatementKind kind;
-    Position pos;
-    union {
-        Expr *ret;
-        Expr *expr;
-        struct { Expr *cond; Stmt_ty then_stmt; Stmt_ty else_stmt; } if_stmt;
-        struct { const String *lbl; Stmt_ty stmt; } labeled_stmt;
-        const String* goto_stmt;
-        Block *compound_stmt;
-    } as;
-} Stmt;
-
-Stmt *Stmt_create(StatementKind kind);
-void Stmt_destroy(Stmt *stmt);
-void Stmt_print(Stmt *stmt, int indent_lvl);
-
 typedef struct decl_ {
     DeclarationKind kind;
     Position pos;
@@ -142,6 +136,34 @@ typedef struct decl_ {
 Decl *Decl_create(DeclarationKind kind);
 void Decl_destroy(Decl *decl);
 void Decl_print(Decl *decl, int indent_lvl);
+
+typedef struct forInit_ {
+    ForInitKind kind;
+    union { Decl *decl; Expr *exp; } as;
+} ForInit;
+
+typedef struct stmt_ *Stmt_ty;
+typedef struct stmt_ {
+    StatementKind kind;
+    Position pos;
+    union {
+        Expr *ret;
+        Expr *expr;
+        struct { Expr *cond; Stmt_ty then_stmt; Stmt_ty else_stmt; } if_stmt;
+        struct { const String *lbl; Stmt_ty stmt; } labeled_stmt;
+        const String* goto_stmt;
+        Block *compound_stmt;
+        const String *break_stmt;
+        const String *continue_stmt;
+        struct { Expr *cond; Stmt_ty body; const String *lbl; } while_stmt;
+        struct { Stmt_ty body; Expr *cond; const String *lbl; } do_while_stmt;
+        struct { ForInit init; Expr *cond; Expr *post; Stmt_ty body; const String *lbl; } for_stmt;
+    } as;
+} Stmt;
+
+Stmt *Stmt_create(StatementKind kind);
+void Stmt_destroy(Stmt *stmt);
+void Stmt_print(Stmt *stmt, int indent_lvl);
 
 typedef struct blockItem_ {
     BlockItemKind kind;

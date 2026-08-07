@@ -47,4 +47,7 @@ void err_incr_not_lvalue(CompDriver *cd, Position pos);
 void err_duplicate_label(CompDriver *cd, Position pos, const SymEntry *lbl);
 void err_undefined_label(CompDriver *cd, Position pos, const String *lbl);
 
+void err_break_not_in_loop(CompDriver *cd, Position pos);
+void err_continue_not_in_loop(CompDriver *cd, Position pos);
+
 #endif // DD_ERROR_H

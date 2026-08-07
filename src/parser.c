@@ -416,6 +416,19 @@ static Expr *parse_expression(CompDriver *cd, int min_prec) {
     return left;
 }
 
+static Expr *parse_optional_expression(CompDriver *cd, TokenKind sentinel) {
+    Token next_tok = peek_token(cd);
+    if (next_tok.kind == sentinel) {
+        advance_token(cd);
+        return NULL;
+    }
+    Expr *res = parse_expression(cd, 0);
+    expect_token(cd, sentinel);
+    return res;
+}
+
+static Decl *parse_declaration(CompDriver *cd);
+
 static Stmt *parse_statement(CompDriver *cd) {
     Token next_tok = peek_token(cd);
     if (next_tok.kind == TOKEN_KW_RETURN) {
@@ -480,6 +493,77 @@ static Stmt *parse_statement(CompDriver *cd) {
         cmpnd_stmt->pos = next_tok.pos;
         cmpnd_stmt->as.compound_stmt = stmt_block;
         return cmpnd_stmt;
+    } else if (next_tok.kind == TOKEN_KW_BREAK) {
+        advance_token(cd);
+        expect_token(cd, TOKEN_SEMICOLON);
+
+        Stmt *break_stmt = Stmt_create(STMT_BREAK);
+        break_stmt->pos = next_tok.pos;
+        break_stmt->as.break_stmt = NULL; // Loop label; for semantic analysis
+        return break_stmt;
+    } else if (next_tok.kind == TOKEN_KW_CONTINUE) {
+        advance_token(cd);
+        expect_token(cd, TOKEN_SEMICOLON);
+
+        Stmt *cont_stmt = Stmt_create(STMT_CONTINUE);
+        cont_stmt->pos = next_tok.pos;
+        cont_stmt->as.continue_stmt = NULL; // Loop label; for semantic analysis
+        return cont_stmt;
+    } else if (next_tok.kind == TOKEN_KW_WHILE) {
+        advance_token(cd);
+        expect_token(cd, TOKEN_LEFT_PAREN);
+        Expr *cond = parse_expression(cd, 0);
+        expect_token(cd, TOKEN_RIGHT_PAREN);
+        Stmt *body = parse_statement(cd);
+
+        Stmt *while_stmt = Stmt_create(STMT_WHILE);
+        while_stmt->pos = next_tok.pos;
+        while_stmt->as.while_stmt.cond = cond;
+        while_stmt->as.while_stmt.body = body;
+        while_stmt->as.while_stmt.lbl = NULL; // Loop label; for semantic analysis
+        return while_stmt;
+    } else if (next_tok.kind == TOKEN_KW_DO) {
+        advance_token(cd);
+        Stmt *body = parse_statement(cd);
+        expect_token(cd, TOKEN_KW_WHILE);
+        expect_token(cd, TOKEN_LEFT_PAREN);
+        Expr *cond = parse_expression(cd, 0);
+        expect_token(cd, TOKEN_RIGHT_PAREN);
+        expect_token(cd, TOKEN_SEMICOLON);
+
+        Stmt *dwhile_stmt = Stmt_create(STMT_DOWHILE);
+        dwhile_stmt->pos = next_tok.pos;
+        dwhile_stmt->as.do_while_stmt.body = body;
+        dwhile_stmt->as.do_while_stmt.cond = cond;
+        dwhile_stmt->as.do_while_stmt.lbl = NULL; // Loop label; for semantic analysis
+        return dwhile_stmt;
+    } else if (next_tok.kind == TOKEN_KW_FOR) { 
+        advance_token(cd);
+        expect_token(cd, TOKEN_LEFT_PAREN);
+        Token init_tok = peek_token(cd);
+        ForInit init = {0};
+        if (init_tok.kind == TOKEN_KW_INT) {
+            init.kind = FOR_INIT_DECL;
+            init.as.decl = parse_declaration(cd);
+        } else {
+            init.as.exp = parse_optional_expression(cd, TOKEN_SEMICOLON);
+            if (init.as.exp == NULL) {
+                init.kind = FOR_INIT_NULL;
+            } else {
+                init.kind = FOR_INIT_EXP;
+            }
+        }
+        Expr *cond = parse_optional_expression(cd, TOKEN_SEMICOLON);
+        Expr *post = parse_optional_expression(cd, TOKEN_RIGHT_PAREN);
+        Stmt *body = parse_statement(cd);
+        Stmt *for_stmt = Stmt_create(STMT_FOR);
+        for_stmt->pos = next_tok.pos;
+        for_stmt->as.for_stmt.init = init;
+        for_stmt->as.for_stmt.cond = cond;
+        for_stmt->as.for_stmt.post = post;
+        for_stmt->as.for_stmt.body = body;
+        for_stmt->as.for_stmt.lbl = NULL; // Loop label; for semantic analysis
+        return for_stmt;
     }
 
     Expr *expr = parse_expression(cd, 0);

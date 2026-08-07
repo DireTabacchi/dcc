@@ -63,4 +63,35 @@ bool SymTable_scope_contains(SymTable *table, char *key, SymType type);
 SymEntry *SymTable_scope_get(SymTable *table, char *key, SymType type);
 void SymTable_print(SymTable *table);
 
+typedef enum LabelKind_ {
+    AND_FALSE,
+    AND_END,
+    OR_TRUE,
+    OR_END,
+    IF_ELSE,
+    IF_END,
+    TERN_ELSE,
+    TERN_END,
+    STMT_LABEL,
+    LOOP_WHILE,
+    LOOP_DOWHILE,
+    LOOP_FOR,
+    LABEL_KIND_LENGTH
+} LabelKind;
+
+static String label_kind_table[LABEL_KIND_LENGTH] = {
+    (String){ .cstr = (char*)"and_false",   .len = 9 },
+    (String){ .cstr = (char*)"and_end",     .len = 7 },
+    (String){ .cstr = (char*)"or_true",     .len = 7 },
+    (String){ .cstr = (char*)"or_end",      .len = 6 },
+    (String){ .cstr = (char*)"if_else",     .len = 7 },
+    (String){ .cstr = (char*)"if_end",      .len = 6 },
+    (String){ .cstr = (char*)"tern_else",   .len = 9 },
+    (String){ .cstr = (char*)"tern_end",    .len = 8 },
+    (String){ .cstr = (char *)"stmt",       .len = 4 },
+    (String){ .cstr = (char*)"loop_while",  .len = 10 },
+    (String){ .cstr = (char*)"loop_do_while",  .len = 13 },
+    (String){ .cstr = (char*)"loop_for",    .len = 8 },
+};
+
 #endif // SYM_TABLE_H

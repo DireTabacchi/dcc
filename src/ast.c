@@ -142,6 +142,33 @@ void Stmt_destroy(Stmt *stmt) {
         Block_destroy(stmt->as.compound_stmt);
         free(stmt);
         break;
+    case STMT_BREAK:
+    case STMT_CONTINUE:
+        free(stmt);
+        break;
+    case STMT_WHILE:
+        Expr_destroy(stmt->as.while_stmt.cond);
+        Stmt_destroy(stmt->as.while_stmt.body);
+        free(stmt);
+        break;
+    case STMT_DOWHILE:
+        Stmt_destroy(stmt->as.do_while_stmt.body);
+        Expr_destroy(stmt->as.do_while_stmt.cond);
+        free(stmt);
+        break;
+    case STMT_FOR:
+        if (stmt->as.for_stmt.init.kind == FOR_INIT_DECL) {
+            Decl_destroy(stmt->as.for_stmt.init.as.decl);
+        }
+        else if (stmt->as.for_stmt.init.kind == FOR_INIT_EXP) {
+            Expr_destroy(stmt->as.for_stmt.init.as.exp);
+        }
+
+        Expr_destroy(stmt->as.for_stmt.cond);
+        Expr_destroy(stmt->as.for_stmt.post);
+        Stmt_destroy(stmt->as.for_stmt.body);
+        free(stmt);
+        break;
     }
 }
 
@@ -414,6 +441,90 @@ void Stmt_print(Stmt *stmt, int indent_lvl) {
         printf("%2$*1$c\n", spaces+1, ')');
         break;
 
+    case STMT_BREAK:
+        printf("%2$*1$s", spaces+15, "Break Statement");
+        if (stmt->as.break_stmt != NULL)
+            printf("(%s)\n", stmt->as.break_stmt->cstr);
+        else
+            printf("\n");
+        break;
+
+    case STMT_CONTINUE:
+        printf("%2$*1$s", spaces+18, "Continue Statement");
+        if (stmt->as.continue_stmt != NULL)
+            printf("(%s)\n", stmt->as.continue_stmt->cstr);
+        else
+            printf("\n");
+        break;
+
+    case STMT_WHILE:
+        printf("%2$*1$s(\n", spaces+15, "While Statement");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        if (stmt->as.while_stmt.lbl != NULL)
+            printf("%2$*1$s=`%3$s`\n", spaces+3, "lbl", stmt->as.while_stmt.lbl->cstr);
+        printf("%2$*1$s=(\n", spaces+4, "cond");
+        Expr_print(stmt->as.while_stmt.cond, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        printf("%2$*1$s=(\n", spaces+4, "body");
+        Stmt_print(stmt->as.while_stmt.body, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
+    case STMT_DOWHILE:
+        printf("%2$*1$s(\n", spaces+18, "Do-While Statement");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        if (stmt->as.do_while_stmt.lbl != NULL)
+            printf("%2$*1$s=`%3$s`\n", spaces+3, "lbl", stmt->as.do_while_stmt.lbl->cstr);
+        printf("%2$*1$s=(\n", spaces+4, "body");
+        Stmt_print(stmt->as.do_while_stmt.body, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        printf("%2$*1$s=(\n", spaces+4, "cond");
+        Expr_print(stmt->as.do_while_stmt.cond, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
+    case STMT_FOR:
+        printf("%2$*1$s(\n", spaces+13, "For Statement");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        if (stmt->as.for_stmt.lbl != NULL)
+            printf("%2$*1$s=`%3$s`\n", spaces+3, "lbl", stmt->as.for_stmt.lbl->cstr);
+
+        if (stmt->as.for_stmt.init.kind == FOR_INIT_DECL) {
+            printf("%2$*1$s=(\n", spaces+4, "init");
+            Decl_print(stmt->as.for_stmt.init.as.decl, indent_lvl+1);
+            printf("%2$*1$c\n", spaces+1, ')');
+        } else if (stmt->as.for_stmt.init.kind == FOR_INIT_EXP) {
+            printf("%2$*1$s=(\n", spaces+4, "init");
+            Expr_print(stmt->as.for_stmt.init.as.exp, indent_lvl+1);
+            printf("%2$*1$c\n", spaces+1, ')');
+        }
+        if (stmt->as.for_stmt.cond != NULL) {
+            printf("%2$*1$s=(\n", spaces+4, "cond");
+            Expr_print(stmt->as.for_stmt.cond, indent_lvl+1);
+            printf("%2$*1$c\n", spaces+1, ')');
+        }
+        if (stmt->as.for_stmt.post != NULL) {
+            printf("%2$*1$s=(\n", spaces+4, "post");
+            Expr_print(stmt->as.for_stmt.cond, indent_lvl+1);
+            printf("%2$*1$c\n", spaces+1, ')');
+        }
+        printf("%2$*1$s=(\n", spaces+4, "body");
+        Stmt_print(stmt->as.for_stmt.body, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
     case STMT_NULL:
         printf("%2$*1$s\n", spaces+14, "Null Statement");
         break;
@@ -434,10 +545,11 @@ void Decl_print(Decl *decl, int indent_lvl) {
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$s=%3$s\n", spaces+4, "name", decl->as.loc_var.identifier->cstr);
-        printf("%2$*1$s=%3$s", spaces+4, "init", (decl->as.loc_var.init == NULL) ? "NULL\n" : "\n");
+        printf("%2$*1$s=(%3$s", spaces+4, "init", (decl->as.loc_var.init == NULL) ? "NULL\n" : "\n");
         if (decl->as.loc_var.init != NULL) {
             Expr_print(decl->as.loc_var.init, indent_lvl+1);
         }
+        printf("%2$*1$c\n", spaces+1, ')');
         indent_lvl -= 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');

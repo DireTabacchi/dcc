@@ -67,6 +67,11 @@
     TOKENKIND(TOKEN_KW_IF, "if"), \
     TOKENKIND(TOKEN_KW_ELSE, "else"), \
     TOKENKIND(TOKEN_KW_GOTO, "goto"), \
+    TOKENKIND(TOKEN_KW_DO, "do"), \
+    TOKENKIND(TOKEN_KW_WHILE, "while"), \
+    TOKENKIND(TOKEN_KW_FOR, "for"), \
+    TOKENKIND(TOKEN_KW_BREAK, "break"), \
+    TOKENKIND(TOKEN_KW_CONTINUE, "continue"), \
     TOKENKIND(TOKEN_KEYWORDS_END, ""), \
 \
     TOKENKIND(TOKEN_IDENTIFIER, "identifier"), \

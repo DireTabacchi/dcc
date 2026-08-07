@@ -164,3 +164,19 @@ void err_undefined_label(CompDriver *cd, Position pos, const String *lbl) {
         "use of undefined label `%s`", lbl->cstr);
     ErrorList_append(&cd->errors, undef_err);
 }
+
+void err_break_not_in_loop(CompDriver *cd, Position pos) {
+    Error break_err = {0};
+    break_err.file = String_copy(cd->tokenizer.src_path);
+    break_err.pos = pos;
+    break_err.desc = String_init_cstr("`break` not used in loop");
+    ErrorList_append(&cd->errors, break_err);
+}
+
+void err_continue_not_in_loop(CompDriver *cd, Position pos) {
+    Error continue_err = {0};
+    continue_err.file = String_copy(cd->tokenizer.src_path);
+    continue_err.pos = pos;
+    continue_err.desc = String_init_cstr("`continue` not used in loop");
+    ErrorList_append(&cd->errors, continue_err);
+}

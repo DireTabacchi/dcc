@@ -7,12 +7,14 @@
 #include "dd_string.h"
 #include "interner.h"
 #include "ast.h"
+#include "sym_table.h"
 
 #include "tacd.h"
 
 // Forward declarations
 
 static void trx_block(CompDriver *cd, TacdNode *tacd_fn, Block *block);
+static void trx_declaration(CompDriver *cd, TacdNode *tacd_fn, Decl *decl);
 
 // Definitions
 
@@ -95,7 +97,7 @@ static const String *create_temporary_var(CompDriver *cd) {
     return canon_varname;
 }
 
-static const String *create_label(CompDriver *cd, TacdLabelKind kind, const String *stmt_lbl) {
+static const String *create_label(CompDriver *cd, LabelKind kind, const String *stmt_lbl) {
     String label_kind = label_kind_table[kind];
 
     // label length: func_name.len + (1) "." + label_kind.len + (1) "." + digit_len
@@ -678,6 +680,203 @@ static void trx_statement(CompDriver *cd, TacdNode *tacd_fn, Stmt *stmt) {
 
     case STMT_COMPOUND: {
         trx_block(cd, tacd_fn, stmt->as.compound_stmt);
+        break;
+    }
+
+    case STMT_BREAK: {
+        String lbl_txt = String_init_length(stmt->as.break_stmt->len + 6);
+        snprintf(lbl_txt.cstr, lbl_txt.len+1, "break.%s", stmt->as.break_stmt->cstr);
+        const String *canon_lbl = StrInterner_intern(&cd->str_table, lbl_txt);
+
+        TacdCode break_jmp = (TacdCode){ .kind = TACD_CODE_JUMP, .code.jump = canon_lbl };
+        CodeList_append(&tacd_fn->node.function.body, break_jmp);
+        String_free(&lbl_txt);
+        break;
+    }
+
+    case STMT_CONTINUE: {
+        String lbl_txt = String_init_length(stmt->as.break_stmt->len + 9);
+        snprintf(lbl_txt.cstr, lbl_txt.len+1, "continue.%s", stmt->as.break_stmt->cstr);
+        const String *canon_lbl = StrInterner_intern(&cd->str_table, lbl_txt);
+
+        TacdCode continue_jmp = (TacdCode){ .kind = TACD_CODE_JUMP, .code.jump = canon_lbl };
+        CodeList_append(&tacd_fn->node.function.body, continue_jmp);
+        String_free(&lbl_txt);
+        break;
+    }
+
+    case STMT_DOWHILE: {
+        TacdCode start_lbl = (TacdCode){
+            .kind = TACD_CODE_LABEL,
+            .code.label = stmt->as.do_while_stmt.lbl
+        };
+        CodeList_append(&tacd_fn->node.function.body, start_lbl);
+
+        trx_statement(cd, tacd_fn, stmt->as.do_while_stmt.body);
+
+        String continue_lbl_txt = String_init_length(stmt->as.do_while_stmt.lbl->len + 9);
+        snprintf(continue_lbl_txt.cstr, continue_lbl_txt.len+1,
+            "continue.%s", stmt->as.do_while_stmt.lbl->cstr);
+        const String *canon_cont_lbl = StrInterner_intern(&cd->str_table, continue_lbl_txt);
+        TacdCode continue_lbl = (TacdCode){ .kind = TACD_CODE_LABEL, .code.label = canon_cont_lbl };
+        CodeList_append(&tacd_fn->node.function.body, continue_lbl);
+
+        TacdValue cond_res = trx_expression(cd, tacd_fn, stmt->as.do_while_stmt.cond);
+        TacdValue cond_dest = {
+            .kind = TACD_VALUE_IDENTIFIER,
+            .val.identifier = create_temporary_var(cd)
+        };
+        TacdCode copy_cond_res = (TacdCode){ .kind = TACD_CODE_COPY,
+            .code.copy = {
+                .dest = cond_dest,
+                .src = cond_res
+            }
+        };
+        CodeList_append(&tacd_fn->node.function.body, copy_cond_res);
+
+        TacdCode start_jmp = (TacdCode){
+            .kind = TACD_CODE_JUMP_IF_NOT_ZERO,
+            .code.jump_conditional = {
+                .condition = cond_dest,
+                .target = start_lbl.code.label 
+            }
+        };
+        CodeList_append(&tacd_fn->node.function.body, start_jmp);
+
+        String break_lbl_txt = String_init_length(stmt->as.do_while_stmt.lbl->len + 6);
+        snprintf(break_lbl_txt.cstr, break_lbl_txt.len+1,
+            "break.%s", stmt->as.do_while_stmt.lbl->cstr);
+        const String *canon_break_lbl = StrInterner_intern(&cd->str_table, break_lbl_txt);
+        TacdCode break_lbl = (TacdCode){ .kind = TACD_CODE_LABEL, .code.label = canon_break_lbl };
+        CodeList_append(&tacd_fn->node.function.body, break_lbl);
+
+        String_free(&break_lbl_txt);
+        String_free(&continue_lbl_txt);
+        break;
+    }
+
+    case STMT_WHILE: {
+        String continue_lbl_txt = String_init_length(stmt->as.while_stmt.lbl->len + 9);
+        snprintf(continue_lbl_txt.cstr, continue_lbl_txt.len+1,
+            "continue.%s", stmt->as.while_stmt.lbl->cstr);
+        const String *canon_cont_lbl = StrInterner_intern(&cd->str_table, continue_lbl_txt);
+        TacdCode continue_lbl = (TacdCode){ .kind = TACD_CODE_LABEL, .code.label = canon_cont_lbl };
+        CodeList_append(&tacd_fn->node.function.body, continue_lbl);
+
+        TacdValue cond_res = trx_expression(cd, tacd_fn, stmt->as.while_stmt.cond);
+
+        TacdValue cond_dest = {
+            .kind = TACD_VALUE_IDENTIFIER,
+            .val.identifier = create_temporary_var(cd)
+        };
+        TacdCode copy_cond_res = (TacdCode){ .kind = TACD_CODE_COPY,
+            .code.copy = {
+                .dest = cond_dest,
+                .src = cond_res
+            }
+        };
+        CodeList_append(&tacd_fn->node.function.body, copy_cond_res);
+
+        String break_lbl_txt = String_init_length(stmt->as.while_stmt.lbl->len + 6);
+        snprintf(break_lbl_txt.cstr, break_lbl_txt.len+1,
+            "break.%s", stmt->as.while_stmt.lbl->cstr);
+        const String *canon_break_lbl = StrInterner_intern(&cd->str_table, break_lbl_txt);
+
+        TacdCode end_jmp = (TacdCode){
+            .kind = TACD_CODE_JUMP_IF_ZERO,
+            .code.jump_conditional =  {
+                .condition = cond_dest,
+                .target = canon_break_lbl
+            }
+        };
+        CodeList_append(&tacd_fn->node.function.body, end_jmp);
+
+        trx_statement(cd, tacd_fn, stmt->as.while_stmt.body);
+
+        TacdCode start_jmp = (TacdCode) {
+            .kind = TACD_CODE_JUMP,
+            .code.jump = canon_cont_lbl
+        };
+        CodeList_append(&tacd_fn->node.function.body, start_jmp);
+
+        TacdCode break_lbl = (TacdCode){ .kind = TACD_CODE_LABEL, .code.label = canon_break_lbl };
+        CodeList_append(&tacd_fn->node.function.body, break_lbl);
+
+        String_free(&break_lbl_txt);
+        String_free(&continue_lbl_txt);
+        break;
+    }
+
+    case STMT_FOR: {
+        if (stmt->as.for_stmt.init.kind == FOR_INIT_DECL) {
+            trx_declaration(cd, tacd_fn, stmt->as.for_stmt.init.as.decl);
+        } else if (stmt->as.for_stmt.init.kind == FOR_INIT_EXP) {
+            trx_expression(cd, tacd_fn, stmt->as.for_stmt.init.as.exp);
+        }
+
+        TacdCode start_lbl = (TacdCode){
+            .kind = TACD_CODE_LABEL,
+            .code.label = stmt->as.for_stmt.lbl
+        };
+        CodeList_append(&tacd_fn->node.function.body, start_lbl);
+
+        String break_lbl_txt = String_init_length(stmt->as.for_stmt.lbl->len + 6);
+        snprintf(break_lbl_txt.cstr, break_lbl_txt.len+1,
+            "break.%s", stmt->as.for_stmt.lbl->cstr);
+        const String *canon_break_lbl = StrInterner_intern(&cd->str_table, break_lbl_txt);
+
+        if (stmt->as.for_stmt.cond != NULL) {
+            TacdValue cond_res = trx_expression(cd, tacd_fn, stmt->as.for_stmt.cond);
+            TacdValue cond_dest = (TacdValue){
+                .kind = TACD_VALUE_IDENTIFIER,
+                .val.identifier = create_temporary_var(cd)
+            };
+            TacdCode copy_cond_res = (TacdCode){
+                .kind = TACD_CODE_COPY,
+                .code.copy = {
+                    .dest = cond_dest,
+                    .src = cond_res
+                }
+            };
+            CodeList_append(&tacd_fn->node.function.body, copy_cond_res);
+
+            TacdCode jmp_end = (TacdCode){
+                .kind = TACD_CODE_JUMP_IF_ZERO,
+                .code.jump_conditional = {
+                    .condition = cond_dest,
+                    .target = canon_break_lbl
+                }
+            };
+            CodeList_append(&tacd_fn->node.function.body, jmp_end);
+        }
+        
+        trx_statement(cd, tacd_fn, stmt->as.for_stmt.body);
+
+        String continue_lbl_txt = String_init_length(stmt->as.for_stmt.lbl->len + 9);
+        snprintf(continue_lbl_txt.cstr, continue_lbl_txt.len+1,
+            "continue.%s", stmt->as.for_stmt.lbl->cstr);
+        const String *canon_cont_lbl = StrInterner_intern(&cd->str_table, continue_lbl_txt);
+        TacdCode continue_lbl = (TacdCode){ .kind = TACD_CODE_LABEL, .code.label = canon_cont_lbl };
+        CodeList_append(&tacd_fn->node.function.body, continue_lbl);
+
+        if (stmt->as.for_stmt.post != NULL) {
+            trx_expression(cd, tacd_fn, stmt->as.for_stmt.post);
+        }
+
+        TacdCode start_jmp = (TacdCode){
+            .kind = TACD_CODE_JUMP,
+            .code.jump = stmt->as.for_stmt.lbl
+        };
+        CodeList_append(&tacd_fn->node.function.body, start_jmp);
+
+        TacdCode break_lbl = (TacdCode){
+            .kind = TACD_CODE_LABEL,
+            .code.label = canon_break_lbl
+        };
+        CodeList_append(&tacd_fn->node.function.body, break_lbl);
+
+        String_free(&continue_lbl_txt);
+        String_free(&break_lbl_txt);
         break;
     }
 

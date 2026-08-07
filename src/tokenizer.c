@@ -120,22 +120,40 @@ static void scan_identifier(CompDriver *cd, long offset) {
 
     // Trie to check if identifier is a keyword
     switch (ident.cstr[0]) {
+    case 'b':
+        if (is_keyword(ident, 1, 4, "reak")) { // break
+            tok.kind = TOKEN_KW_BREAK;
+        }
+        break;
+    case 'c':
+        if (is_keyword(ident, 1, 7, "ontinue")) { // continue
+            tok.kind = TOKEN_KW_CONTINUE;
+        }
+        break;
+    case 'd':
+        if (is_keyword(ident, 1, 1, "o")) { // do
+            tok.kind = TOKEN_KW_DO;
+        }
+        break;
     case 'e':
-        if (is_keyword(ident, 1, 3, "lse")) {
+        if (is_keyword(ident, 1, 3, "lse")) { // else
             tok.kind = TOKEN_KW_ELSE;
         }
         break;
-
+    case 'f':
+        if (is_keyword(ident, 1, 2, "or")) { // for
+            tok.kind = TOKEN_KW_FOR;
+        }
+        break;
     case 'g':
-        if (is_keyword(ident, 1, 3, "oto")) {
+        if (is_keyword(ident, 1, 3, "oto")) { // goto
             tok.kind = TOKEN_KW_GOTO;
         }
         break;
-
     case 'i':
         switch (ident.cstr[1]) {
             case 'f':
-                if (is_keyword(ident, 2, 0, "")) {
+                if (is_keyword(ident, 2, 0, "")) { // if
                     tok.kind = TOKEN_KW_IF;
                 }
                 break;
@@ -146,7 +164,6 @@ static void scan_identifier(CompDriver *cd, long offset) {
                 break;
         }
         break;
-
     case 'r':
         if (is_keyword(ident, 1, 5, "eturn")) { // return
             tok.kind = TOKEN_KW_RETURN;
@@ -157,6 +174,11 @@ static void scan_identifier(CompDriver *cd, long offset) {
             tok.kind = TOKEN_KW_VOID;
         }
         break;
+
+    case 'w':
+        if (is_keyword(ident, 1, 4, "hile")) { // while
+            tok.kind = TOKEN_KW_WHILE;
+        }
     }
 
     tok.text = (String *)StrInterner_intern(&cd->str_table, ident);
