@@ -41,7 +41,7 @@ void ErrorList_append(ErrorList* el, Error err) {
 void ErrorList_print(ErrorList *el) {
     for (size_t el_idx = 0; el_idx < el->len; el_idx++) {
         Error err = el->errors[el_idx];
-        fprintf(stderr, "[%s:%d:%d] \x1B[1;31merror:\x1B[0m %s\n", err.file.cstr, err.pos.line, err.pos.column, err.desc.cstr);
+        fprintf(stderr, "\x1B[1m[%s:%d:%d] \x1B[1;31merror:\x1B[0m %s\n", err.file.cstr, err.pos.line, err.pos.column, err.desc.cstr);
     }
 }
 
@@ -165,11 +165,11 @@ void err_undefined_label(CompDriver *cd, Position pos, const String *lbl) {
     ErrorList_append(&cd->errors, undef_err);
 }
 
-void err_break_not_in_loop(CompDriver *cd, Position pos) {
+void err_break_not_in_loop_switch(CompDriver *cd, Position pos) {
     Error break_err = {0};
     break_err.file = String_copy(cd->tokenizer.src_path);
     break_err.pos = pos;
-    break_err.desc = String_init_cstr("`break` not used in loop");
+    break_err.desc = String_init_cstr("`break` not used in loop or switch");
     ErrorList_append(&cd->errors, break_err);
 }
 
@@ -179,4 +179,47 @@ void err_continue_not_in_loop(CompDriver *cd, Position pos) {
     continue_err.pos = pos;
     continue_err.desc = String_init_cstr("`continue` not used in loop");
     ErrorList_append(&cd->errors, continue_err);
+}
+
+void err_case_not_in_switch(CompDriver *cd, Position pos) {
+    Error case_err = {0};
+    case_err.file = String_copy(cd->tokenizer.src_path);
+    case_err.pos = pos;
+    case_err.desc = String_init_cstr("`case` not used in `switch`");
+    ErrorList_append(&cd->errors, case_err);
+}
+
+void err_default_not_in_switch(CompDriver *cd, Position pos) {
+    Error def_err = {0};
+    def_err.file = String_copy(cd->tokenizer.src_path);
+    def_err.pos = pos;
+    def_err.desc = String_init_cstr("`default` not used in `switch`");
+    ErrorList_append(&cd->errors, def_err);
+}
+
+void err_case_lbl_not_constant(CompDriver *cd, Position pos) {
+    Error def_err = {0};
+    def_err.file = String_copy(cd->tokenizer.src_path);
+    def_err.pos = pos;
+    def_err.desc = String_init_cstr("case label must be an integer constant\n"
+        "\tNOTE: constant expressions are not yet supported.\n");
+    ErrorList_append(&cd->errors, def_err);
+}
+
+void err_duplicate_case(CompDriver *cd, Position pos, int val) {
+    Error dup_err = {0};
+    dup_err.file = String_copy(cd->tokenizer.src_path);
+    dup_err.pos = pos;
+    int case_len = integer_len(val);
+    dup_err.desc = String_init_length(28 + case_len);
+    snprintf(dup_err.desc.cstr, dup_err.desc.len+1, "duplicate case with value `%d`", val);
+    ErrorList_append(&cd->errors, dup_err);
+}
+
+void err_duplicate_default(CompDriver *cd, Position pos) {
+    Error dup_err = {0};
+    dup_err.file = String_copy(cd->tokenizer.src_path);
+    dup_err.pos = pos;
+    dup_err.desc = String_init_cstr("default case is a duplicate");
+    ErrorList_append(&cd->errors, dup_err);
 }

@@ -17,8 +17,8 @@ SymTable *SymTable_create(SymTable *parent, size_t scope) {
 }
 
 SymTable *SymTable_destroy(SymTable *table) {
-    SymTable *parent = NULL;
     if (table == NULL) return NULL;
+    SymTable *parent = NULL;
     parent = table->parent;
     free(table->syms);
     free(table);
@@ -43,6 +43,9 @@ static void SymTable_insert_raw(SymTable *table, SymEntry se, size_t hash) {
                     case SYMTYPE_LABEL:
                         table_ent->as.lbl.status = se.as.lbl.status;
                         return;
+                    case SYMTYPE_CASE_LABEL:
+                        table_ent->as.case_lbl.val = se.as.case_lbl.val;
+                        return;
                     }
                 }
         }
@@ -62,6 +65,8 @@ static void SymTable_insert_raw(SymTable *table, SymEntry se, size_t hash) {
     case SYMTYPE_LABEL:
         table->syms[idx].as.lbl.status = se.as.lbl.status;
         break;
+    case SYMTYPE_CASE_LABEL:
+        table->syms[idx].as.case_lbl.val = se.as.case_lbl.val;
     }
     table->load += 1;
 }
@@ -102,8 +107,20 @@ void SymTable_insert_label(SymTable *table, Position pos, const String *txt, Lab
 
     size_t hash = fnv1a_hash(txt->cstr);
     SymEntry se = (SymEntry){
-        .hash = hash, .status = STE_OCCUPIED, .type = SYMTYPE_LABEL, .key = txt,
-        .pos = pos, .as.lbl.status = status
+        .hash = hash, .status = STE_OCCUPIED, .type = SYMTYPE_LABEL, .key = txt, .pos = pos,
+        .as.lbl.status = status
+    };
+    SymTable_insert_raw(table, se, hash);
+}
+
+void SymTable_insert_case_label(SymTable *table, Position pos, const String *lbl, int val) {
+    if ((float)(table->load+1) / table->cap > TABLE_LOAD_FACTOR)
+        SymTable_resize(table);
+
+    size_t hash = fnv1a_hash(lbl->cstr);
+    SymEntry se = (SymEntry){
+        .hash = hash, .status = STE_OCCUPIED, .type = SYMTYPE_CASE_LABEL, .key = lbl, .pos = pos,
+        .as.case_lbl.val = val
     };
     SymTable_insert_raw(table, se, hash);
 }
@@ -138,6 +155,17 @@ SymEntry *SymTable_get(SymTable *table, char *key, SymType type) {
         return SymTable_get(table->parent, key, type);
 
     return res;
+}
+
+SymEntry *SymTable_scope_get(SymTable *table, char *key, SymType type) {
+    size_t hash = fnv1a_hash(key);
+    SymEntry *res = SymTable_get_raw(table, key, hash, type);
+
+    return res;
+}
+
+bool SymTable_scope_contains(SymTable *table, char *key, SymType type) {
+    return SymTable_scope_get(table, key, type) != NULL;
 }
 
 void SymTable_print(SymTable *table) {

@@ -49,6 +49,28 @@ static const String *create_label(CompDriver *cd, LabelKind kind) {
     return canon_label;
 }
 
+static const String *create_case_label(CompDriver *cd, const String *switch_lbl, int lbl) {
+    int digit_len = integer_len(lbl);
+
+    // label length: switch_lbl.len + (1) "." + digit_len
+    String label = String_init_length(1 + switch_lbl->len + digit_len);
+    snprintf(label.cstr, label.len+1, "%s.%d", switch_lbl->cstr, lbl);
+
+    const String *canon_label = StrInterner_intern(&cd->str_table, label);
+    String_free(&label);
+    return canon_label;
+}
+
+static const String *create_default_label(CompDriver *cd, const String *switch_lbl) {
+    // label length: switch_lbl.len + (2) ".d"
+    String label = String_init_length(2 + switch_lbl->len);
+    snprintf(label.cstr, label.len+1, "%s.d", switch_lbl->cstr);
+
+    const String *canon_label = StrInterner_intern(&cd->str_table, label);
+    String_free(&label);
+    return canon_label;
+}
+
 // Determine whether the expression resolves to an lvalue
 static bool resolve_lvalue(Expr *expr) {
     switch (expr->kind) {
@@ -221,14 +243,8 @@ static void resolve_statement(CompDriver *cd, Stmt *stmt) {
 
     case STMT_COMPOUND:
         cd->sema.var_table = SymTable_create(cd->sema.var_table, cd->sema.var_table->scope+1);
-        puts("Compound Statement: symtable before resolve_block:");
-        SymTable_print(cd->sema.var_table);
         resolve_block(cd, stmt->as.compound_stmt);
-        puts("Compound Statement: symtable after resolve_block:");
-        SymTable_print(cd->sema.var_table);
         cd->sema.var_table = SymTable_destroy(cd->sema.var_table);
-        puts("Compound Statement: symtable after destroy:");
-        SymTable_print(cd->sema.var_table);
         break;
 
     case STMT_WHILE:
@@ -249,7 +265,21 @@ static void resolve_statement(CompDriver *cd, Stmt *stmt) {
         resolve_statement(cd, stmt->as.for_stmt.body);
         cd->sema.var_table = SymTable_destroy(cd->sema.var_table);
         break;
+
+    case STMT_SWITCH:
+        resolve_expression(cd, stmt->as.switch_stmt.ctrl_expr);
+        resolve_statement(cd, stmt->as.switch_stmt.body);
+        break;
+
+    case STMT_CASE:
+        resolve_statement(cd, stmt->as.case_stmt.stmt);
+        break;
+        
+    case STMT_DEFAULT:
+        resolve_statement(cd, stmt->as.default_stmt.stmt);
+        break;
     }
+
 }
 
 static void resolve_blockitem_statement(CompDriver *cd, BlockItem *item) {
@@ -275,6 +305,9 @@ static void resolve_blockitem_statement(CompDriver *cd, BlockItem *item) {
     case STMT_WHILE:
     case STMT_DOWHILE:
     case STMT_FOR:
+    case STMT_SWITCH:
+    case STMT_CASE:
+    case STMT_DEFAULT:
         resolve_statement(cd, item->as.statement);
         break;
     }
@@ -312,7 +345,14 @@ static void resolve_labels(CompDriver *cd) {
     }
 }
 
-static void label_statement(CompDriver *cd, Stmt *stmt, const String *lbl) {
+typedef enum loopSwitchStatus {
+    LSS_NONE,
+    LSS_LOOP,
+    LSS_SWITCH
+} LoopSwitchStatus;
+
+static void
+label_loop_statement( CompDriver *cd, Stmt *stmt, LoopSwitchStatus lss, const String *lbl) {
     switch (stmt->kind) {
     case STMT_INVALID:
     case STMT_RET:
@@ -321,52 +361,61 @@ static void label_statement(CompDriver *cd, Stmt *stmt, const String *lbl) {
     case STMT_GOTO:
         break;
     case STMT_IF:
-        label_statement(cd, stmt->as.if_stmt.then_stmt, lbl);
+        label_loop_statement(cd, stmt->as.if_stmt.then_stmt, lss, lbl);
         if (stmt->as.if_stmt.else_stmt != NULL)
-            label_statement(cd, stmt->as.if_stmt.else_stmt, lbl);
+            label_loop_statement(cd, stmt->as.if_stmt.else_stmt, lss, lbl);
         break;
     case STMT_LABELED:
-        label_statement(cd, stmt->as.labeled_stmt.stmt, lbl);
+        label_loop_statement(cd, stmt->as.labeled_stmt.stmt, lss, lbl);
         break;
     case STMT_COMPOUND: {
         Block *comp_stmt = stmt->as.compound_stmt;
         for (size_t blck_idx = 0; blck_idx < comp_stmt->len; blck_idx++) {
             BlockItem *item = &comp_stmt->items[blck_idx];
             if (item->kind == BLOCKITEM_STATEMENT)
-                label_statement(cd, item->as.statement, lbl);
+                label_loop_statement(cd, item->as.statement, lss, lbl);
         }
         break;
     }
     case STMT_BREAK:
-        if (lbl == NULL) {
-            err_break_not_in_loop(cd, stmt->pos);
+        if (lss == LSS_SWITCH || lss == LSS_NONE) {
+            break;
         }
         stmt->as.break_stmt = lbl;
         break;
     case STMT_CONTINUE:
-        if (lbl == NULL) {
+        if (lss == LSS_NONE || lbl == NULL) {
             err_continue_not_in_loop(cd, stmt->pos);
         }
         stmt->as.continue_stmt = lbl;
         break;
     case STMT_WHILE: {
         const String *new_lbl = create_label(cd, LOOP_WHILE);
-        label_statement(cd, stmt->as.while_stmt.body, new_lbl);
+        label_loop_statement(cd, stmt->as.while_stmt.body, LSS_LOOP, new_lbl);
         stmt->as.while_stmt.lbl = new_lbl;
         break;
     }
     case STMT_DOWHILE: {
         const String *new_lbl = create_label(cd, LOOP_DOWHILE);
-        label_statement(cd, stmt->as.do_while_stmt.body, new_lbl);
+        label_loop_statement(cd, stmt->as.do_while_stmt.body, LSS_LOOP, new_lbl);
         stmt->as.do_while_stmt.lbl = new_lbl;
         break;
     }
     case STMT_FOR: {
         const String *new_lbl = create_label(cd, LOOP_FOR);
-        label_statement(cd, stmt->as.for_stmt.body, new_lbl);
+        label_loop_statement(cd, stmt->as.for_stmt.body, LSS_LOOP, new_lbl);
         stmt->as.for_stmt.lbl = new_lbl;
         break;
     }
+    case STMT_SWITCH:
+        label_loop_statement(cd, stmt->as.switch_stmt.body, LSS_SWITCH, lbl);
+        break;
+    case STMT_CASE:
+        label_loop_statement(cd, stmt->as.case_stmt.stmt, lss, lbl);
+        break;
+    case STMT_DEFAULT:
+        label_loop_statement(cd, stmt->as.default_stmt.stmt, lss, lbl);
+        break;
     }
 }
 
@@ -374,7 +423,110 @@ static void label_loop_statements(CompDriver *cd) {
     for (size_t block_idx = 0; block_idx < cd->parser.program->func->block->len; block_idx++) {
         BlockItem *item = &cd->parser.program->func->block->items[block_idx];
         if (item->kind == BLOCKITEM_STATEMENT) {
-            label_statement(cd, item->as.statement, NULL);
+            label_loop_statement(cd, item->as.statement, LSS_NONE, NULL);
+        }
+    }
+}
+
+static void
+label_switch_statement(CompDriver *cd, Stmt *stmt, LoopSwitchStatus lss, const String *lbl) {
+    switch (stmt->kind) {
+    case STMT_INVALID:
+    case STMT_RET:
+    case STMT_EXPR:
+    case STMT_NULL:
+    case STMT_GOTO:
+        break;
+    case STMT_BREAK:
+        if (lss == LSS_NONE && lbl == NULL) {
+            err_break_not_in_loop_switch(cd, stmt->pos);
+        } else if (lss == LSS_LOOP || stmt->as.break_stmt != NULL) {
+            break;
+        }
+        stmt->as.break_stmt = lbl;
+        break;
+    case STMT_CONTINUE:
+        break;
+    case STMT_IF:
+        label_switch_statement(cd, stmt->as.if_stmt.then_stmt, lss, lbl);
+        if (stmt->as.if_stmt.else_stmt != NULL)
+            label_switch_statement(cd, stmt->as.if_stmt.else_stmt, lss, lbl);
+        break;
+    case STMT_LABELED:
+        label_switch_statement(cd, stmt->as.labeled_stmt.stmt, lss, lbl);
+        break;
+    case STMT_COMPOUND: {
+        Block *comp_stmt = stmt->as.compound_stmt;
+        for (size_t blck_idx = 0; blck_idx < comp_stmt->len; blck_idx++) {
+            BlockItem *item = &comp_stmt->items[blck_idx];
+            if (item->kind == BLOCKITEM_STATEMENT)
+                label_switch_statement(cd, item->as.statement, lss, lbl);
+        }
+        break;
+    }
+    case STMT_WHILE:
+        label_switch_statement(cd, stmt->as.while_stmt.body, LSS_LOOP, lbl);
+        break;
+    case STMT_DOWHILE:
+        label_switch_statement(cd, stmt->as.do_while_stmt.body, LSS_LOOP, lbl);
+        break;
+    case STMT_FOR:
+        label_switch_statement(cd, stmt->as.for_stmt.body, LSS_LOOP, lbl);
+        break;
+    case STMT_SWITCH: {
+        cd->sema.lbl_table = SymTable_create(cd->sema.lbl_table, cd->sema.lbl_table->scope+1);
+        const String *new_lbl = create_label(cd, SWITCH);
+        label_switch_statement(cd, stmt->as.switch_stmt.body, LSS_SWITCH, new_lbl);
+        stmt->as.switch_stmt.lbl = new_lbl;
+        stmt->as.switch_stmt.cases = cd->sema.lbl_table;
+        cd->sema.lbl_table = cd->sema.lbl_table->parent;
+        stmt->as.switch_stmt.cases->parent = NULL;
+        //cd->sema.lbl_table = SymTable_destroy(cd->sema.lbl_table);
+        break;
+    }
+    case STMT_CASE: {
+        if (lss == LSS_NONE || lbl == NULL) {
+            err_case_not_in_switch(cd, stmt->pos);
+            break;
+        } else if (stmt->as.case_stmt.lbl_expr->kind != EXPR_CONSTANT) {
+            err_case_lbl_not_constant(cd, stmt->pos);
+            break;
+        }
+        const String *case_lbl =
+            create_case_label(cd, lbl, stmt->as.case_stmt.lbl_expr->as.constant);
+        if (SymTable_scope_contains(cd->sema.lbl_table, case_lbl->cstr, SYMTYPE_CASE_LABEL)) {
+            err_duplicate_case(cd, stmt->pos, stmt->as.case_stmt.lbl_expr->as.constant);
+            break;
+        }
+        SymTable_insert_case_label(cd->sema.lbl_table,
+            stmt->pos, case_lbl, stmt->as.case_stmt.lbl_expr->as.constant);
+        stmt->as.case_stmt.lbl = case_lbl;
+        label_switch_statement(cd, stmt->as.case_stmt.stmt, lss, lbl);
+        break;
+    }
+    case STMT_DEFAULT: {
+        if (lss == LSS_NONE || lbl == NULL) {
+            err_default_not_in_switch(cd, stmt->pos);
+            break;
+        }
+        const String *case_lbl = create_default_label(cd, lbl);
+        if (SymTable_scope_contains(cd->sema.lbl_table, case_lbl->cstr, SYMTYPE_LABEL)) {
+            err_duplicate_default(cd, stmt->pos);
+            break;
+        }
+        stmt->as.default_stmt.lbl = case_lbl;
+        SymTable_insert_label(cd->sema.lbl_table, stmt->pos, case_lbl, LABEL_DEFINED);
+        label_switch_statement(cd, stmt->as.default_stmt.stmt, lss, lbl);
+        break;
+    }
+    }
+}
+
+static void label_switch_statements(CompDriver *cd) {
+    for (size_t block_idx = 0; block_idx < cd->parser.program->func->block->len; block_idx++) {
+        BlockItem *item = &cd->parser.program->func->block->items[block_idx];
+        if (item->kind == BLOCKITEM_STATEMENT) {
+            label_switch_statement(cd, item->as.statement, LSS_NONE, NULL);
         }
     }
 }
@@ -384,4 +536,5 @@ void sem_analyze(CompDriver *cd) {
     resolve_block(cd, func->block);
     resolve_labels(cd);
     label_loop_statements(cd);
+    label_switch_statements(cd);
 }

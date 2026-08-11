@@ -1,5 +1,5 @@
 #include <stdlib.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include "common.h"
 #include "dd_string.h"
@@ -564,6 +564,42 @@ static Stmt *parse_statement(CompDriver *cd) {
         for_stmt->as.for_stmt.body = body;
         for_stmt->as.for_stmt.lbl = NULL; // Loop label; for semantic analysis
         return for_stmt;
+    } else if (next_tok.kind == TOKEN_KW_SWITCH) {
+        advance_token(cd);
+        expect_token(cd, TOKEN_LEFT_PAREN);
+        Expr *control_expr = parse_expression(cd, 0);
+        expect_token(cd, TOKEN_RIGHT_PAREN);
+        Stmt *body = parse_statement(cd);
+        
+        Stmt *switch_stmt = Stmt_create(STMT_SWITCH);
+        switch_stmt->pos = next_tok.pos;
+        switch_stmt->as.switch_stmt.ctrl_expr = control_expr;
+        switch_stmt->as.switch_stmt.body = body;
+        switch_stmt->as.switch_stmt.cases = NULL; // case labels; filled in semantic analysis
+        switch_stmt->as.switch_stmt.lbl = NULL; // switch label; for semantic analysis
+        return switch_stmt;
+    } else if (next_tok.kind == TOKEN_KW_CASE) {
+        advance_token(cd);
+        Expr *lbl = parse_expression(cd, 0);
+        expect_token(cd, TOKEN_OP_COLON);
+        Stmt *stmt = parse_statement(cd);
+
+        Stmt *case_stmt = Stmt_create(STMT_CASE);
+        case_stmt->pos = next_tok.pos;
+        case_stmt->as.case_stmt.stmt = stmt;
+        case_stmt->as.case_stmt.lbl_expr = lbl;
+        case_stmt->as.case_stmt.lbl = NULL; // switch label; for semantic analysis to fill in
+        return case_stmt;
+    } else if (next_tok.kind == TOKEN_KW_DEFAULT) {
+        advance_token(cd);
+        expect_token(cd, TOKEN_OP_COLON);
+        Stmt *stmt = parse_statement(cd);
+
+        Stmt *def_stmt = Stmt_create(STMT_DEFAULT);
+        def_stmt->pos = next_tok.pos;
+        def_stmt->as.default_stmt.stmt = stmt;
+        def_stmt->as.default_stmt.lbl = NULL; // switch label; for semantic analysis to fill in
+        return def_stmt;
     }
 
     Expr *expr = parse_expression(cd, 0);

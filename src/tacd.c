@@ -880,6 +880,97 @@ static void trx_statement(CompDriver *cd, TacdNode *tacd_fn, Stmt *stmt) {
         break;
     }
 
+    case STMT_SWITCH: {
+        TacdValue ctrl_res_dest = (TacdValue){
+            .kind = TACD_VALUE_IDENTIFIER,
+            .val.identifier = create_temporary_var(cd)
+        };
+        TacdValue ctrl_val = trx_expression(cd, tacd_fn, stmt->as.switch_stmt.ctrl_expr);
+        for (size_t c_idx = 0; c_idx < stmt->as.switch_stmt.cases->cap; c_idx++) {
+            if (stmt->as.switch_stmt.cases->syms[c_idx].status == STE_OCCUPIED) {
+                SymEntry *case_entry = &stmt->as.switch_stmt.cases->syms[c_idx];
+                if (case_entry->type == SYMTYPE_CASE_LABEL) {
+                    TacdValue case_val = (TacdValue){
+                        .kind = TACD_VALUE_CONSTANT,
+                        .val.constant = case_entry->as.case_lbl.val
+                    };
+                    TacdCode cmp_ctrl = (TacdCode){
+                        .kind = TACD_CODE_BINARY,
+                        .code.binary = {
+                            .dest = ctrl_res_dest,
+                            .src1 = ctrl_val,
+                            .src2 = case_val,
+                            .op = TACD_BINARY_EQUAL
+                        }
+                    };
+                    TacdCode jmp_case = (TacdCode){
+                        .kind = TACD_CODE_JUMP_IF_NOT_ZERO,
+                        .code.jump_conditional = {
+                            .condition = ctrl_res_dest,
+                            .target = case_entry->key
+                        }
+                    };
+                    CodeList_append(&tacd_fn->node.function.body, cmp_ctrl);
+                    CodeList_append(&tacd_fn->node.function.body, jmp_case);
+                }
+            }
+        }
+
+        String swtch_brk_txt = String_init_length(stmt->as.switch_stmt.lbl->len + 6);
+        snprintf(swtch_brk_txt.cstr, swtch_brk_txt.len+1,
+            "break.%s", stmt->as.switch_stmt.lbl->cstr);
+        const String *canon_break_lbl = StrInterner_intern(&cd->str_table, swtch_brk_txt);
+        String_free(&swtch_brk_txt);
+
+        String def_str = String_init_length(stmt->as.switch_stmt.lbl->len + 2);
+        snprintf(def_str.cstr, def_str.len+1, "%s.d", stmt->as.switch_stmt.lbl->cstr);
+        if (SymTable_contains(stmt->as.switch_stmt.cases, def_str.cstr, SYMTYPE_LABEL)) {
+            SymEntry *def_entry = SymTable_get(stmt->as.switch_stmt.cases,
+                def_str.cstr, SYMTYPE_LABEL);
+            TacdCode jmp_def = (TacdCode){
+                .kind = TACD_CODE_JUMP,
+                .code.jump = def_entry->key
+            };
+            CodeList_append(&tacd_fn->node.function.body, jmp_def);
+        } else {
+            TacdCode jmp_end = (TacdCode){
+                .kind = TACD_CODE_JUMP,
+                .code.jump = canon_break_lbl
+            };
+            CodeList_append(&tacd_fn->node.function.body, jmp_end);
+        }
+        String_free(&def_str);
+
+        trx_statement(cd, tacd_fn, stmt->as.switch_stmt.body);
+
+        TacdCode end_lbl = (TacdCode){
+            .kind = TACD_CODE_LABEL,
+            .code.label = canon_break_lbl
+        };
+        CodeList_append(&tacd_fn->node.function.body, end_lbl);
+        break;
+    }
+
+    case STMT_CASE: {
+        TacdCode case_lbl = (TacdCode){
+            .kind = TACD_CODE_LABEL,
+            .code.label = stmt->as.case_stmt.lbl
+        };
+        CodeList_append(&tacd_fn->node.function.body, case_lbl);
+        trx_statement(cd, tacd_fn, stmt->as.case_stmt.stmt);
+        break;
+    }
+
+    case STMT_DEFAULT: {
+        TacdCode default_lbl = (TacdCode){
+            .kind = TACD_CODE_LABEL,
+            .code.label = stmt->as.default_stmt.lbl
+        };
+        CodeList_append(&tacd_fn->node.function.body, default_lbl);
+        trx_statement(cd, tacd_fn, stmt->as.default_stmt.stmt);
+        break;
+    }
+
     case STMT_NULL:
     case STMT_INVALID: // Should err?
         break;

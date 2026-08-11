@@ -9,6 +9,8 @@
     - Memory usage tracker (for debug builds)
     - Internal compiler errors in various places
     - Comment TACD Code (for Debugging TACD and ASM)
+    - semantic constant-folding (for switch statements)
+        - constant evaluator
 
 ### Compiler driver
 

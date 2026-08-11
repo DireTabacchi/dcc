@@ -72,6 +72,9 @@
     TOKENKIND(TOKEN_KW_FOR, "for"), \
     TOKENKIND(TOKEN_KW_BREAK, "break"), \
     TOKENKIND(TOKEN_KW_CONTINUE, "continue"), \
+    TOKENKIND(TOKEN_KW_SWITCH, "switch"), \
+    TOKENKIND(TOKEN_KW_CASE, "case"), \
+    TOKENKIND(TOKEN_KW_DEFAULT, "default"), \
     TOKENKIND(TOKEN_KEYWORDS_END, ""), \
 \
     TOKENKIND(TOKEN_IDENTIFIER, "identifier"), \

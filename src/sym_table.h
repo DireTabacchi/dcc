@@ -9,7 +9,8 @@
 
 typedef enum symType_ {
     SYMTYPE_MAPPING,
-    SYMTYPE_LABEL
+    SYMTYPE_LABEL,
+    SYMTYPE_CASE_LABEL
 } SymType;
 
 typedef enum {
@@ -37,6 +38,7 @@ typedef struct symEntry_ {
     union {
         struct { const String *name; size_t scope; } mapping;
         struct { LabelStatus status; } lbl;
+        struct { int val; } case_lbl;
     } as;
 } SymEntry;
 
@@ -57,6 +59,7 @@ Otherwise, if there is no parent or the passed table is NULL, returns NULL. */
 SymTable *SymTable_destroy(SymTable *table);
 void SymTable_insert_mapping(SymTable *table, Position pos, const String *key, const String *value);
 void SymTable_insert_label(SymTable *table, Position pos, const String *txt, LabelStatus status);
+void SymTable_insert_case_label(SymTable *table, Position pos, const String *lbl, int val);
 bool SymTable_contains(SymTable *table, char *key, SymType type);
 SymEntry *SymTable_get(SymTable *table, char *key, SymType type);
 bool SymTable_scope_contains(SymTable *table, char *key, SymType type);
@@ -76,22 +79,24 @@ typedef enum LabelKind_ {
     LOOP_WHILE,
     LOOP_DOWHILE,
     LOOP_FOR,
+    SWITCH,
     LABEL_KIND_LENGTH
 } LabelKind;
 
 static String label_kind_table[LABEL_KIND_LENGTH] = {
-    (String){ .cstr = (char*)"and_false",   .len = 9 },
-    (String){ .cstr = (char*)"and_end",     .len = 7 },
-    (String){ .cstr = (char*)"or_true",     .len = 7 },
-    (String){ .cstr = (char*)"or_end",      .len = 6 },
-    (String){ .cstr = (char*)"if_else",     .len = 7 },
-    (String){ .cstr = (char*)"if_end",      .len = 6 },
-    (String){ .cstr = (char*)"tern_else",   .len = 9 },
-    (String){ .cstr = (char*)"tern_end",    .len = 8 },
-    (String){ .cstr = (char *)"stmt",       .len = 4 },
-    (String){ .cstr = (char*)"loop_while",  .len = 10 },
+    (String){ .cstr = (char*)"and_false",       .len = 9 },
+    (String){ .cstr = (char*)"and_end",         .len = 7 },
+    (String){ .cstr = (char*)"or_true",         .len = 7 },
+    (String){ .cstr = (char*)"or_end",          .len = 6 },
+    (String){ .cstr = (char*)"if_else",         .len = 7 },
+    (String){ .cstr = (char*)"if_end",          .len = 6 },
+    (String){ .cstr = (char*)"tern_else",       .len = 9 },
+    (String){ .cstr = (char*)"tern_end",        .len = 8 },
+    (String){ .cstr = (char *)"stmt",           .len = 4 },
+    (String){ .cstr = (char*)"loop_while",      .len = 10 },
     (String){ .cstr = (char*)"loop_do_while",  .len = 13 },
-    (String){ .cstr = (char*)"loop_for",    .len = 8 },
+    (String){ .cstr = (char*)"loop_for",        .len = 8 },
+    (String){ .cstr = (char*)"switch",          .len = 6 },
 };
 
 #endif // SYM_TABLE_H

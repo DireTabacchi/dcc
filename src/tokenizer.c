@@ -128,11 +128,15 @@ static void scan_identifier(CompDriver *cd, long offset) {
     case 'c':
         if (is_keyword(ident, 1, 7, "ontinue")) { // continue
             tok.kind = TOKEN_KW_CONTINUE;
+        } else if (is_keyword(ident, 1, 3, "ase")) {
+            tok.kind = TOKEN_KW_CASE;
         }
         break;
     case 'd':
         if (is_keyword(ident, 1, 1, "o")) { // do
             tok.kind = TOKEN_KW_DO;
+        } else if (is_keyword(ident, 1, 6, "efault")) {
+            tok.kind = TOKEN_KW_DEFAULT;
         }
         break;
     case 'e':
@@ -167,6 +171,11 @@ static void scan_identifier(CompDriver *cd, long offset) {
     case 'r':
         if (is_keyword(ident, 1, 5, "eturn")) { // return
             tok.kind = TOKEN_KW_RETURN;
+        }
+        break;
+    case 's':
+        if (is_keyword(ident, 1, 5, "witch")) {
+            tok.kind = TOKEN_KW_SWITCH;
         }
         break;
     case 'v':

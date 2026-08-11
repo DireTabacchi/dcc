@@ -6,6 +6,7 @@
 #include "dd_string.h"
 
 #include "ast.h"
+#include "sym_table.h"
 
 // How many spaces to include per indent level. Used in AstNode_print
 #define SPACES_PER_INDENT 2
@@ -167,6 +168,24 @@ void Stmt_destroy(Stmt *stmt) {
         Expr_destroy(stmt->as.for_stmt.cond);
         Expr_destroy(stmt->as.for_stmt.post);
         Stmt_destroy(stmt->as.for_stmt.body);
+        free(stmt);
+        break;
+
+    case STMT_SWITCH:
+        Stmt_destroy(stmt->as.switch_stmt.body);
+        Expr_destroy(stmt->as.switch_stmt.ctrl_expr);
+        SymTable_destroy(stmt->as.switch_stmt.cases);
+        free(stmt);
+        break;
+
+    case STMT_CASE:
+        Expr_destroy(stmt->as.case_stmt.lbl_expr);
+        Stmt_destroy(stmt->as.case_stmt.stmt);
+        free(stmt);
+        break;
+
+    case STMT_DEFAULT:
+        Stmt_destroy(stmt->as.default_stmt.stmt);
         free(stmt);
         break;
     }
@@ -519,6 +538,68 @@ void Stmt_print(Stmt *stmt, int indent_lvl) {
         }
         printf("%2$*1$s=(\n", spaces+4, "body");
         Stmt_print(stmt->as.for_stmt.body, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
+    case STMT_SWITCH:
+        printf("%2$*1$s(\n", spaces+16, "Switch Statement");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=(\n", spaces+4, "ctrl");
+        Expr_print(stmt->as.switch_stmt.ctrl_expr, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        if (stmt->as.switch_stmt.cases != NULL) {
+            printf("%2$*1$s=(\n", spaces+5, "cases");
+            indent_lvl += 1;
+            spaces = indent_lvl * SPACES_PER_INDENT;
+            for (size_t cidx = 0; cidx < stmt->as.switch_stmt.cases->cap; cidx++) {
+                SymEntry *case_lbl = &stmt->as.switch_stmt.cases->syms[cidx];
+                if (case_lbl->status == STE_OCCUPIED) {
+                    printf("%2$*1$c%3$s`\n", spaces+1, '`', case_lbl->key->cstr);
+                }
+            }
+            indent_lvl -= 1;
+            spaces = indent_lvl * SPACES_PER_INDENT;
+            printf("%2$*1$c\n", spaces+1, ')');
+        }
+        printf("%2$*1$s=(\n", spaces+4, "body");
+        Stmt_print(stmt->as.switch_stmt.body, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
+    case STMT_CASE:
+        printf("%2$*1$s(\n", spaces+14, "Case Statement");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=(\n", spaces+8, "lbl_expr");
+        Expr_print(stmt->as.case_stmt.lbl_expr, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        if (stmt->as.case_stmt.lbl != NULL) {
+            printf("%2$*1$s=`%3$s`\n", spaces+3, "lbl", stmt->as.case_stmt.lbl->cstr);
+        }
+        printf("%2$*1$s=(\n", spaces+4, "stmt");
+        Stmt_print(stmt->as.case_stmt.stmt, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
+    case STMT_DEFAULT:
+        printf("%2$*1$s(\n", spaces+17, "Default Statement");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        if (stmt->as.default_stmt.lbl != NULL) {
+            printf("%2$*1$s=`%3$s`\n", spaces+3, "lbl", stmt->as.default_stmt.lbl->cstr);
+        }
+        printf("%2$*1$s=(\n", spaces+4, "stmt");
+        Stmt_print(stmt->as.default_stmt.stmt, indent_lvl+1);
         printf("%2$*1$c\n", spaces+1, ')');
         indent_lvl -= 1;
         spaces = indent_lvl * SPACES_PER_INDENT;

@@ -4,6 +4,8 @@
 #include "common.h"
 #include "dd_string.h"
 
+#include "sym_table.h"
+
 typedef enum unaryOpKind_ {
     UNARY_INVALID,
     UNARY_COMPLEMENT,
@@ -78,7 +80,10 @@ typedef enum stmtKind_ {
     STMT_CONTINUE,
     STMT_WHILE,
     STMT_DOWHILE,
-    STMT_FOR
+    STMT_FOR,
+    STMT_SWITCH,
+    STMT_CASE,
+    STMT_DEFAULT
 } StatementKind;
 
 typedef enum declKind_ {
@@ -106,11 +111,29 @@ typedef struct expr_ {
     union {
         int constant;
         const String *var;
-        struct { AssignOpKind op; Expr_ty lhs; Expr_ty rhs; } assign;
-        struct { Expr_ty lhs; Expr_ty rhs; } compound_assign;
-        struct { UnaryOpKind op; Expr_ty expr; } unary;
-        struct { BinaryOpKind op; Expr_ty left; Expr_ty right; } binary;
-        struct { Expr_ty cond; Expr_ty then_expr; Expr_ty else_expr; } ternary;
+        struct {
+            AssignOpKind op;
+            Expr_ty lhs;
+            Expr_ty rhs;
+        } assign;
+        struct {
+            Expr_ty lhs;
+            Expr_ty rhs;
+        } compound_assign;
+        struct {
+            UnaryOpKind op;
+            Expr_ty expr;
+        } unary;
+        struct {
+            BinaryOpKind op;
+            Expr_ty left;
+            Expr_ty right;
+        } binary;
+        struct {
+            Expr_ty cond;
+            Expr_ty then_expr;
+            Expr_ty else_expr;
+        } ternary;
     } as;
 } Expr;
 
@@ -129,7 +152,10 @@ typedef struct decl_ {
     DeclarationKind kind;
     Position pos;
     union {
-        struct { const String *identifier; Expr *init; } loc_var;
+        struct {
+            const String *identifier;
+            Expr *init;
+        } loc_var;
     } as;
 } Decl;
 
@@ -149,15 +175,51 @@ typedef struct stmt_ {
     union {
         Expr *ret;
         Expr *expr;
-        struct { Expr *cond; Stmt_ty then_stmt; Stmt_ty else_stmt; } if_stmt;
-        struct { const String *lbl; Stmt_ty stmt; } labeled_stmt;
+        struct {
+            Expr *cond;
+            Stmt_ty then_stmt;
+            Stmt_ty else_stmt;
+        } if_stmt;
+        struct {
+            const String *lbl;
+            Stmt_ty stmt;
+        } labeled_stmt;
         const String* goto_stmt;
         Block *compound_stmt;
-        const String *break_stmt;
-        const String *continue_stmt;
-        struct { Expr *cond; Stmt_ty body; const String *lbl; } while_stmt;
-        struct { Stmt_ty body; Expr *cond; const String *lbl; } do_while_stmt;
-        struct { ForInit init; Expr *cond; Expr *post; Stmt_ty body; const String *lbl; } for_stmt;
+        const String *break_stmt;       // Assigned at Semantic Analysis
+        const String *continue_stmt;    // Assigned at Semantic Analysis
+        struct {
+            Expr *cond;
+            Stmt_ty body;
+            const String *lbl;
+        } while_stmt;
+        struct {
+            Stmt_ty body;
+            Expr *cond;
+            const String *lbl;
+        } do_while_stmt;
+        struct {
+            ForInit init;
+            Expr *cond;
+            Expr *post;
+            Stmt_ty body;
+            const String *lbl;
+        } for_stmt;
+        struct {
+            Expr *ctrl_expr;
+            Stmt_ty body;
+            SymTable *cases;
+            const String *lbl;
+        } switch_stmt;
+        struct {
+            const String *lbl; // assigned at Semantic Analysis
+            Expr *lbl_expr;
+            Stmt_ty stmt;
+        } case_stmt;
+        struct {
+            const String *lbl; // assigned at Semantic Analysis
+            Stmt_ty stmt;
+        } default_stmt;
     } as;
 } Stmt;
 
