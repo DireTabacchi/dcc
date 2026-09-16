@@ -170,8 +170,10 @@ void PseudoSymMap_deinit(PseudoSymMap *map);
 void PseudoSymMap_append(PseudoSymMap *map, PseudoStackMapping item);
 bool PseudoSymMap_contains(PseudoSymMap *map, String key, int *val);
 
+typedef struct compDriver_ CompDriver;
+
 /* Translate TACD to generated ASM instructions. First pass.    */
-void emit_asm(CodegenDriver *cgd, TacdNode *src);
+void emit_asm(CompDriver *cd, TacdProgram *src);
 
 /* Resolve Pseudo registers to Stack offsets. Returns total stack offset. Second pass.  */
 int resolve_pseudo_registers(CodegenDriver *cgd);

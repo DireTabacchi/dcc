@@ -8,7 +8,8 @@
 typedef struct semAnalyzer_ {
     size_t lbl_count;
     SymTable *lbl_table;
-    SymTable *var_table;
+    SymTable *ident_table;
+    SymTable *symbol_table;
 } Sema;
 
 typedef struct compDriver_ CompDriver;

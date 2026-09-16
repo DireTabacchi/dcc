@@ -8,19 +8,21 @@
 #include "dd_string.h"
 #include "comp_driver.h"
 #include "sym_table.h"
-#include "sem_analysis.h"
+#include "sema.h"
 
 // Forward Declarations
 static void resolve_block(CompDriver *cd, Block *block);
 
 void Sema_init(Sema *sa) {
     sa->lbl_table = SymTable_create(NULL, 0);
-    sa->var_table = SymTable_create(NULL, 0);
+    sa->ident_table = SymTable_create(NULL, 0);
+    sa->symbol_table = SymTable_create(NULL, 0);
     sa->lbl_count = 0;
 }
 
 void Sema_deinit(Sema *sa) {
-    SymTable_destroy(sa->var_table);
+    SymTable_destroy(sa->symbol_table);
+    SymTable_destroy(sa->ident_table);
     SymTable_destroy(sa->lbl_table);
 }
 
@@ -96,12 +98,13 @@ static void resolve_expression(CompDriver *cd, Expr *expr) {
         resolve_expression(cd, expr->as.assign.rhs);
         break;
     case EXPR_VAR: {
-        if (SymTable_contains(cd->sema.var_table, expr->as.var->cstr, SYMTYPE_MAPPING)) {
+        if (SymTable_contains(cd->sema.ident_table, expr->as.var.name->cstr, SYMTYPE_MAPPING)) {
             SymEntry *canon_name =
-                SymTable_get(cd->sema.var_table, expr->as.var->cstr, SYMTYPE_MAPPING);
-            expr->as.var = canon_name->as.mapping.name;
+                SymTable_get(cd->sema.ident_table, expr->as.var.name->cstr, SYMTYPE_MAPPING);
+            expr->as.var.name = canon_name->as.mapping.name;
         } else {
-            err_undeclared_variable(&cd->errors, cd->tokenizer.src_path, expr->pos, *expr->as.var);
+            err_undeclared_variable(&cd->errors, cd->tokenizer.src_path, expr->pos,
+                *expr->as.var.name);
         }
         break;
     }
@@ -138,6 +141,24 @@ static void resolve_expression(CompDriver *cd, Expr *expr) {
         resolve_expression(cd, expr->as.ternary.then_expr);
         resolve_expression(cd, expr->as.ternary.else_expr);
         break;
+
+    case EXPR_FN_CALL: {
+        if (SymTable_contains(cd->sema.ident_table, expr->as.fn_call.ident->cstr, SYMTYPE_MAPPING)
+        ) {
+            SymEntry *sym = SymTable_get(cd->sema.ident_table, expr->as.fn_call.ident->cstr,
+                SYMTYPE_MAPPING);
+            if (sym == NULL) puts("sym was NULL");
+            expr->as.fn_call.ident = sym->as.mapping.name;
+            if (expr->as.fn_call.args == NULL) break;
+            for (size_t a_idx = 0; a_idx < expr->as.fn_call.args->len; a_idx++) {
+                resolve_expression(cd, expr->as.fn_call.args->exprs[a_idx]);
+            }
+        } else {
+            err_undeclared_function(&cd->errors, cd->tokenizer.src_path, expr->pos,
+                expr->as.fn_call.ident);
+        }
+        break;
+    }
     }
 }
 
@@ -149,24 +170,60 @@ static void resolve_declaration(CompDriver *cd, Decl *decl) {
     case DECL_INVALID:
         break;
     case DECL_LCL_VAR: {
-        if (SymTable_contains(cd->sema.var_table,
+        if (SymTable_contains(cd->sema.ident_table,
                 decl->as.loc_var.identifier->cstr, 
                 SYMTYPE_MAPPING))
         {
-            SymEntry *sym = SymTable_get(cd->sema.var_table,
+            SymEntry *sym = SymTable_get(cd->sema.ident_table,
                 decl->as.loc_var.identifier->cstr,
                 SYMTYPE_MAPPING);
-            if (sym->as.mapping.scope == cd->sema.var_table->scope)
+            if (sym->as.mapping.scope == cd->sema.ident_table->scope)
                 err_redeclared_variable(&cd->errors, cd->tokenizer.src_path,
                     decl->pos, *decl->as.loc_var.identifier);
         }
         const String *new_name = create_unique_varname(cd, *decl->as.loc_var.identifier);
-        SymTable_insert_mapping(cd->sema.var_table, decl->pos,
-            (String *)decl->as.loc_var.identifier, new_name);
+        SymTable_insert_mapping(cd->sema.ident_table, decl->pos,
+            (String *)decl->as.loc_var.identifier, new_name, LINKAGE_INTERNAL);
         decl->as.loc_var.identifier = new_name;
         if (decl->as.loc_var.init != NULL) {
             resolve_expression(cd, decl->as.loc_var.init);
         }
+        break;
+    }
+    case DECL_FUNCTION: {
+        if (SymTable_contains(cd->sema.ident_table, decl->as.fn.name->cstr, SYMTYPE_MAPPING)) {
+            SymEntry *prev_sym =
+                SymTable_get(cd->sema.ident_table, decl->as.fn.name->cstr, SYMTYPE_MAPPING);
+            if (prev_sym->as.mapping.scope == cd->sema.ident_table->scope &&
+                prev_sym->as.mapping.linkage == LINKAGE_INTERNAL
+            ) {
+                err_var_redeclared_as_fn(&cd->errors, cd->tokenizer.src_path, decl->pos,
+                    decl->as.fn.name);
+            }
+        }
+        SymTable_insert_mapping(cd->sema.ident_table, decl->pos, decl->as.fn.name, decl->as.fn.name,
+            LINKAGE_EXTERNAL);
+
+        cd->sema.ident_table = SymTable_create(cd->sema.ident_table, cd->sema.ident_table->scope+1);
+        for (size_t p_idx = 0; p_idx < decl->as.fn.params->len; p_idx++) {
+            const String *param = decl->as.fn.params->params[p_idx];
+            if (SymTable_contains(cd->sema.ident_table, param->cstr, SYMTYPE_MAPPING)) {
+                SymEntry *sym = SymTable_get(cd->sema.ident_table, param->cstr, SYMTYPE_MAPPING);
+                if (sym->as.mapping.scope == cd->sema.ident_table->scope) {
+                    err_redefined_param(&cd->errors, cd->tokenizer.src_path, decl->pos, sym->key,
+                        decl->as.fn.name);
+                }
+            }
+            const String *new_name = create_unique_varname(cd, *param);
+            SymTable_insert_mapping(cd->sema.ident_table, decl->pos, param, new_name,
+                LINKAGE_INTERNAL);
+            decl->as.fn.params->params[p_idx] = new_name;
+        }
+        if (decl->as.fn.body != NULL) {
+            resolve_block(cd, decl->as.fn.body);
+        }
+        SymTable_print(cd->sema.ident_table);
+        cd->sema.ident_table = SymTable_destroy(cd->sema.ident_table);
         break;
     }
     }
@@ -242,9 +299,9 @@ static void resolve_statement(CompDriver *cd, Stmt *stmt) {
         break;
 
     case STMT_COMPOUND:
-        cd->sema.var_table = SymTable_create(cd->sema.var_table, cd->sema.var_table->scope+1);
+        cd->sema.ident_table = SymTable_create(cd->sema.ident_table, cd->sema.ident_table->scope+1);
         resolve_block(cd, stmt->as.compound_stmt);
-        cd->sema.var_table = SymTable_destroy(cd->sema.var_table);
+        cd->sema.ident_table = SymTable_destroy(cd->sema.ident_table);
         break;
 
     case STMT_WHILE:
@@ -258,12 +315,12 @@ static void resolve_statement(CompDriver *cd, Stmt *stmt) {
         break;
 
     case STMT_FOR:
-        cd->sema.var_table = SymTable_create(cd->sema.var_table, cd->sema.var_table->scope+1);
+        cd->sema.ident_table = SymTable_create(cd->sema.ident_table, cd->sema.ident_table->scope+1);
         resolve_for_init(cd, &stmt->as.for_stmt.init);
         resolve_optional_expression(cd, stmt->as.for_stmt.cond);
         resolve_optional_expression(cd, stmt->as.for_stmt.post);
         resolve_statement(cd, stmt->as.for_stmt.body);
-        cd->sema.var_table = SymTable_destroy(cd->sema.var_table);
+        cd->sema.ident_table = SymTable_destroy(cd->sema.ident_table);
         break;
 
     case STMT_SWITCH:
@@ -335,10 +392,10 @@ static void resolve_labels(CompDriver *cd) {
         if (lbl_table->syms[lbl_idx].status == STE_OCCUPIED &&
             lbl_table->syms[lbl_idx].type == SYMTYPE_LABEL
         ) {
-            puts("Found a lbl");
+            //puts("Found a lbl");
             SymEntry lbl = lbl_table->syms[lbl_idx];
             if (lbl.as.lbl.status == LABEL_REFERENCED) {
-                puts("lbl is in error");
+                //puts("lbl is in error");
                 err_undefined_label(cd, lbl.pos, lbl.key);
             }
         }
@@ -419,11 +476,17 @@ label_loop_statement( CompDriver *cd, Stmt *stmt, LoopSwitchStatus lss, const St
     }
 }
 
+// TODO: transition from Function to decls in program
 static void label_loop_statements(CompDriver *cd) {
-    for (size_t block_idx = 0; block_idx < cd->parser.program->func->block->len; block_idx++) {
-        BlockItem *item = &cd->parser.program->func->block->items[block_idx];
-        if (item->kind == BLOCKITEM_STATEMENT) {
-            label_loop_statement(cd, item->as.statement, LSS_NONE, NULL);
+    for (size_t d_idx = 0; d_idx < cd->parser.program->decls.len; d_idx++) {
+        Decl *decl = cd->parser.program->decls.decls[d_idx];
+        if (decl->kind == DECL_FUNCTION && decl->as.fn.body != NULL) {
+            for (size_t block_idx = 0; block_idx < decl->as.fn.body->len; block_idx++) {
+                BlockItem *item = &decl->as.fn.body->items[block_idx];
+                if (item->kind == BLOCKITEM_STATEMENT) {
+                    label_loop_statement(cd, item->as.statement, LSS_NONE, NULL);
+                }
+            }
         }
     }
 }
@@ -522,19 +585,288 @@ label_switch_statement(CompDriver *cd, Stmt *stmt, LoopSwitchStatus lss, const S
     }
 }
 
+// TODO: transition from Function to decls in program
 static void label_switch_statements(CompDriver *cd) {
-    for (size_t block_idx = 0; block_idx < cd->parser.program->func->block->len; block_idx++) {
-        BlockItem *item = &cd->parser.program->func->block->items[block_idx];
-        if (item->kind == BLOCKITEM_STATEMENT) {
-            label_switch_statement(cd, item->as.statement, LSS_NONE, NULL);
+    for (size_t d_idx = 0; d_idx < cd->parser.program->decls.len; d_idx++) {
+        Decl *decl = cd->parser.program->decls.decls[d_idx];
+        if (decl->kind == DECL_FUNCTION && decl->as.fn.body != NULL) {
+            for (size_t block_idx = 0; block_idx < decl->as.fn.body->len; block_idx++) {
+                BlockItem *item = &decl->as.fn.body->items[block_idx];
+                if (item->kind == BLOCKITEM_STATEMENT) {
+                    label_switch_statement(cd, item->as.statement, LSS_NONE, NULL);
+                }
+            }
         }
     }
 }
 
+// typecheck_*
+
+static void typecheck_block(CompDriver *cd, Block *block);
+
+static void typecheck_expression(CompDriver *cd, Expr *expr) {
+    if (expr == NULL) return;
+
+    switch (expr->kind) {
+    case EXPR_INVALID:
+    case EXPR_CONSTANT:
+        break;
+    case EXPR_FN_CALL: {
+        SymEntry *sym =
+            SymTable_get(cd->sema.symbol_table, expr->as.fn_call.ident->cstr, SYMTYPE_SYMBOL);
+        if (sym == NULL) break;
+        if (sym->as.symbol.type == TYPE_INT) {
+            err_object_not_function(&cd->errors, cd->tokenizer.src_path, expr->pos,
+                sym->as.symbol.origin_name);
+            break;
+        }
+        if ((expr->as.fn_call.args == NULL && sym->as.symbol.as.fn_type.type.arity > 0) || 
+            (expr->as.fn_call.args != NULL &&
+                sym->as.symbol.as.fn_type.type.arity > expr->as.fn_call.args->len)
+        ) {
+            err_too_few_args(&cd->errors, cd->tokenizer.src_path, expr->pos, expr->as.fn_call.ident,
+                sym->as.symbol.as.fn_type.type.arity, expr->as.fn_call.args->len);
+        } else if (expr->as.fn_call.args != NULL &&
+            sym->as.symbol.as.fn_type.type.arity < expr->as.fn_call.args->len) {
+            err_too_many_args(&cd->errors, cd->tokenizer.src_path, expr->pos, expr->as.fn_call.ident,
+                sym->as.symbol.as.fn_type.type.arity, expr->as.fn_call.args->len);
+        }
+        if (expr->as.fn_call.args != NULL)
+            for (size_t a_idx = 0; a_idx < expr->as.fn_call.args->len; a_idx++) {
+                typecheck_expression(cd, expr->as.fn_call.args->exprs[a_idx]);
+            }
+        break;
+    }
+    case EXPR_VAR: {
+        SymEntry *sym =
+            SymTable_get(cd->sema.symbol_table, expr->as.var.name->cstr, SYMTYPE_SYMBOL);
+        if (sym == NULL) break;
+        if (sym->as.symbol.type != TYPE_INT) {
+            err_object_not_variable(&cd->errors, cd->tokenizer.src_path, expr->pos,
+                sym->as.symbol.origin_name);
+        }
+        break;
+    }
+    case EXPR_UNARY:
+        typecheck_expression(cd, expr->as.unary.expr);
+        break;
+    case EXPR_BINARY:
+        typecheck_expression(cd, expr->as.binary.left);
+        typecheck_expression(cd, expr->as.binary.right);
+        break;
+    case EXPR_ASSIGN: {
+        if (expr->as.assign.lhs->kind == EXPR_VAR) {
+            Expr *lhs_var = expr->as.assign.lhs;
+            if (SymTable_contains(cd->sema.symbol_table,
+                    lhs_var->as.var.name->cstr, SYMTYPE_SYMBOL)
+            ) {
+                SymEntry *lhs_sym =
+                    SymTable_get(cd->sema.symbol_table, lhs_var->as.var.name->cstr, SYMTYPE_SYMBOL);
+                if (lhs_sym->as.symbol.type == TYPE_FN) {
+                    err_assign_to_fn(&cd->errors, cd->tokenizer.src_path, expr->pos,
+                        lhs_sym->as.symbol.origin_name);
+
+                } else if (lhs_sym->as.symbol.type == TYPE_INT) {
+                    if (expr->as.assign.rhs->kind == EXPR_VAR) {
+                        Expr *rhs_var = expr->as.assign.rhs;
+                        if (SymTable_contains(cd->sema.symbol_table, rhs_var->as.var.name->cstr,
+                                SYMTYPE_SYMBOL)
+                        ) {
+                            SymEntry *rhs_sym =
+                                SymTable_get(cd->sema.symbol_table, rhs_var->as.var.name->cstr,
+                                    SYMTYPE_SYMBOL);
+                            if (rhs_sym->as.symbol.type == TYPE_FN) {
+                                err_assign_fn_to_var(&cd->errors, cd->tokenizer.src_path, expr->pos,
+                                    rhs_sym->as.symbol.origin_name);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        break;
+    }
+    case EXPR_TERNARY:
+        typecheck_expression(cd, expr->as.ternary.cond);
+        typecheck_expression(cd, expr->as.ternary.then_expr);
+        typecheck_expression(cd, expr->as.ternary.else_expr);
+        break;
+    }
+
+}
+
+static void typecheck_variable_declaration(CompDriver *cd, Decl *var_decl) {
+    SymTable_insert_symbol(cd->sema.symbol_table, var_decl->pos, var_decl->as.loc_var.identifier,
+        TYPE_INT, var_decl->as.loc_var.origin_name, 0, false);
+    if (var_decl->as.loc_var.init != NULL) {
+        typecheck_expression(cd, var_decl->as.loc_var.init);
+    }
+}
+
+static void typecheck_fn_declaration(CompDriver *cd, Decl *fn_decl) {
+    FnType fn_type = (FnType){ .arity = fn_decl->as.fn.params->len };
+    bool has_body = fn_decl->as.fn.body != NULL;
+    bool prev_defined = false;
+
+    if (SymTable_contains(cd->sema.symbol_table, fn_decl->as.fn.name->cstr, SYMTYPE_SYMBOL)) {
+        SymEntry *prev_decl = SymTable_get(cd->sema.symbol_table, fn_decl->as.fn.name->cstr,
+            SYMTYPE_SYMBOL);
+        if (prev_decl->as.symbol.type != TYPE_FN ||
+            (prev_decl->as.symbol.type == TYPE_FN &&
+             prev_decl->as.symbol.as.fn_type.type.arity != fn_type.arity)
+        ) {
+            err_incompatible_fn_types(&cd->errors, cd->tokenizer.src_path, fn_decl->pos,
+                fn_decl->as.fn.name);
+            return;
+        }
+        prev_defined = prev_decl->as.symbol.as.fn_type.defined;
+        if (prev_defined && has_body) {
+            err_fn_redefinition(&cd->errors, cd->tokenizer.src_path, fn_decl->pos,
+                fn_decl->as.fn.name, prev_decl->pos);
+            return;
+        }
+    }
+
+    SymTable_insert_symbol(cd->sema.symbol_table, fn_decl->pos, fn_decl->as.fn.name, TYPE_FN, fn_decl->as.fn.name,
+        fn_type.arity, prev_defined || has_body);
+
+    if (has_body) {
+        for (size_t p_idx = 0; p_idx < fn_decl->as.fn.params->len; p_idx++) {
+            SymTable_insert_symbol(cd->sema.symbol_table, fn_decl->pos,
+                fn_decl->as.fn.params->params[p_idx], TYPE_INT,
+                fn_decl->as.fn.params->params[p_idx], 0, false);
+        }
+        typecheck_block(cd, fn_decl->as.fn.body);
+    }
+}
+
+static void typecheck_block_declaration(CompDriver *cd, Decl *decl) {
+    if (decl == NULL) return;
+
+    switch (decl->kind) {
+    case DECL_INVALID:
+        break;
+    case DECL_LCL_VAR:
+        typecheck_variable_declaration(cd, decl);
+        break;
+    case DECL_FUNCTION:
+        if (decl->as.fn.body != NULL) {
+            err_nested_fn_definition(&cd->errors, cd->tokenizer.src_path, decl->pos);
+            break;
+        }
+        typecheck_fn_declaration(cd, decl);
+        break;
+    }
+}
+
+static void typecheck_statement(CompDriver *cd, Stmt *stmt) {
+    if (stmt == NULL) return;
+
+    switch (stmt->kind) {
+    case STMT_INVALID:
+        break;
+    case STMT_RET:
+        typecheck_expression(cd, stmt->as.ret);
+        break;
+    case STMT_EXPR:
+        typecheck_expression(cd, stmt->as.expr);
+        break;
+    case STMT_NULL:
+    case STMT_GOTO:
+    case STMT_BREAK:
+    case STMT_CONTINUE:
+        /* Nothing to check */
+        break;
+    case STMT_IF:
+        typecheck_expression(cd, stmt->as.if_stmt.cond);
+        typecheck_statement(cd, stmt->as.if_stmt.then_stmt);
+        if (stmt->as.if_stmt.else_stmt != NULL) typecheck_statement(cd, stmt->as.if_stmt.else_stmt);
+        break;
+    case STMT_LABELED:
+        typecheck_statement(cd, stmt->as.labeled_stmt.stmt);
+        break;
+    case STMT_COMPOUND:
+        typecheck_block(cd, stmt->as.compound_stmt);
+        break;
+    case STMT_WHILE:
+        typecheck_expression(cd, stmt->as.while_stmt.cond);
+        typecheck_statement(cd, stmt->as.while_stmt.body);
+        break;
+    case STMT_DOWHILE:
+        typecheck_expression(cd, stmt->as.do_while_stmt.cond);
+        typecheck_statement(cd, stmt->as.do_while_stmt.body);
+        break;
+    case STMT_FOR:
+        if (stmt->as.for_stmt.init.kind == FOR_INIT_DECL) {
+            typecheck_variable_declaration(cd, stmt->as.for_stmt.init.as.decl);
+        } else if (stmt->as.for_stmt.init.kind == FOR_INIT_EXP) {
+            typecheck_expression(cd, stmt->as.for_stmt.init.as.exp);
+        }
+        typecheck_expression(cd, stmt->as.for_stmt.cond);
+        typecheck_expression(cd, stmt->as.for_stmt.post);
+        typecheck_statement(cd, stmt->as.for_stmt.body);
+        break;
+    case STMT_SWITCH:
+        typecheck_expression(cd, stmt->as.switch_stmt.ctrl_expr);
+        typecheck_statement(cd, stmt->as.switch_stmt.body);
+        break;
+    case STMT_CASE:
+        typecheck_expression(cd, stmt->as.case_stmt.lbl_expr);
+        typecheck_statement(cd, stmt->as.case_stmt.stmt);
+        break;
+    case STMT_DEFAULT:
+        typecheck_statement(cd, stmt->as.default_stmt.stmt);
+        break;
+    }
+}
+
+static void typecheck_block(CompDriver *cd, Block *block) {
+    if (block == NULL) return;
+    if (block->len <= 0) return;
+
+    for (size_t b_idx = 0; b_idx < block->len; b_idx++) {
+        BlockItem *item = &block->items[b_idx];
+        switch (item->kind) {
+        case BLOCKITEM_INVALID:
+            break;
+        case BLOCKITEM_DECLARATION:
+            typecheck_block_declaration(cd, item->as.declaration);
+            break;
+        case BLOCKITEM_STATEMENT:
+            typecheck_statement(cd, item->as.statement);
+            break;
+        }
+    }
+}
+
+static void typecheck_program(CompDriver *cd) {
+    for (size_t d_idx = 0; d_idx < cd->parser.program->decls.len; d_idx++) {
+        Decl *decl = cd->parser.program->decls.decls[d_idx];
+        switch (decl->kind) {
+        case DECL_INVALID:
+            break;
+        case DECL_LCL_VAR:
+            typecheck_variable_declaration(cd, decl);
+            break;
+        case DECL_FUNCTION:
+            typecheck_fn_declaration(cd, decl);
+            break;
+        }
+    }
+
+    printf("After typechecking...\n");
+    SymTable_print(cd->sema.symbol_table);
+}
+
 void sem_analyze(CompDriver *cd) {
-    Function *func = cd->parser.program->func;
-    resolve_block(cd, func->block);
-    resolve_labels(cd);
+    for (size_t d_idx = 0; d_idx < cd->parser.program->decls.len; d_idx++) {
+        cd->sema.lbl_table = SymTable_create(cd->sema.lbl_table, 0);
+        resolve_declaration(cd, cd->parser.program->decls.decls[d_idx]);
+        resolve_labels(cd);
+        cd->sema.lbl_table = SymTable_destroy(cd->sema.lbl_table);
+    }
     label_loop_statements(cd);
     label_switch_statements(cd);
+    Parser_print_ast(&cd->parser);
+    typecheck_program(cd);
 }

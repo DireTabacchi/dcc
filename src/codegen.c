@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "comp_driver.h"
 #include "dd_string.h"
 #include "tacd.h"
 
@@ -421,7 +422,7 @@ static void AsmNode_print(AsmNode *node, int indent_lvl) {
 
 static Operand trx_operand(TacdValue val) {
     switch (val.kind) {
-    case TACD_NODE_INVALID:
+    case TACD_VALUE_INVALID:
         /*  TODO: should probably be an internal compiler error.    */
         break;
 
@@ -728,13 +729,12 @@ static AsmInstr trx_code(AsmNode *asm_function, TacdCode *tacd_code) {
     return (AsmInstr){ .kind = ASM_INSTR_INVALID };
 }
 
-static AsmNode *trx_function(TacdNode *tacd_function) {
+static AsmNode *trx_function(TacdFunction *tacd_function) {
     if (tacd_function == NULL) return NULL;
-    if (tacd_function->kind != TACD_NODE_FUNCTION) return NULL;
 
-    AsmNode *asm_function = AsmNode_function_create(tacd_function->node.function.name);
+    AsmNode *asm_function = AsmNode_function_create(tacd_function->name);
 
-    CodeList func_body = tacd_function->node.function.body;
+    CodeList func_body = tacd_function->body;
     for (size_t code_idx = 0; code_idx < func_body.len; code_idx++) {
         AsmInstr instr = trx_code(asm_function, &func_body.codes[code_idx]);
         // TODO: check if instr is ASM_INSTR_INVALID
@@ -746,14 +746,14 @@ static AsmNode *trx_function(TacdNode *tacd_function) {
     return asm_function;
 }
 
-static AsmNode *trx_program(TacdNode *tacd_program) {
+static AsmNode *trx_program(TacdProgram *tacd_program) {
     /*  TODO: these checks should result in internal compiler error.    */
     if (tacd_program == NULL) return NULL;
-    if (tacd_program->kind != TACD_NODE_PROGRAM) return NULL;
 
     AsmNode *prog = AsmNode_create();
     prog->kind = ASMNODE_PROGRAM;
-    prog->node.program.function = trx_function(tacd_program->node.program.function);
+    // TODO: Now a list of TacdFunction
+    //prog->node.program.function = trx_function(tacd_program->node.program.function);
 
     return prog;
 }
@@ -1001,34 +1001,43 @@ int resolve_pseudo_registers(CodegenDriver *cgd) {
     return total_offset;
 }
 
-void emit_asm(CodegenDriver *cgd, TacdNode *src) {
+void emit_asm(CompDriver *cd, TacdProgram *src) {
+    CodegenDriver *cgd = &cd->cgd;
     // First pass of TACD -> ASM; Generate preliminary ASM.
     cgd->program = trx_program(src);
 
 #ifdef DEBUG
-    puts("Generated ASM Structure ([1] Initial Generation)\n================================================");
-    AsmNode_print(cgd->program, 0);
+    if (cd->opts.debug_flags[DF_PRINT_CODEGEN] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+        puts("Generated ASM Structure ([1] Initial Generation)\n================================================");
+        AsmNode_print(cgd->program, 0);
+    }
 #endif
 
     // Second pass of TACD -> ASM; Replace Pseudo registers with stack offsets.
     int resolved_offset = resolve_pseudo_registers(cgd);
 #ifdef DEBUG
-    puts("Generated ASM Structure ([2] Resolve Pseudo Registers)\n======================================================");
-    AsmNode_print(cgd->program, 0);
-    printf("resolved offset: %d\n", resolved_offset);
+    if (cd->opts.debug_flags[DF_PRINT_CODEGEN] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+        puts("Generated ASM Structure ([2] Resolve Pseudo Registers)\n======================================================");
+        AsmNode_print(cgd->program, 0);
+        printf("resolved offset: %d\n", resolved_offset);
+    }
 #endif
 
     // Third pass Resolve the function stack and invalid instructions
     resolve_function_stack(cgd, resolved_offset);
 #ifdef DEBUG
-    puts("Generated ASM Structure ([3] Add Stack Allocation)\n==================================================");
-    AsmNode_print(cgd->program, 0);
+    if (cd->opts.debug_flags[DF_PRINT_CODEGEN] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+        puts("Generated ASM Structure ([3] Add Stack Allocation)\n==================================================");
+        AsmNode_print(cgd->program, 0);
+    }
 #endif
 
     resolve_invalid_instructions(cgd, cgd->program->node.program.function);
 #ifdef DEBUG
-    puts("Generated ASM Structure ([4] Fix Bad Instructions)\n==================================================");
-    AsmNode_print(cgd->program, 0);
+    if (cd->opts.debug_flags[DF_PRINT_CODEGEN] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+        puts("Generated ASM Structure ([4] Fix Bad Instructions)\n==================================================");
+        AsmNode_print(cgd->program, 0);
+    }
 #endif
 
 }

@@ -5,10 +5,6 @@
 #include "dd_string.h"
 #include "token.h"
 
-//bool Token_is_operator(Token t) {
-//    return t.kind > TOKEN_OPERATORS_BEGIN && t.kind < TOKEN_OPERATORS_END;
-//}
-
 void TokenList_init(TokenList* tl) {
     tl->cap = 2;
     tl->len = 0;
@@ -47,7 +43,10 @@ void TokenList_destroy(TokenList* tl) {
         case TOKEN_OP_DOUBLE_AMP: case TOKEN_OP_AMPERSAND: case TOKEN_OP_DOUBLE_BAR:
         case TOKEN_OP_BAR: case TOKEN_OP_CARET: case TOKEN_OP_LSHFT: case TOKEN_OP_LTE:
         case TOKEN_OP_LT: case TOKEN_OP_RSHFT: case TOKEN_OP_GTE: case TOKEN_OP_GT:
-        case TOKEN_OP_QUESTION: case TOKEN_OP_COLON: case TOKEN_KW_IF: case TOKEN_KW_ELSE:
+        case TOKEN_OP_QUESTION: case TOKEN_OP_COLON: case TOKEN_OP_COMMA: case TOKEN_KW_IF:
+        case TOKEN_KW_ELSE: case TOKEN_KW_DO: case TOKEN_KW_WHILE: case TOKEN_KW_FOR:
+        case TOKEN_KW_BREAK: case TOKEN_KW_CONTINUE: case TOKEN_KW_SWITCH: case TOKEN_KW_CASE:
+        case TOKEN_KW_DEFAULT: case TOKEN_KW_GOTO:
         case TOKEN_EOF:
             /* Interned String */
             break;

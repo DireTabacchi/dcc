@@ -10,7 +10,8 @@
 typedef enum symType_ {
     SYMTYPE_MAPPING,
     SYMTYPE_LABEL,
-    SYMTYPE_CASE_LABEL
+    SYMTYPE_CASE_LABEL,
+    SYMTYPE_SYMBOL
 } SymType;
 
 typedef enum {
@@ -29,6 +30,20 @@ typedef enum {
     SCOPE_ALL       // All scopes
 } ScopeStatus;
 
+typedef enum {
+    LINKAGE_INTERNAL,
+    LINKAGE_EXTERNAL
+} LinkageKind;
+
+typedef enum {
+    TYPE_INT,
+    TYPE_FN
+} TypeKind;
+
+typedef struct fnType_ {
+    size_t arity;
+} FnType;
+
 typedef struct symEntry_ {
     size_t hash;
     const String *key;
@@ -36,9 +51,16 @@ typedef struct symEntry_ {
     STEStatus status;
     Position pos;
     union {
-        struct { const String *name; size_t scope; } mapping;
+        struct { const String *name; size_t scope; LinkageKind linkage; } mapping;
         struct { LabelStatus status; } lbl;
         struct { int val; } case_lbl;
+        struct {
+            TypeKind type;
+            const String *origin_name;
+            union {
+                struct { FnType type; bool defined; } fn_type;
+            } as;
+        } symbol;
     } as;
 } SymEntry;
 
@@ -57,14 +79,18 @@ SymTable *SymTable_create(SymTable *parent, size_t scope);
 If the table has a parent, returns a pointer to the parent.
 Otherwise, if there is no parent or the passed table is NULL, returns NULL. */
 SymTable *SymTable_destroy(SymTable *table);
-void SymTable_insert_mapping(SymTable *table, Position pos, const String *key, const String *value);
+void SymTable_insert_mapping(SymTable *table, Position pos, const String *key, const String *value,
+    LinkageKind linkage);
 void SymTable_insert_label(SymTable *table, Position pos, const String *txt, LabelStatus status);
 void SymTable_insert_case_label(SymTable *table, Position pos, const String *lbl, int val);
+void SymTable_insert_symbol( SymTable *table, Position pos, const String *key, TypeKind type,
+    const String *origin_name, size_t param_cnt, bool defined);
 bool SymTable_contains(SymTable *table, char *key, SymType type);
 SymEntry *SymTable_get(SymTable *table, char *key, SymType type);
 bool SymTable_scope_contains(SymTable *table, char *key, SymType type);
 SymEntry *SymTable_scope_get(SymTable *table, char *key, SymType type);
 void SymTable_print(SymTable *table);
+void SymEntry_print(SymEntry *entry);
 
 typedef enum LabelKind_ {
     AND_FALSE,

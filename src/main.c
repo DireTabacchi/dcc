@@ -13,7 +13,7 @@
 #include "codegen_x86_64.h"
 #include "tacd.h"
 #include "comp_driver.h"
-#include "sem_analysis.h"
+#include "sema.h"
 
 #include "dcc_error.h"
 
@@ -39,25 +39,13 @@ void printOptions(Options *opts) {
         puts("No build flags; emit executable");
     }
 
-    printf("Source file: %s\n", opts->filepath);
-}
-
-void print_usage(char *argv0) {
-    printf("Usage: %s [options] <srcfile.c>\n", argv0);
-    puts("Options:");
-    puts("  -h, --help\t\tDisplay this information.");
-    puts("  -E\t\t\tEmit Preprocessor code.\n  -S\t\t\tEmit Assembly code.");
-    puts("  --lex\t\t\tRun compiler up through the Lexing stage. Does not produce output.");
-    puts("  --parse\t\tRun compiler up through the Parsing stage. Does not produce output.");
-    puts("  --validate\t\tRun compiler up through the semantic analysis stage. Does not produce output.");
-    puts("  --tacky\t\tRun compiler up through the TACD gen stage. Does not produce output.");
-    puts("  --codegen\t\tRun compiler up through the Codegen stage. Does not produce output.");
+    //printf("Source file: %s\n", opts->filepath);
 }
 
 int main(int argc, char *argv[]) {
     CompDriver driver = {0};
     CompDriver_init(&driver);
-    if (parse_command(&driver.opts, argc, argv) != 0) {
+    if (parse_command(&driver, argc, argv) != 0) {
         print_usage(argv[0]);
         CompDriver_deinit(&driver);
         return EXIT_FAILURE;
@@ -68,128 +56,172 @@ int main(int argc, char *argv[]) {
         return EXIT_SUCCESS;
     }
 
-    struct stat src_stat;
-    if (stat(driver.opts.filepath, &src_stat) != 0) {
-        printf("[Error] Cannot stat file %s\n", driver.opts.filepath);
-        return EXIT_FAILURE;
+    bool compiler_erred = false;
+    // Create an object for each source file
+    for (size_t src_idx = 0; src_idx < driver.src_paths.len; src_idx++) {
+        String src_path = driver.src_paths.strs[src_idx];
+        struct stat src_stat;
+        if (stat(src_path.cstr, &src_stat) != 0) {
+            printf("[Error] Cannot stat file %s\n", src_path.cstr);
+            return EXIT_FAILURE;
+        }
+
+        // Size of path string (not including null terminator byte)
+        size_t basename_len = 0;
+        // find the suffix (.c) to replace with the suffix (.i)
+        if (src_path.cstr[src_path.len-1] != 'c' && src_path.cstr[src_path.len-2] != '.') {
+            puts("[Error] Expected source file ending in `.c`");
+            return EXIT_FAILURE;
+        }
+        for (size_t i = src_path.len-1; i >= 0; i--) {
+            if (src_path.cstr[i] == '.') {
+                basename_len = i;
+                break;
+            }
+        }
+        if (basename_len == 0) {
+            puts("[Error] Invalid filename");
+            return EXIT_FAILURE;
+        }
+
+        String tu_name = String_init_length(basename_len);
+        memcpy(tu_name.cstr, src_path.cstr, basename_len);
+        StringArray_append(&driver.tu_names, tu_name);
+        //printf("[debug] file basename is %s\n", file_basename);
+        String preproc_filename = String_init_length(basename_len+2);
+        memcpy(preproc_filename.cstr, tu_name.cstr, basename_len);
+        memcpy(&preproc_filename.cstr[basename_len], ".i", 2);  // kinda sketchy, maybe find better way later
+        // Preprocess file; Let GCC handle that
+        // allocate space for command:
+        //   14 characters (exe, flags, spaces) + src_path.len + strlen(preproc_filename)
+        String preproc_command = String_init_length(14 + src_path.len + preproc_filename.len);
+        sprintf(preproc_command.cstr, "gcc -E -P %s -o %s", src_path.cstr, preproc_filename.cstr);
+        //printf("[debug] Preproc_command:\n%s\n", preproc_command);
+        system(preproc_command.cstr);
+        String_free(&preproc_command); // preproc command no longer needed
+
+        Tokenizer_init(&driver, preproc_filename.cstr);
+        Parser_init(&driver.parser);
+        if (driver.opts.dbf >= DBF_LEX || driver.opts.dbf == DBF_NONE) {
+            tokenize(&driver);
+#ifdef DEBUG
+            if (driver.opts.debug_flags[DF_PRINT_TOKENS] || driver.opts.debug_flags[DF_PRINT_ALL]) {
+                TokenList_print(&driver.tokenizer.tokens);
+            }
+#endif
+        }
+
+        if (driver.opts.dbf >= DBF_PARSE || driver.opts.dbf == DBF_NONE) {
+            // TODO: take in the whole driver
+            parse(&driver);
+#ifdef DEBUG
+            if (driver.opts.debug_flags[DF_PRINT_AST] || driver.opts.debug_flags[DF_PRINT_ALL]) {
+                puts("Generated AST Structure\n=======================");
+                Parser_print_ast(&driver.parser);
+            }
+#endif
+        }
+
+        if (driver.opts.dbf >= DBF_VALIDATE || driver.opts.dbf == DBF_NONE) {
+            sem_analyze(&driver);
+#ifdef DEBUG
+            if (driver.opts.debug_flags[DF_PRINT_AST] || driver.opts.debug_flags[DF_PRINT_ALL]) {
+                puts("Validated AST Structure\n=======================");
+                Parser_print_ast(&driver.parser);
+            }
+#endif
+        }
+
+        if (driver.errors.len > 0) {
+            compiler_erred = true;
+            ErrorList_print(&driver.errors);
+        }
+
+        CodegenDriver_init(&driver.cgd);
+        if (!compiler_erred && (driver.opts.dbf >= DBF_TACD || driver.opts.dbf == DBF_NONE)) {
+            generate_tacd(&driver, driver.parser.program);
+#ifdef DEBUG
+            if (driver.opts.debug_flags[DF_PRINT_TACD] || driver.opts.debug_flags[DF_PRINT_ALL]) {
+                Tacd_print(driver.cgd.tacd_gen.program);
+            }
+#endif
+        }
+
+        if (!compiler_erred && (driver.opts.dbf >= DBF_CODEGEN || driver.opts.dbf == DBF_NONE)) {
+            // TODO: pass whole driver
+            emit_asm(&driver, driver.cgd.tacd_gen.program);
+        }
+        driver.cgd.dest = String_init_length(basename_len+2);
+        memcpy(driver.cgd.dest.cstr, tu_name.cstr, basename_len);
+        memcpy(&driver.cgd.dest.cstr[basename_len], ".s", 2);
+
+        if (!compiler_erred && (driver.opts.dbf >= DBF_CODEGEN || driver.opts.dbf == DBF_NONE)) {
+            emit_program(&driver.cgd);
+        }
+
+        if (driver.opts.bf != BF_EMIT_PREPROCESSOR) {
+            //puts("removing preprocessor file");
+            remove(preproc_filename.cstr);
+        }
+
+        if (!compiler_erred && driver.opts.dbf < DBF_LEX && driver.opts.bf < BF_EMIT_PREPROCESSOR) {
+            // allocate space for command: 8 characters ((3)exe, (2)flags, (3)spaces) + strlen(src) + strlen(preproc_filename)
+            String assemble_command = String_init_length(8 + driver.cgd.dest.len + tu_name.len);
+            sprintf(assemble_command.cstr, "gcc -c -o %s.o %s", tu_name.cstr, driver.cgd.dest.cstr);
+            //printf("[debug] assemble_command:\n%s\n", assemble_command);
+            system(assemble_command.cstr);
+            String_free(&assemble_command); // assemble command no longer needed
+        }
+
+        if (driver.opts.bf != BF_EMIT_ASSEMBLY) {
+            remove(driver.cgd.dest.cstr);
+        }
+
+        String_free(&preproc_filename);
+        //String_free(&tu_name);
     }
-    // Size of path string (not including null terminator byte)
-    size_t path_len = strlen(driver.opts.filepath);
-    size_t basename_len = 0;
-    // find the suffix (.c) to replace with the suffix (.i)
-    if (driver.opts.filepath[path_len-1] != 'c' && driver.opts.filepath[path_len-2] != '.') {
-        puts("[Error] Expected source file ending in `.c`");
-        return EXIT_FAILURE;
+
+    if (!compiler_erred && driver.opts.bf != BF_EMIT_OBJECT && driver.opts.dbf < DBF_LEX) {
+        // link all objects into executable
+        size_t command_len = driver.tu_names.strs[0].len+7;
+        size_t next_offset = command_len;
+        for (size_t tu_idx = 0; tu_idx < driver.tu_names.len; tu_idx++) {
+            command_len += driver.tu_names.strs[tu_idx].len + 3;
+        }
+        String link_command = String_init_length(command_len);
+        snprintf(link_command.cstr, driver.tu_names.strs[0].len+8,
+            "gcc -o %s", driver.tu_names.strs[0].cstr);
+        for (size_t tu_idx = 0; tu_idx < driver.tu_names.len; tu_idx++) {
+            size_t max_len = link_command.len-next_offset+1;
+            snprintf(&link_command.cstr[next_offset], max_len,
+                " %s.o", driver.tu_names.strs[tu_idx].cstr);
+            next_offset += driver.tu_names.strs[tu_idx].len+3;
+        }
+        system(link_command.cstr);
+        String_free(&link_command);
     }
-    for (size_t i = path_len-1; i >= 0; i--) {
-        if (driver.opts.filepath[i] == '.') {
-            basename_len = i;
-            break;
+
+    if (driver.opts.bf != BF_EMIT_OBJECT) {
+        for (size_t tu_idx = 0; tu_idx < driver.tu_names.len; tu_idx++) {
+            String obj_path = String_init_length(driver.tu_names.strs[tu_idx].len+2);
+            snprintf(obj_path.cstr, obj_path.len+1, "%s.o", driver.tu_names.strs[tu_idx].cstr);
+            remove(obj_path.cstr);
+            String_free(&obj_path);
         }
     }
-    if (basename_len == 0) {
-        puts("[Error] Invalid filename");
-        return EXIT_FAILURE;
-    }
 
-    String file_basename = String_init_length(basename_len);
-    memcpy(file_basename.cstr, driver.opts.filepath, basename_len);
-    //printf("[debug] file basename is %s\n", file_basename);
-    String preproc_filename = String_init_length(basename_len+2);
-    memcpy(preproc_filename.cstr, file_basename.cstr, basename_len);
-    memcpy(&preproc_filename.cstr[basename_len], ".i", 2);  // kinda sketchy, maybe find better way later
-    //printf("[debug] preproc filename: %s\n", preproc_filename);
-
-    // Preprocess file; Let GCC handle that
-    // allocate space for command: 14 characters (exe, flags, spaces) + strlen(src) + strlen(preproc_filename)
-    String preproc_command = String_init_length(14 + strlen(driver.opts.filepath) + preproc_filename.len);
-    sprintf(preproc_command.cstr, "gcc -E -P %s -o %s", driver.opts.filepath, preproc_filename.cstr);
-    //printf("[debug] Preproc_command:\n%s\n", preproc_command);
-    system(preproc_command.cstr);
-    String_free(&preproc_command); // preproc command no longer needed
-
-    Tokenizer_init(&driver.tokenizer, preproc_filename.cstr);
-    Parser_init(&driver.parser);
-    bool compiler_erred = false;
-    if (driver.opts.dbf >= DBF_LEX || driver.opts.dbf == DBF_NONE) {
-        tokenize(&driver);
 #ifdef DEBUG
-        TokenList_print(&driver.tokenizer.tokens);
-#endif
-    }
-
-    if (driver.opts.dbf >= DBF_PARSE || driver.opts.dbf == DBF_NONE) {
-        // TODO: take in the whole driver
-        parse(&driver);
-#ifdef DEBUG
-        puts("Generated AST Structure\n=======================");
-        Parser_print_ast(&driver.parser);
-#endif
-    }
-
-    if (driver.opts.dbf >= DBF_VALIDATE || driver.opts.dbf == DBF_NONE) {
-        sem_analyze(&driver);
-#ifdef DEBUG
-        puts("Validated AST Structure\n=======================");
-        Parser_print_ast(&driver.parser);
-#endif
-    }
-
-    if (driver.errors.len > 0) {
-        compiler_erred = true;
-        ErrorList_print(&driver.errors);
-    }
-
-    CodegenDriver_init(&driver.cgd);
-    if (!compiler_erred && (driver.opts.dbf >= DBF_TACD || driver.opts.dbf == DBF_NONE)) {
-        generate_tacd(&driver, driver.parser.program);
-#ifdef DEBUG
-        Tacd_print(driver.cgd.tacd_gen.program, 0);
-#endif
-    }
-
-    if (!compiler_erred && (driver.opts.dbf >= DBF_CODEGEN || driver.opts.dbf == DBF_NONE)) {
-        // TODO: pass whole driver
-        emit_asm(&driver.cgd, driver.cgd.tacd_gen.program);
-    }
-
-    driver.cgd.dest = String_init_length(basename_len+2);
-    memcpy(driver.cgd.dest.cstr, file_basename.cstr, basename_len);
-    memcpy(&driver.cgd.dest.cstr[basename_len], ".s", 2);
-
-    if (!compiler_erred && (driver.opts.dbf >= DBF_CODEGEN || driver.opts.dbf == DBF_NONE)) {
-        emit_program(&driver.cgd);
-    }
-
-    if (driver.opts.bf != BF_EMIT_PREPROCESSOR) {
-        //puts("removing preprocessor file");
-        remove(preproc_filename.cstr);
-    }
-
-    if (!compiler_erred && driver.opts.dbf < DBF_LEX && driver.opts.bf < BF_EMIT_PREPROCESSOR) {
-        // allocate space for command: 8 characters ((3)exe, (2)flags, (3)spaces) + strlen(src) + strlen(preproc_filename)
-        String assemble_command = String_init_length(8 + driver.cgd.dest.len + file_basename.len);
-        sprintf(assemble_command.cstr, "gcc %s -o %s", driver.cgd.dest.cstr, file_basename.cstr);
-        //printf("[debug] assemble_command:\n%s\n", assemble_command);
-        system(assemble_command.cstr);
-        String_free(&assemble_command); // assemble command no longer needed
-    }
-
-    if (driver.opts.bf != BF_EMIT_ASSEMBLY) {
-        remove(driver.cgd.dest.cstr);
-    }
-
-    printf("Final Interned Strings [%ld/%ld] (load/cap):\n", driver.str_table.load, driver.str_table.cap);
+    printf("Final Interned Strings [%ld/%ld] (load/cap):\n",
+        driver.str_table.load, driver.str_table.cap);
     for (size_t is_idx = 0; is_idx < driver.str_table.cap; is_idx++) {
         if (driver.str_table.strs[is_idx].status == ISS_OCCUPIED) {
             printf("\t[%4ld] `%s`\n", is_idx, driver.str_table.strs[is_idx].str->cstr);
         }
     }
+#endif
 
     CompDriver_deinit(&driver);
 
-    String_free(&file_basename);
-    String_free(&preproc_filename);
 
     if (compiler_erred) {
         return EXIT_FAILURE;

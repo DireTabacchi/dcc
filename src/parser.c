@@ -131,18 +131,22 @@ static Token advance2_token(CompDriver* cd) {
 }
 
 static Token peek_token(CompDriver *cd) {
-    if (cd->parser.curr_idx < 0) return (Token){ .kind = TOKEN_INVALID };
+    if (cd->parser.curr_idx == cd->parser.prev_idx) return (Token){ .kind = TOKEN_EOF };
     return cd->tokenizer.tokens.toks[cd->parser.curr_idx];
 }
 
 static Token peek2_token(CompDriver *cd) {
-    if (cd->parser.curr_idx+1 >= cd->tokenizer.tokens.len) return (Token){ .kind = TOKEN_INVALID };
+    if (cd->parser.curr_idx+1 >= cd->tokenizer.tokens.len) return (Token){ .kind = TOKEN_EOF };
     return cd->tokenizer.tokens.toks[cd->parser.curr_idx+1];
+}
+static Token peek_prev_token(CompDriver *cd) {
+    if (cd->parser.curr_idx-1 < 0) return (Token){ .kind = TOKEN_INVALID };
+    return cd->tokenizer.tokens.toks[cd->parser.curr_idx-1];
 }
 
 static Token expect_token(CompDriver *cd, TokenKind expected_kind) {
     if (cd->parser.curr_idx == -1) {
-        return (Token){ .kind = TOKEN_INVALID };
+        return (Token){ .kind = TOKEN_EOF };
     }
 
     if (cd->tokenizer.tokens.toks[cd->parser.curr_idx].kind == TOKEN_EOF && expected_kind != TOKEN_EOF) {
@@ -168,14 +172,23 @@ static Token expect_token(CompDriver *cd, TokenKind expected_kind) {
     return actual;
 }
 
+static void Parser_set_pos(CompDriver *cd, ssize_t set_idx) {
+    if (cd == NULL) return;
+    if (set_idx < 0 || set_idx >= cd->tokenizer.tokens.len) return;
+
+    cd->parser.curr_idx = set_idx;
+    cd->parser.prev_idx = cd->parser.curr_idx - 1;
+}
+
 // parse_* functions
 
 static Block *parse_block(CompDriver *cd);
 static Expr *parse_expression(CompDriver *cd, int min_prec);
+static Decl *parse_var_declaration(CompDriver *cd);
 
 static const String *parse_identifier(CompDriver *cd) {
-    Token tok;
-    if ((tok = expect_token(cd, TOKEN_IDENTIFIER)), tok.kind != TOKEN_IDENTIFIER) {
+    Token tok = expect_token(cd, TOKEN_IDENTIFIER);
+    if (tok.kind != TOKEN_IDENTIFIER) {
         return (String *)StrInterner_intern(&cd->str_table, token_literals[TOKEN_INVALID]);
     }
 
@@ -248,6 +261,48 @@ static BinaryOpKind parse_binop(CompDriver *cd) {
     return BINARY_INVALID;
 }
 
+static ExprArray *parse_call_args(CompDriver *cd) {
+    Token next_tok = peek_token(cd);
+    if (next_tok.kind == TOKEN_RIGHT_PAREN) {
+        return NULL;
+    }
+
+    ExprArray *call_args = ExprArray_create();
+    do {
+        if (next_tok.kind == TOKEN_OP_COMMA) advance_token(cd);
+        Expr *arg = parse_expression(cd, 0);
+
+        if (arg->kind == EXPR_INVALID) {
+            // err should already be noted
+            puts("arg is EXPR_INVALID");
+            ExprArray_append(call_args, arg);
+            break;
+        }
+
+        ExprArray_append(call_args, arg);
+        
+        next_tok = peek_token(cd);
+    } while (next_tok.kind != TOKEN_RIGHT_PAREN && next_tok.kind == TOKEN_OP_COMMA);
+
+    return call_args;
+}
+
+static Expr *parse_fn_call(CompDriver *cd) {
+    Token next_tok = peek_token(cd);
+    const String *fn_name = parse_identifier(cd);
+    expect_token(cd, TOKEN_LEFT_PAREN);
+
+    ExprArray *args = parse_call_args(cd);
+    expect_token(cd, TOKEN_RIGHT_PAREN);
+
+    Expr *fn_call = Expr_create(EXPR_FN_CALL);
+    fn_call->pos = next_tok.pos;
+    fn_call->as.fn_call.ident = fn_name;
+    fn_call->as.fn_call.args = args;
+
+    return fn_call;
+}
+
 static Expr *parse_primary(CompDriver *cd) {
     Token tok = peek_token(cd);
     switch (tok.kind) {
@@ -264,11 +319,17 @@ static Expr *parse_primary(CompDriver *cd) {
     }
 
     case TOKEN_IDENTIFIER: {
+        Token next_tok = peek2_token(cd);
+        if (next_tok.kind == TOKEN_LEFT_PAREN) {
+            return parse_fn_call(cd);
+        }
+
         const String *var_name = parse_identifier(cd);
 
         Expr *var = Expr_create(EXPR_VAR);
         var->pos = tok.pos;
-        var->as.var = var_name;
+        var->as.var.name = var_name;
+        var->as.var.old_name = var_name;
 
         return var;
     }
@@ -544,7 +605,7 @@ static Stmt *parse_statement(CompDriver *cd) {
         ForInit init = {0};
         if (init_tok.kind == TOKEN_KW_INT) {
             init.kind = FOR_INIT_DECL;
-            init.as.decl = parse_declaration(cd);
+            init.as.decl = parse_var_declaration(cd);
         } else {
             init.as.exp = parse_optional_expression(cd, TOKEN_SEMICOLON);
             if (init.as.exp == NULL) {
@@ -611,13 +672,69 @@ static Stmt *parse_statement(CompDriver *cd) {
     return expr_stmt;
 }
 
-static Decl *parse_declaration(CompDriver *cd) {
+static ParamArray *parse_param_list(CompDriver *cd, const String *fn_name) {
+    Token begin_param_list = peek_prev_token(cd);
+
+    Token next_token = peek_token(cd);
+    if (next_token.kind == TOKEN_KW_VOID) {
+        advance_token(cd);
+    }
+
+    ParamArray *param_list = ParamArray_create();
+    next_token = peek_token(cd);
+    if (next_token.kind == TOKEN_RIGHT_PAREN) goto finalize_param_list;
+    
+    // NOTE: do-while? (look at parse args function)
+    int p_cnt = 0;
+    while (next_token.kind != TOKEN_RIGHT_PAREN) {
+        p_cnt += 1;
+        if (next_token.kind == TOKEN_OP_COMMA) {
+            advance_token(cd);
+            next_token = peek_token(cd);
+        }
+        if (next_token.kind == TOKEN_LEFT_BRACE || next_token.kind == TOKEN_SEMICOLON
+            || next_token.kind == TOKEN_EOF
+        ) {
+            err_unclosed_param_list(&cd->errors, cd->tokenizer.src_path, begin_param_list.pos,
+                fn_name);
+            break;
+        } else if (next_token.kind == TOKEN_RIGHT_PAREN) {
+            err_expected_parameter(&cd->errors, cd->tokenizer.src_path, next_token.pos);
+            break;
+        } else if (next_token.kind == TOKEN_RIGHT_BRACE) {
+            err_unexpected_token(&cd->errors, cd->tokenizer.src_path, next_token);
+            break;
+        }
+        expect_token(cd, TOKEN_KW_INT);
+        next_token = peek_token(cd);
+        const String *param_name = parse_identifier(cd);
+        //for (size_t pl_idx = 0; pl_idx < param_list->len; pl_idx++) {
+        //    if (param_list->params[pl_idx] == NULL) {
+        //        break;
+        //    }
+            // This if should go in semantic analyzer
+            //if (param_list->params[pl_idx] == param_name) {
+            //    err_redefined_param(&cd->errors, cd->tokenizer.src_path, next_token, fn_name);
+            //}
+        //}
+        ParamArray_append(param_list, param_name);
+        //param_list->params[p_idx] = param_name;
+        //p_idx += 1;
+        next_token = peek_token(cd);
+    }
+
+finalize_param_list:
+    return param_list;
+}
+
+static Decl *parse_var_declaration(CompDriver *cd) {
     Token first_tok = expect_token(cd, TOKEN_KW_INT);
 
     const String *ident = parse_identifier(cd);
     Decl *var_decl = Decl_create(DECL_LCL_VAR);
     var_decl->pos = first_tok.pos;
     var_decl->as.loc_var.identifier = ident;
+    var_decl->as.loc_var.origin_name = ident;
     var_decl->as.loc_var.init = NULL;
 
     Token next_tok = peek_token(cd);
@@ -629,6 +746,41 @@ static Decl *parse_declaration(CompDriver *cd) {
     expect_token(cd, TOKEN_SEMICOLON);
 
     return var_decl;
+}
+
+// TODO: maybe split this into different functions?
+static Decl *parse_declaration(CompDriver *cd) {
+    ssize_t decl_start_idx = cd->parser.curr_idx;
+    Token first_tok = expect_token(cd, TOKEN_KW_INT);
+
+    const String *ident = parse_identifier(cd);
+    Token paren_tok = peek_token(cd);
+    if (paren_tok.kind == TOKEN_LEFT_PAREN) {
+        advance_token(cd);
+        Decl *fn_decl = Decl_create(DECL_FUNCTION);
+        fn_decl->pos = first_tok.pos;
+        fn_decl->as.fn.name = ident;
+        fn_decl->as.fn.params = parse_param_list(cd, fn_decl->as.fn.name);
+        expect_token(cd, TOKEN_RIGHT_PAREN);
+        Token next_tok = peek_token(cd);
+        if (next_tok.kind == TOKEN_SEMICOLON) {
+            fn_decl->as.fn.body = NULL;
+            advance_token(cd);
+        } else if (next_tok.kind == TOKEN_LEFT_BRACE) {
+            Block *fn_body = parse_block(cd);
+            fn_decl->as.fn.body = fn_body;
+        } else {
+            // TODO: error: what is the next token?
+            fn_decl->as.fn.body = NULL;
+        }
+        return fn_decl;
+    } else {
+        Parser_set_pos(cd, decl_start_idx);
+        Decl *var_decl = parse_var_declaration(cd);
+        return var_decl;
+    }
+
+    return Decl_create(DECL_INVALID);
 }
 
 static BlockItem parse_block_item(CompDriver *cd) {
@@ -660,6 +812,7 @@ static Block *parse_block(CompDriver *cd) {
     return block;
 }
 
+// TODO: rewrite to use the function declaration
 static Function *parse_function(CompDriver *cd) {
     expect_token(cd, TOKEN_KW_INT);
     const String *name = parse_identifier(cd);
@@ -679,11 +832,18 @@ static Function *parse_function(CompDriver *cd) {
     return func;
 }
 
+// TODO: rewrite to parse all declarations in a source file, not just one function
 void parse(CompDriver *cd) {
-    Function *func = parse_function(cd);
+    //Program_init(cd->parser.program);
+    Token peeked = peek_token(cd);
+    while (peeked.kind != TOKEN_EOF) {
+        Decl *decl = parse_declaration(cd);
+        DeclArray_append(&cd->parser.program->decls, decl);
+        peeked = peek_token(cd);
+    }
+    // TODO: parse tokens via `parse_declaration` until EOF
+    // TODO: append parsed declarations into program->decls DeclArray
     expect_token(cd, TOKEN_EOF);
-
-    cd->parser.program->func = func;
 }
 
 // Parser management

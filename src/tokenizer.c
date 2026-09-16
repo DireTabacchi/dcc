@@ -31,7 +31,9 @@ static char advance(Tokenizer *t) {
     return t->ch;
 }
 
-void Tokenizer_init(Tokenizer *t, const char *src_path) {
+void Tokenizer_init(CompDriver *cd, const char *src_path) {
+    if (cd == NULL) return;
+    Tokenizer *t = &cd->tokenizer;
     int src_fd = open(src_path, O_RDONLY);
     if (src_fd == -1) {
         printf("Unable to open file %s\n", src_path);
@@ -44,12 +46,14 @@ void Tokenizer_init(Tokenizer *t, const char *src_path) {
 
     t->src = String_init_length(src_stat.st_size);
     read(src_fd, t->src.cstr, t->src.len);
-    t->src_path = String_init_cstr(src_path);
+    cd->tokenizer.src_path = String_init_cstr(src_path);
 
 #ifdef DEBUG
-    puts("File src -----------------------------------------------------------------------");
-    printf("%s", t->src.cstr);
-    puts("--------------------------------------------------------------------------------");
+    if (cd->opts.debug_flags[DF_PRINT_SRC] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+        puts("File src -----------------------------------------------------------------------");
+        printf("%s", t->src.cstr);
+        puts("--------------------------------------------------------------------------------");
+    }
 #endif
 
     TokenList_init(&t->tokens);
@@ -264,6 +268,14 @@ void tokenize(CompDriver *cd) {
                 tok.kind = TOKEN_RIGHT_BRACE;
                 //tok.text = String_init_length(1);
                 //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
+                lit.cstr = &t->src.cstr[offset];
+                lit.len = 1;
+                tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
+                TokenList_append(&t->tokens, tok);
+                break;
+
+            case ',':
+                tok.kind = TOKEN_OP_COMMA;
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);

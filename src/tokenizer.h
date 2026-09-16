@@ -3,7 +3,6 @@
 
 #include "dd_string.h"
 #include "token.h"
-#include "dcc_error.h"
 
 typedef struct tokenizer_ {
     String src_path;
@@ -20,7 +19,7 @@ typedef struct tokenizer_ {
 
 typedef struct compDriver_ CompDriver;
 
-void Tokenizer_init(Tokenizer *t, const char *path);
+void Tokenizer_init(CompDriver *cd, const char *path);
 void Tokenizer_destroy(Tokenizer *t);
 void tokenize(CompDriver *t);
 

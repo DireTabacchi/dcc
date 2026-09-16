@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "dd_string.h"
-#include <stdio.h>
+//#include <stdio.h>
 
 String String_init_cstr(const char *str) {
     String ret;

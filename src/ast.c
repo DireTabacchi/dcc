@@ -8,6 +8,9 @@
 #include "ast.h"
 #include "sym_table.h"
 
+// TODO: write DeclArray_* functions
+// NOTE: I don't think I'll need the `Function` structure once everything runs on declarations...
+
 // How many spaces to include per indent level. Used in AstNode_print
 #define SPACES_PER_INDENT 2
 
@@ -101,6 +104,10 @@ void Expr_destroy(Expr *expr) {
         Expr_destroy(expr->as.ternary.else_expr);
         free(expr);
         break;
+
+    case EXPR_FN_CALL:
+        ExprArray_destroy(expr->as.fn_call.args);
+        free(expr);
     }
 }
 
@@ -191,6 +198,47 @@ void Stmt_destroy(Stmt *stmt) {
     }
 }
 
+ExprArray *ExprArray_create(void) {
+    ExprArray *ea = malloc(sizeof(ExprArray));
+    ea->len = 0;
+    ea->cap = 2;
+    ea->exprs = calloc(ea->cap, sizeof(Expr *));
+
+    return ea;
+}
+
+void ExprArray_destroy(ExprArray *ea) {
+    if (ea == NULL) return;
+    if (ea->len > 0) {
+        for (size_t e_idx = 0; e_idx < ea->len; e_idx++) {
+            Expr_destroy(ea->exprs[e_idx]);
+        }
+        free(ea->exprs);
+    }
+
+    free(ea);
+}
+
+void ExprArray_append(ExprArray *ea, Expr *expr) {
+    if (ea == NULL) return;
+    if (ea->exprs == NULL) return;
+
+    if (ea->len == ea->cap) {
+        size_t old_cap = ea->cap;
+        size_t new_cap = old_cap / 2 + old_cap;
+        Expr **new_exprs = calloc(new_cap, sizeof(Expr *));
+
+        memcpy(new_exprs, ea->exprs, old_cap*sizeof(Expr *));
+        free(ea->exprs);
+        ea->exprs = new_exprs;
+        ea->cap = new_cap;
+    }
+
+    ea->exprs[ea->len] = expr;
+    //memcpy(&ea->exprs[ea->len], &expr, sizeof(Expr *));
+    ea->len += 1;
+}
+
 Decl *Decl_create(DeclarationKind kind) {
     Decl *d = malloc(sizeof(Decl));
     d->kind = kind;
@@ -208,7 +256,50 @@ void Decl_destroy(Decl *decl) {
             Expr_destroy(decl->as.loc_var.init);
             free(decl);
             break;
+        case DECL_FUNCTION:
+            ParamArray_destroy(decl->as.fn.params);
+            Block_destroy(decl->as.fn.body);
+            free(decl);
+            break;
     }
+}
+
+void DeclArray_init(DeclArray *da) {
+    if (da == NULL) return;
+    da->cap = 2;
+    da->len = 0;
+    da->decls = (Decl **)calloc(da->cap, sizeof(Decl *));
+}
+
+void DeclArray_deinit(DeclArray *da) {
+    if (da == NULL) return;
+    if (da->decls == NULL) return;
+
+    for (size_t d_idx = 0; d_idx < da->len; d_idx++) {
+        Decl_destroy(da->decls[d_idx]);
+    }
+
+    free(da->decls);
+    da->cap = 0;
+    da->len = 0;
+}
+
+void DeclArray_append(DeclArray *da, Decl *decl) {
+    if (da == NULL) return;
+    if (da->decls == NULL) return;
+
+    if (da->len == da->cap) {
+        size_t old_cap = da->cap;
+        size_t new_cap = old_cap / 2 + old_cap;
+        Decl **new_decls = (Decl **)calloc(new_cap, sizeof(Decl *));
+        memcpy(new_decls, da->decls, old_cap*sizeof(Decl *));
+        free(da->decls);
+        da->decls = new_decls;
+        da->cap = new_cap;
+    }
+
+    da->decls[da->len] = decl;
+    da->len += 1;
 }
 
 Function *Function_create() {
@@ -227,11 +318,11 @@ void Function_destroy(Function *func) {
 
 // TODO: Function list?
 void Program_init(AstProgram *prog) {
-    prog->func = NULL;
+    DeclArray_init(&prog->decls);
 }
 
 void Program_deinit(AstProgram *prog) {
-    Function_destroy(prog->func);
+    DeclArray_deinit(&prog->decls);
 }
 
 /*
@@ -330,7 +421,7 @@ void Expr_print(Expr *expr, int indent_lvl) {
         break;
 
     case EXPR_VAR:
-        printf("%2$*1$s(%3$s)\n", spaces+3, "Var", expr->as.var->cstr);
+        printf("%2$*1$s(%3$s)\n", spaces+3, "Var", expr->as.var.name->cstr);
         break;
 
     case EXPR_ASSIGN:
@@ -384,6 +475,24 @@ void Expr_print(Expr *expr, int indent_lvl) {
         printf("%2$*1$s=(\n", spaces+4, "else");
         Expr_print(expr->as.ternary.else_expr, indent_lvl+1);
         printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
+
+    case EXPR_FN_CALL:
+        printf("%2$*1$s(\n", spaces+13, "Function Call");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=`%3$s`\n", spaces+4, "name", expr->as.fn_call.ident->cstr);
+        if (expr->as.fn_call.args != NULL) {
+            printf("%2$*1$s=(\n", spaces+4, "args");
+            for (size_t a_idx = 0; a_idx < expr->as.fn_call.args->len; a_idx++) {
+                Expr *arg_expr = expr->as.fn_call.args->exprs[a_idx];
+                Expr_print(arg_expr, indent_lvl+1);
+            }
+            printf("%2$*1$c\n", spaces+1, ')');
+        }
         indent_lvl -= 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');
@@ -635,6 +744,35 @@ void Decl_print(Decl *decl, int indent_lvl) {
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');
         break;
+    case DECL_FUNCTION:
+        printf("%2$*1$s(\n", spaces+13, "Function Decl");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=`%3$s`\n", spaces+4, "name", decl->as.fn.name->cstr);
+        printf("%2$*1$s=", spaces+6, "params");
+        if (decl->as.fn.params->len == 0) {
+            printf("void\n");
+        } else {
+            indent_lvl += 1;
+            spaces = indent_lvl * SPACES_PER_INDENT;
+            printf("(\n");
+            for (size_t p_idx = 0; p_idx < decl->as.fn.params->len; p_idx++) {
+                const String *p = decl->as.fn.params->params[p_idx];
+                printf("%2$*1$s\n", (int)(spaces+p->len), p->cstr);
+            }
+            indent_lvl -= 1;
+            spaces = indent_lvl * SPACES_PER_INDENT;
+            printf("%2$*1$c\n", spaces+1, ')');
+        }
+        if (decl->as.fn.body != NULL) {
+            printf("%2$*1$s=(\n", spaces+4, "body");
+            Block_print(decl->as.fn.body, indent_lvl+1);
+            printf("%2$*1$c\n", spaces+1, ')');
+        }
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1, ')');
+        break;
     }
 
 }
@@ -688,13 +826,14 @@ void Function_print(Function *func, int indent_lvl) {
 }
 
 void Program_print(AstProgram *prog) {
-    if (prog == NULL) return;
-    if (prog->func == NULL) {
+    if (prog == NULL) {
         printf("NULL PROGRAM\n");
         return;
     }
 
     printf("Program(\n");
-    Function_print(prog->func, 1);
+    for (size_t pd_idx = 0; pd_idx < prog->decls.len; pd_idx++) {
+        Decl_print(prog->decls.decls[pd_idx], 1);
+    }
     printf(")\n");
 }

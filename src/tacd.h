@@ -1,15 +1,10 @@
 #ifndef TACD_H
 #define TACD_H
 
-#include "ast.h"
-
 #include "dd_string.h"
 
-typedef enum tacdNodeKind_ {
-    TACD_NODE_INVALID,
-    TACD_NODE_PROGRAM,
-    TACD_NODE_FUNCTION,
-} TacdNodeKind;
+#include "param_array.h"
+#include "ast.h"
 
 typedef enum tacdCodeKind_ {
     TACD_CODE_INVALID,
@@ -20,7 +15,8 @@ typedef enum tacdCodeKind_ {
     TACD_CODE_JUMP,
     TACD_CODE_JUMP_IF_ZERO,
     TACD_CODE_JUMP_IF_NOT_ZERO,
-    TACD_CODE_LABEL
+    TACD_CODE_LABEL,
+    TACD_CODE_FN_CALL
 } TacdCodeKind;
 
 typedef enum tacdValueKind_ {
@@ -66,19 +62,44 @@ typedef struct tacdValue_ {
     } val;
 } TacdValue;
 
+typedef struct valueArray_ {
+    TacdValue *vals;
+    size_t len;
+    size_t cap;
+} ValueArray;
+
+ValueArray *ValueArray_create(void);
+void ValueArray_destroy(ValueArray *va);
+void ValueArray_append(ValueArray *va);
+
 typedef struct tacdCode_ {
     TacdCodeKind kind;
     union {
         TacdValue ret;
-        struct { TacdUnaryOp op; TacdValue src; TacdValue dest; } unary;
+        struct {
+            TacdUnaryOp op;
+            TacdValue src;
+            TacdValue dest;
+        } unary;
         struct {
             TacdBinaryOp op;
             TacdValue src1; TacdValue src2; TacdValue dest;
         } binary;
-        struct { TacdValue src; TacdValue dest; } copy;
+        struct {
+            TacdValue src;
+            TacdValue dest;
+        } copy;
         const String *jump;
-        struct { TacdValue condition; const String *target; } jump_conditional;    // zero/not-zero encoded in kind
+        struct {
+            TacdValue condition;
+            const String *target;
+        } jump_conditional;    // zero/not-zero encoded in kind
         const String *label;
+        struct {
+            const String *name;
+            ValueArray *args;
+            TacdValue dest;
+        } fn_call;
     } code;
 } TacdCode;
 
@@ -88,20 +109,28 @@ typedef struct CodeList_ {
     size_t cap;
 } CodeList;
 
-typedef struct tacdNode_ *TacdNode_ty;
-typedef struct tacdNode_ {
-    TacdNodeKind kind;
-    union {
-        struct { TacdNode_ty function; } program;
-        struct { const String *name; CodeList body; } function;
-    } node;
-} TacdNode;
+typedef struct tacdFunction_ {
+    const String *name;
+    ParamArray *params;
+    CodeList body;
+} TacdFunction;
 
-//typedef struct tacdSymbolTable_ {
-//    String **syms;
-//    size_t len;
-//    size_t cap;
-//} TacdSymTable;
+typedef struct tacdFunctionArray_ {
+    TacdFunction *fns;
+    size_t len;
+    size_t cap;
+} TacdFunctionArray;
+
+void TacdFunctionArray_init(TacdFunctionArray *tfa);
+void TacdFunctionArray_deinit(TacdFunctionArray *tfa);
+void TacdFunctionArray_append(TacdFunctionArray *tfa, TacdFunction fn);
+
+typedef struct tacdProgram_ {
+    TacdFunctionArray fn_defs;
+} TacdProgram;
+
+TacdProgram *TacdProgram_create();
+void TacdProgram_destroy(TacdProgram *node);
 
 typedef struct tacdGenerator_ {
     const String *func_name;    // Current function generating code for.
@@ -109,8 +138,7 @@ typedef struct tacdGenerator_ {
                                 // names, e.g. "main.tmp.0". (func_name.tmp.tmpvar_count)
     int label_count;            // Current count of ASM labels generated.
 
-    //TacdSymTable symbols;
-    TacdNode *program;
+    TacdProgram *program;
 } TacdGenerator;
 
 /*  TODO: refactor this API */
@@ -119,17 +147,11 @@ void TacdGenerator_init(TacdGenerator *tg);
 void TacdGenerator_deinit(TacdGenerator *tg);
 typedef struct compDriver_ CompDriver;
 void generate_tacd(CompDriver *cd, AstProgram *ast_prog);
-void Tacd_print(TacdNode *program, int indent_lvl);
-
-//void TacdSymTable_init(TacdSymTable *tst);
-//void TacdSymTable_deinit(TacdSymTable *tst);
-//void TacdSymTable_append(TacdSymTable *tst, String *symbol);
-
-TacdNode *TacdNode_create();
-void TacdNode_destroy(TacdNode *node);
 
 void CodeList_init(CodeList *il);
 void CodeList_deinit(CodeList* il);
 void CodeList_append(CodeList* il, TacdCode code);
+
+void Tacd_print(TacdProgram *program);
 
 #endif // TACD_H

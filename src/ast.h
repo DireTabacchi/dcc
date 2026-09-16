@@ -4,6 +4,7 @@
 #include "common.h"
 #include "dd_string.h"
 
+#include "param_array.h"
 #include "sym_table.h"
 
 typedef enum unaryOpKind_ {
@@ -64,7 +65,8 @@ typedef enum exprKind_ {
     EXPR_UNARY,
     EXPR_BINARY,
     EXPR_ASSIGN,
-    EXPR_TERNARY
+    EXPR_TERNARY,
+    EXPR_FN_CALL
 } ExpressionKind;
 
 typedef enum stmtKind_ {
@@ -88,7 +90,8 @@ typedef enum stmtKind_ {
 
 typedef enum declKind_ {
     DECL_INVALID,
-    DECL_LCL_VAR
+    DECL_LCL_VAR,
+    DECL_FUNCTION
 } DeclarationKind;
 
 typedef enum blockItemKind_ {
@@ -104,13 +107,18 @@ typedef enum forInitKind_ {
     FOR_INIT_EXP
 } ForInitKind;
 
+typedef struct exprArray_ ExprArray;
+
 typedef struct expr_ *Expr_ty;
 typedef struct expr_ {
     ExpressionKind kind;
     Position pos;
     union {
         int constant;
-        const String *var;
+        struct {
+        const String *name;
+        const String *old_name;
+        } var;
         struct {
             AssignOpKind op;
             Expr_ty lhs;
@@ -134,12 +142,26 @@ typedef struct expr_ {
             Expr_ty then_expr;
             Expr_ty else_expr;
         } ternary;
+        struct {
+            const String *ident;
+            ExprArray *args;
+        } fn_call;
     } as;
 } Expr;
 
 Expr *Expr_create(ExpressionKind kind);
 void Expr_destroy(Expr *expr);
 void Expr_print(Expr *expr, int indent_lvl);
+
+struct exprArray_ {
+    Expr **exprs;
+    size_t len;
+    size_t cap;
+};
+
+ExprArray *ExprArray_create(void);
+void ExprArray_destroy(ExprArray *ea);
+void ExprArray_append(ExprArray *ea, Expr *expr);
 
 typedef struct blockItem_ BlockItem;
 typedef struct block_ {
@@ -154,8 +176,15 @@ typedef struct decl_ {
     union {
         struct {
             const String *identifier;
+            const String *origin_name;
             Expr *init;
         } loc_var;
+        struct {
+            const String *name;
+            const String *old_name;
+            ParamArray *params;
+            Block *body;
+        } fn;
     } as;
 } Decl;
 
@@ -235,7 +264,7 @@ typedef struct blockItem_ {
     } as;
 } BlockItem;
 
-Block *Block_create();
+Block *Block_create(void);
 void Block_destroy(Block *block);
 void Block_append(Block *block, BlockItem item);
 
@@ -244,12 +273,22 @@ typedef struct func_ {
     Block *block;
 } Function;
 
-Function *Function_create();
+Function *Function_create(void);
 void Function_destroy(Function *func);
 void Function_print(Function *func, int indent_lvl);
 
+typedef struct declArray_ {
+    Decl **decls;
+    size_t len;
+    size_t cap;
+} DeclArray;
+
+void DeclArray_init(DeclArray *da);
+void DeclArray_deinit(DeclArray *da);
+void DeclArray_append(DeclArray *da, Decl *decl);
+
 typedef struct astProgram_ {
-    Function *func;
+    DeclArray decls;
 } AstProgram;
 
 void Program_init(AstProgram *prog);
