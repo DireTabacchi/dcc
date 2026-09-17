@@ -222,7 +222,7 @@ static void resolve_declaration(CompDriver *cd, Decl *decl) {
         if (decl->as.fn.body != NULL) {
             resolve_block(cd, decl->as.fn.body);
         }
-        SymTable_print(cd->sema.ident_table);
+        //SymTable_print(cd->sema.ident_table);
         cd->sema.ident_table = SymTable_destroy(cd->sema.ident_table);
         break;
     }
@@ -854,8 +854,8 @@ static void typecheck_program(CompDriver *cd) {
         }
     }
 
-    printf("After typechecking...\n");
-    SymTable_print(cd->sema.symbol_table);
+    //printf("After typechecking...\n");
+    //SymTable_print(cd->sema.symbol_table);
 }
 
 void sem_analyze(CompDriver *cd) {
@@ -867,6 +867,6 @@ void sem_analyze(CompDriver *cd) {
     }
     label_loop_statements(cd);
     label_switch_statements(cd);
-    Parser_print_ast(&cd->parser);
+    //Parser_print_ast(&cd->parser);
     typecheck_program(cd);
 }

@@ -13,8 +13,6 @@
 #include "token.h"
 #include "tokenizer.h"
 
-// TODO: string interning
-
 static char advance(Tokenizer *t) {
     if (t->read_offset < t->src.len) {
         t->offset = t->read_offset;
@@ -49,7 +47,7 @@ void Tokenizer_init(CompDriver *cd, const char *src_path) {
     cd->tokenizer.src_path = String_init_cstr(src_path);
 
 #ifdef DEBUG
-    if (cd->opts.debug_flags[DF_PRINT_SRC] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+    if (cd->opts.dev_debug_flags[DDF_PRINT_SRC] || cd->opts.dev_debug_flags[DDF_PRINT_ALL]) {
         puts("File src -----------------------------------------------------------------------");
         printf("%s", t->src.cstr);
         puts("--------------------------------------------------------------------------------");
@@ -266,8 +264,6 @@ void tokenize(CompDriver *cd) {
 
             case '}':
                 tok.kind = TOKEN_RIGHT_BRACE;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -284,8 +280,6 @@ void tokenize(CompDriver *cd) {
 
             case ';':
                 tok.kind = TOKEN_SEMICOLON;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -295,8 +289,6 @@ void tokenize(CompDriver *cd) {
             case '=':
                 if (peek(t) == '=') {
                     tok.kind = TOKEN_OP_DOUBLE_EQUAL;
-                    //tok.text = String_init_length(2);
-                    //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -305,8 +297,6 @@ void tokenize(CompDriver *cd) {
                     break;
                 }
                 tok.kind = TOKEN_OP_EQUAL;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -378,8 +368,6 @@ void tokenize(CompDriver *cd) {
                     break;
                 }
                 tok.kind = TOKEN_OP_SLASH;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -397,8 +385,6 @@ void tokenize(CompDriver *cd) {
                     break;
                 }
                 tok.kind = TOKEN_OP_PERCENT;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -435,8 +421,6 @@ void tokenize(CompDriver *cd) {
             case '!':
                 if (peek(t) == '=') {
                     tok.kind = TOKEN_OP_EXCLAMATION_EQUAL;
-                    //tok.text = String_init_length(2);
-                    //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 2);
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
@@ -445,8 +429,6 @@ void tokenize(CompDriver *cd) {
                     break;
                 }
                 tok.kind = TOKEN_OP_EXCLAMATION;
-                //tok.text = String_init_length(1);
-                //memcpy(tok.text.cstr, &t->src.cstr[t->offset], 1);
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);

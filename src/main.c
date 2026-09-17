@@ -105,7 +105,9 @@ int main(int argc, char *argv[]) {
         if (driver.opts.dbf >= DBF_LEX || driver.opts.dbf == DBF_NONE) {
             tokenize(&driver);
 #ifdef DEBUG
-            if (driver.opts.debug_flags[DF_PRINT_TOKENS] || driver.opts.debug_flags[DF_PRINT_ALL]) {
+            if (driver.opts.dev_debug_flags[DDF_PRINT_TOKENS] ||
+                driver.opts.dev_debug_flags[DDF_PRINT_ALL]
+            ) {
                 TokenList_print(&driver.tokenizer.tokens);
             }
 #endif
@@ -115,7 +117,9 @@ int main(int argc, char *argv[]) {
             // TODO: take in the whole driver
             parse(&driver);
 #ifdef DEBUG
-            if (driver.opts.debug_flags[DF_PRINT_AST] || driver.opts.debug_flags[DF_PRINT_ALL]) {
+            if (driver.opts.dev_debug_flags[DDF_PRINT_AST] ||
+                driver.opts.dev_debug_flags[DDF_PRINT_ALL]
+            ) {
                 puts("Generated AST Structure\n=======================");
                 Parser_print_ast(&driver.parser);
             }
@@ -125,7 +129,8 @@ int main(int argc, char *argv[]) {
         if (driver.opts.dbf >= DBF_VALIDATE || driver.opts.dbf == DBF_NONE) {
             sem_analyze(&driver);
 #ifdef DEBUG
-            if (driver.opts.debug_flags[DF_PRINT_AST] || driver.opts.debug_flags[DF_PRINT_ALL]) {
+            if (driver.opts.dev_debug_flags[DDF_PRINT_AST] ||
+                driver.opts.dev_debug_flags[DDF_PRINT_ALL]) {
                 puts("Validated AST Structure\n=======================");
                 Parser_print_ast(&driver.parser);
             }
@@ -141,7 +146,8 @@ int main(int argc, char *argv[]) {
         if (!compiler_erred && (driver.opts.dbf >= DBF_TACD || driver.opts.dbf == DBF_NONE)) {
             generate_tacd(&driver, driver.parser.program);
 #ifdef DEBUG
-            if (driver.opts.debug_flags[DF_PRINT_TACD] || driver.opts.debug_flags[DF_PRINT_ALL]) {
+            if (driver.opts.dev_debug_flags[DDF_PRINT_TACD] ||
+                driver.opts.dev_debug_flags[DDF_PRINT_ALL]) {
                 Tacd_print(driver.cgd.tacd_gen.program);
             }
 #endif

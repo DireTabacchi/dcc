@@ -8,6 +8,7 @@
 
 typedef enum tacdCodeKind_ {
     TACD_CODE_INVALID,
+    TACD_CODE_DCOMMENT, // Debug Comment
     TACD_CODE_RET,
     TACD_CODE_UNARY,
     TACD_CODE_BINARY,
@@ -70,11 +71,12 @@ typedef struct valueArray_ {
 
 ValueArray *ValueArray_create(void);
 void ValueArray_destroy(ValueArray *va);
-void ValueArray_append(ValueArray *va);
+void ValueArray_append(ValueArray *va, TacdValue val);
 
 typedef struct tacdCode_ {
     TacdCodeKind kind;
     union {
+        String *dcomment;
         TacdValue ret;
         struct {
             TacdUnaryOp op;

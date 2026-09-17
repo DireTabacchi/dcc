@@ -18,7 +18,9 @@ static void trx_declaration(CompDriver *cd, TacdFunction *tacd_fn, Decl *decl);
 
 // Definitions
 
-TacdProgram *TacdProgram_create() {
+// Structural & helpers
+
+TacdProgram *TacdProgram_create(void) {
     TacdProgram *prog = malloc(sizeof(TacdProgram));
     *prog = (TacdProgram){0};
     TacdFunctionArray_init(&prog->fn_defs);
@@ -61,6 +63,39 @@ void TacdFunctionArray_append(TacdFunctionArray *tfa, TacdFunction fn) {
 
     memcpy(&tfa->fns[tfa->len], &fn, sizeof(TacdFunction));
     tfa->len += 1;
+}
+
+ValueArray *ValueArray_create(void) {
+    ValueArray *va = malloc(sizeof(ValueArray));
+    va->len = 0;
+    va->cap = 2;
+    va->vals = calloc(va->cap, sizeof(TacdValue));
+    return va;
+}
+
+void ValueArray_destroy(ValueArray *va) {
+    if (va == NULL) return;
+    free(va->vals);
+    free(va);
+    va = NULL;
+}
+
+void ValueArray_append(ValueArray *va, TacdValue val) {
+    if (va == NULL) return;
+    if (va->vals == NULL) return;
+
+    if (va->len == va->cap) {
+        size_t old_cap = va->cap;
+        size_t new_cap = old_cap / 2 + old_cap;
+        TacdValue *new_vals = calloc(new_cap, sizeof(TacdValue));
+        memcpy(new_vals, va->vals, old_cap*sizeof(TacdValue));
+        free(va->vals);
+        va->vals = new_vals;
+        va->cap = new_cap;
+    }
+
+    memcpy(&va->vals[va->len], &val, sizeof(TacdValue));
+    va->len += 1;
 }
 
 void CodeList_init(CodeList *il) {
@@ -599,13 +634,28 @@ static TacdValue trx_expression(CompDriver *cd, TacdFunction *tacd_fn, Expr *exp
         CodeList_append(&tacd_fn->body, copy_res);
         CodeList_append(&tacd_fn->body, tern_lbl);
         return tern_res;
-        break;
     }
 
-    case EXPR_FN_CALL:
-        // TODO: generate code for fn call
-        puts("TODO: EXPR_FN_CALL");
-        break;
+    case EXPR_FN_CALL: {
+        ValueArray *va = NULL;
+        if (expr->as.fn_call.args != NULL && expr->as.fn_call.args->len > 0) {
+            va = ValueArray_create();
+            for (size_t a_idx = 0; a_idx < expr->as.fn_call.args->len; a_idx++) {
+                TacdValue arg = trx_expression(cd, tacd_fn, expr->as.fn_call.args->exprs[a_idx]);
+                ValueArray_append(va, arg);
+            }
+        }
+        TacdCode fn_call = {0};
+        fn_call.kind = TACD_CODE_FN_CALL;
+        fn_call.code.fn_call.name = expr->as.fn_call.ident;
+        fn_call.code.fn_call.args = va;
+        TacdValue fn_res = {0};
+        fn_res.kind = TACD_VALUE_IDENTIFIER;
+        fn_res.val.identifier = create_temporary_var(cd);
+        fn_call.code.fn_call.dest = fn_res;
+        CodeList_append(&tacd_fn->body, fn_call);
+        return fn_res;
+    }
 
     case EXPR_INVALID: // Should err?
         break;
@@ -1004,18 +1054,27 @@ static void trx_statement(CompDriver *cd, TacdFunction *tacd_fn, Stmt *stmt) {
 
 // TODO: eventually handle other declarations
 static void trx_declaration(CompDriver *cd, TacdFunction *tacd_fn, Decl *decl) {
-    if (decl->as.loc_var.init == NULL) return;
+    switch (decl->kind) {
+    case DECL_LCL_VAR: {
+        if (decl->as.loc_var.init == NULL) return;
 
-    TacdValue lhs = {
-        .kind = TACD_VALUE_IDENTIFIER,
-        .val.identifier = decl->as.loc_var.identifier
-    };
-    TacdValue rhs = trx_expression(cd, tacd_fn, decl->as.loc_var.init);
-    TacdCode assign_copy = {0};
-    assign_copy.kind = TACD_CODE_COPY;
-    assign_copy.code.copy.dest = lhs;
-    assign_copy.code.copy.src = rhs;
-    CodeList_append(&tacd_fn->body, assign_copy);
+        TacdValue lhs = {
+            .kind = TACD_VALUE_IDENTIFIER,
+            .val.identifier = decl->as.loc_var.identifier
+        };
+        TacdValue rhs = trx_expression(cd, tacd_fn, decl->as.loc_var.init);
+        TacdCode assign_copy = {0};
+        assign_copy.kind = TACD_CODE_COPY;
+        assign_copy.code.copy.dest = lhs;
+        assign_copy.code.copy.src = rhs;
+        CodeList_append(&tacd_fn->body, assign_copy);
+        break;
+    }
+    case DECL_FUNCTION:
+    case DECL_INVALID:
+        break;
+    }
+
 }
 
 static void trx_blockitem(CompDriver *cd, TacdFunction *tacd_fn, BlockItem *item) {
@@ -1206,7 +1265,19 @@ static void TacdCode_print(TacdCode *code, int indent_lvl) {
         break;
 
     case TACD_CODE_FN_CALL:
-        printf("%2$*1$s\n", spaces+13, "TODO: FN CALL");
+        TacdValue_print(code->code.fn_call.dest, indent_lvl);
+        printf(" = call %s", code->code.fn_call.name->cstr);
+        if (code->code.fn_call.args != NULL) {
+            printf("(");
+            for (size_t v_idx = 0; v_idx < code->code.fn_call.args->len; v_idx++) {
+                TacdValue_print(code->code.fn_call.args->vals[v_idx], 0);
+                if (v_idx+1 < code->code.fn_call.args->len) {
+                    printf(", ");
+                }
+            }
+            printf(")");
+        }
+        printf("\n");
         break;
     }
 }
@@ -1237,6 +1308,9 @@ static void TacdProgram_print(TacdProgram *prog, int indent_lvl) {
     printf("%2$*1$s\n", spaces+8, "Program:");
     for (size_t d_idx = 0; d_idx < prog->fn_defs.len; d_idx++) {
         TacdFunction_print(&prog->fn_defs.fns[d_idx], indent_lvl);
+        if (d_idx+1 < prog->fn_defs.len) {
+            printf("\n");
+        }
     }
 }
 

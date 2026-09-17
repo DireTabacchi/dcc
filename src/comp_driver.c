@@ -80,17 +80,17 @@ int parse_command(CompDriver *cd, int argc, char *argv[]) {
             } else if (strlen(argv[argi]) >= 3 && argv[argi][1] == '-') {
 #ifdef DEBUG
                 if (strcmp("--print-source", argv[argi]) == 0) {
-                    opts->debug_flags[DF_PRINT_SRC] = true;
+                    opts->dev_debug_flags[DDF_PRINT_SRC] = true;
                 } else if (strcmp("--print-tokenlist", argv[argi]) == 0) {
-                    opts->debug_flags[DF_PRINT_TOKENS] = true;
+                    opts->dev_debug_flags[DDF_PRINT_TOKENS] = true;
                 } else if (strcmp("--print-ast", argv[argi]) == 0) {
-                    opts->debug_flags[DF_PRINT_AST] = true;
+                    opts->dev_debug_flags[DDF_PRINT_AST] = true;
                 } else if (strcmp("--print-tacd", argv[argi]) == 0) {
-                    opts->debug_flags[DF_PRINT_TACD] = true;
+                    opts->dev_debug_flags[DDF_PRINT_TACD] = true;
                 } else if (strcmp("--print-codegen", argv[argi]) == 0) {
-                    opts->debug_flags[DF_PRINT_CODEGEN] = true;
+                    opts->dev_debug_flags[DDF_PRINT_CODEGEN] = true;
                 } else if (strcmp("--print-all", argv[argi]) == 0) {
-                    opts->debug_flags[DF_PRINT_ALL] = true;
+                    opts->dev_debug_flags[DDF_PRINT_ALL] = true;
                 } else
 #endif
                 if (strcmp("--lex", argv[argi]) == 0) {
@@ -131,6 +131,8 @@ int parse_command(CompDriver *cd, int argc, char *argv[]) {
                         puts("Found --codegen, but a dry build was already selected.");
                         found_error = true;
                     }
+                } else if (strcmp("--comment-asm", argv[argi]) == 0) {
+                    opts->debug_flags[DF_COMMENT_ASM] = true;
                 } else if (strcmp("--help", argv[argi]) == 0) {
                     opts->display_usage_f = true;
                 } else {
@@ -180,8 +182,9 @@ void print_usage(char *argv0) {
     puts("  --validate\t\tRun compiler up through the semantic analysis stage. Does not produce output.");
     puts("  --tacky\t\tRun compiler up through the TACD gen stage. Does not produce output.");
     puts("  --codegen\t\tRun compiler up through the Codegen stage. Does not produce output.");
-#ifdef DEBUG
     puts("Debug Options:");
+    puts("  --comment-asm\t\tAnnotate ASM output with generated comments.");
+#ifdef DEBUG
     puts("  --print-source\tPrint the source file the compiler is processing.");
     puts("  --print-tokenlist\tPrint the token list after lexing.");
     puts("  --print-ast\t\tPrint the AST after parsing.");

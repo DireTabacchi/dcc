@@ -1007,7 +1007,7 @@ void emit_asm(CompDriver *cd, TacdProgram *src) {
     cgd->program = trx_program(src);
 
 #ifdef DEBUG
-    if (cd->opts.debug_flags[DF_PRINT_CODEGEN] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+    if (cd->opts.dev_debug_flags[DDF_PRINT_CODEGEN] || cd->opts.dev_debug_flags[DDF_PRINT_ALL]) {
         puts("Generated ASM Structure ([1] Initial Generation)\n================================================");
         AsmNode_print(cgd->program, 0);
     }
@@ -1016,7 +1016,7 @@ void emit_asm(CompDriver *cd, TacdProgram *src) {
     // Second pass of TACD -> ASM; Replace Pseudo registers with stack offsets.
     int resolved_offset = resolve_pseudo_registers(cgd);
 #ifdef DEBUG
-    if (cd->opts.debug_flags[DF_PRINT_CODEGEN] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+    if (cd->opts.dev_debug_flags[DDF_PRINT_CODEGEN] || cd->opts.dev_debug_flags[DDF_PRINT_ALL]) {
         puts("Generated ASM Structure ([2] Resolve Pseudo Registers)\n======================================================");
         AsmNode_print(cgd->program, 0);
         printf("resolved offset: %d\n", resolved_offset);
@@ -1026,7 +1026,7 @@ void emit_asm(CompDriver *cd, TacdProgram *src) {
     // Third pass Resolve the function stack and invalid instructions
     resolve_function_stack(cgd, resolved_offset);
 #ifdef DEBUG
-    if (cd->opts.debug_flags[DF_PRINT_CODEGEN] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+    if (cd->opts.dev_debug_flags[DDF_PRINT_CODEGEN] || cd->opts.dev_debug_flags[DDF_PRINT_ALL]) {
         puts("Generated ASM Structure ([3] Add Stack Allocation)\n==================================================");
         AsmNode_print(cgd->program, 0);
     }
@@ -1034,7 +1034,7 @@ void emit_asm(CompDriver *cd, TacdProgram *src) {
 
     resolve_invalid_instructions(cgd, cgd->program->node.program.function);
 #ifdef DEBUG
-    if (cd->opts.debug_flags[DF_PRINT_CODEGEN] || cd->opts.debug_flags[DF_PRINT_ALL]) {
+    if (cd->opts.dev_debug_flags[DDF_PRINT_CODEGEN] || cd->opts.dev_debug_flags[DDF_PRINT_ALL]) {
         puts("Generated ASM Structure ([4] Fix Bad Instructions)\n==================================================");
         AsmNode_print(cgd->program, 0);
     }

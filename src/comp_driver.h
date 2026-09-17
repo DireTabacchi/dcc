@@ -26,23 +26,29 @@ typedef enum drybuildflag_ {
 } DryBuildFlag;
 
 #ifdef DEBUG
+typedef enum devDebugFlag_ {
+    DDF_PRINT_SRC,
+    DDF_PRINT_TOKENS,
+    DDF_PRINT_AST,
+    DDF_PRINT_TACD,
+    DDF_PRINT_CODEGEN,
+    DDF_PRINT_ALL,
+    DDF_FLAGS_LEN
+} DevDebugFlag;
+#endif
+
 typedef enum debugFlag_ {
-    DF_PRINT_SRC,
-    DF_PRINT_TOKENS,
-    DF_PRINT_AST,
-    DF_PRINT_TACD,
-    DF_PRINT_CODEGEN,
-    DF_PRINT_ALL,
+    DF_COMMENT_ASM,
     DF_FLAGS_LEN
 } DebugFlag;
-#endif
 
 typedef struct options_ {
     BuildFlag bf;
     DryBuildFlag dbf;
 #ifdef DEBUG
-    bool debug_flags[DF_FLAGS_LEN];
+    bool dev_debug_flags[DDF_FLAGS_LEN];
 #endif
+    bool debug_flags[DF_FLAGS_LEN];
     bool display_usage_f;
 } Options;
 
