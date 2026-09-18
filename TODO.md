@@ -4,6 +4,7 @@
     - Check this list
 
 ## Immediate
+    - ASM operands size?
     - Refactor Sema & backend to use program of declarations
     - Param list should track position (param structure?)
     - (Maybe?) remove `Function` structure?/Everything runs on function decls?

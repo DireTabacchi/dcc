@@ -118,11 +118,11 @@ static void emit_unary(AsmInstr *unary, FILE *dest) {
 
 // TODO: encode sizes in Instructions (Operands?)
 // TODO: improve logic for binary shift with previous TODO
-static void emit_function(AsmNode *func, FILE *dest) {
-    fprintf(dest, "\t.globl %1$s\n%1$s:\n", func->node.function.name->cstr);
+static void emit_function(AsmFn *asm_fn, FILE *dest) {
+    fprintf(dest, "\t.globl %1$s\n%1$s:\n", asm_fn->name->cstr);
     fprintf(dest, "\tpushq\t%%rbp\n\tmovq\t%%rsp, %%rbp\n");
-    for (size_t instr_idx = 0; instr_idx < func->node.function.instrs.len; instr_idx++) {
-        AsmInstr *instr = &func->node.function.instrs.instrs[instr_idx];
+    for (size_t instr_idx = 0; instr_idx < asm_fn->instrs.len; instr_idx++) {
+        AsmInstr *instr = &asm_fn->instrs.instrs[instr_idx];
         switch (instr->kind) {
         case ASM_INSTR_INVALID:
             fprintf(dest, "# ERROR: INVALID INSTRUCTION\n");
@@ -291,7 +291,6 @@ static void emit_function(AsmNode *func, FILE *dest) {
 
 void emit_program(CodegenDriver *cgd) {
     if (cgd->program == NULL) return;
-    if (cgd->program->kind != ASMNODE_PROGRAM) return;
 
     FILE *asm_file = fopen(cgd->dest.cstr, "w");
     if (asm_file == NULL) {
@@ -299,7 +298,9 @@ void emit_program(CodegenDriver *cgd) {
         return;
     }
 
-    emit_function(cgd->program->node.program.function, asm_file);
+    for (size_t fn_idx = 0; fn_idx < cgd->program->fns.len; fn_idx++) {
+        emit_function(&cgd->program->fns.fns[fn_idx], asm_file);
+    }
 
     fprintf(asm_file, "\t.section .note.GNU-stack,\"\",@progbits\n");
 

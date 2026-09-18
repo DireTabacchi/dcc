@@ -7,6 +7,7 @@
 #include "dd_string.h"
 #include "interner.h"
 #include "ast.h"
+#include "param_array.h"
 #include "sym_table.h"
 
 #include "tacd.h"
@@ -35,12 +36,21 @@ void TacdProgram_destroy(TacdProgram *prog) {
 }
 
 void TacdFunctionArray_init(TacdFunctionArray *tfa) {
+    if (tfa == NULL) return;
+
     tfa->len = 0;
     tfa->cap = 2;
     tfa->fns = calloc(tfa->cap, sizeof(TacdFunction));
 }
 
 void TacdFunctionArray_deinit(TacdFunctionArray *tfa) {
+    if (tfa == NULL) return;
+
+    for (size_t fn_idx = 0; fn_idx < tfa->len; fn_idx++) {
+        CodeList_deinit(&tfa->fns[fn_idx].body);
+        ParamArray_destroy(tfa->fns[fn_idx].params);
+    }
+
     free(tfa->fns);
     tfa->fns = NULL;
     tfa->cap =  0;
@@ -107,6 +117,12 @@ void CodeList_init(CodeList *il) {
 void CodeList_deinit(CodeList* il) {
     if (il == NULL) return;
     if (il->codes == NULL) return;
+
+    for (size_t c_idx = 0; c_idx < il->len; c_idx++) {
+        if (il->codes[c_idx].kind == TACD_CODE_FN_CALL) {
+            ValueArray_destroy(il->codes[c_idx].code.fn_call.args);
+        }
+    }
 
     free(il->codes);
     il->cap = 0;
@@ -1123,7 +1139,7 @@ static void trx_fn_definition(CompDriver *cd, TacdFunction *tacd_fn, Decl *ast_f
 void generate_tacd(CompDriver *cd, AstProgram *ast_prog) {
     TacdGenerator *tg = &cd->cgd.tacd_gen;
 
-    tg->program = TacdProgram_create();
+    //tg->program = TacdProgram_create();
     for (size_t d_idx = 0; d_idx < ast_prog->decls.len; d_idx++) {
         Decl *fn_decl = ast_prog->decls.decls[d_idx];
         if (fn_decl->kind != DECL_FUNCTION) continue;

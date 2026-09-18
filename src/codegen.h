@@ -14,6 +14,7 @@ typedef enum asmNodeKind_ {
 typedef enum asmInstrKind_ {
     ASM_INSTR_INVALID,
     ASM_ALLOCSTACK,     // instruction `subq $n, %rsp`
+    ASM_DEALLOCSTACK,
     ASM_INSTR_MOV,
     ASM_INSTR_UNARY,
     ASM_INSTR_BINARY,
@@ -24,6 +25,8 @@ typedef enum asmInstrKind_ {
     ASM_INSTR_JMPCC,
     ASM_INSTR_SETCC,
     ASM_INSTR_LABEL,
+    ASM_INSTR_PUSH,
+    ASM_INSTR_CALL,
     ASM_INSTR_RET
 } AsmInstrKind;
 
@@ -76,9 +79,17 @@ typedef enum register_ {
     AX,
     CX,
     DX,
+    DI,
+    SI,
+    R8,
+    R9,
     R10,
     R11
 } Register;
+
+static Register param_regs[6] = {
+    DI, SI, DX, CX, R8, R9
+};
 
 typedef struct operand_ {
     OperandType type;
@@ -98,35 +109,49 @@ typedef struct asmInstr_ {
         struct { BinaryOp binop; Operand src; Operand dest; } binary;
         struct { Operand divisor; } idiv;
         int alloc_stack;
+        int dealloc_stack;
         struct { Operand src1; Operand src2; } cmp;
         const String *jmp;
         struct { ConditionCode cond_code; const String *target; } jmpcc;
         struct { ConditionCode cond_code; Operand dest; } setcc;
         const String *label;
+        Operand push;
+        const String *call;
     } instr;
 } AsmInstr;
 
 typedef struct instrArray_ {
-    AsmInstr *instrs;
     size_t len;
     size_t cap;
+    AsmInstr *instrs;
 } InstrArray;
 
-typedef struct asmNode_ *AsmNode_ty;
-typedef struct asmNode_ {
-    AsmNodeKind kind;
-    union {
-        struct { AsmNode_ty function; } program;
-        struct {
-            const String *name;
-            InstrArray instrs;
-        } function;
-    } node;
-} AsmNode;
+void InstrArray_init(InstrArray *ia);
+void InstrArray_deinit(InstrArray *ia);
+void InstrArray_append(InstrArray *ia, AsmInstr in);
+void InstrArray_insert(InstrArray *ia, AsmInstr in, size_t idx);
 
-/*
-   CodegenDriver
-*/
+typedef struct asmFunction_ {
+    const String *name;
+    InstrArray instrs;
+} AsmFn;
+
+typedef struct asmFunctionArray_ {
+    size_t len;
+    size_t cap;
+    AsmFn *fns;
+} AsmFnArray;
+
+void AsmFnArray_init(AsmFnArray *afa);
+void AsmFnArray_deinit(AsmFnArray *afa);
+void AsmFnArray_append(AsmFnArray *afa, AsmFn afn);
+
+typedef struct asmProgram_ {
+    AsmFnArray fns;
+} AsmProgram;
+
+AsmProgram *AsmProgram_create(void);
+void AsmProgram_destroy(AsmProgram *prog);
 
 /*
     Map Pseudo(identifier) -> Stack(int)
@@ -143,32 +168,19 @@ typedef struct pseudoSymMap_ {
     size_t cap;
 } PseudoSymMap;
 
+void PseudoSymMap_init(PseudoSymMap *map);
+void PseudoSymMap_deinit(PseudoSymMap *map);
+void PseudoSymMap_append(PseudoSymMap *map, PseudoStackMapping item);
+bool PseudoSymMap_contains(PseudoSymMap *map, String key, int *val);
+
 typedef struct codegen_ {
     String dest;
 
     TacdGenerator tacd_gen;
     PseudoSymMap stack_offsets;
 
-    AsmNode *program;
+    AsmProgram *program;
 } CodegenDriver;
-
-/*
-   InstrArray
-*/
-
-void InstrArray_init(InstrArray *ia);
-void InstrArray_deinit(InstrArray *ia);
-void InstrArray_append(InstrArray *ia, AsmInstr in);
-void InstrArray_insert(InstrArray *ia, AsmInstr in, size_t idx);
-
-/*
-   PseudoSymMap
-*/
-
-void PseudoSymMap_init(PseudoSymMap *map);
-void PseudoSymMap_deinit(PseudoSymMap *map);
-void PseudoSymMap_append(PseudoSymMap *map, PseudoStackMapping item);
-bool PseudoSymMap_contains(PseudoSymMap *map, String key, int *val);
 
 typedef struct compDriver_ CompDriver;
 
@@ -176,14 +188,8 @@ typedef struct compDriver_ CompDriver;
 void emit_asm(CompDriver *cd, TacdProgram *src);
 
 /* Resolve Pseudo registers to Stack offsets. Returns total stack offset. Second pass.  */
-int resolve_pseudo_registers(CodegenDriver *cgd);
+//int resolve_pseudo_registers(CodegenDriver *cgd);
 
-/*  Create memory for a general AsmNode.
-    If the intended node is a function, prefer `AsmNode_function_create`.   */
-AsmNode *AsmNode_create();
-
-/*  Free memory for an AsmNode. */
-void AsmNode_destroy(AsmNode *node);
 
 void CodegenDriver_init(CodegenDriver *cgd);
 void CodegenDriver_deinit(CodegenDriver *cgd);
