@@ -3,7 +3,7 @@
 set -u
 
 function usage() {
-    printf "Usage: %s <program> <lex|parse|validate|tacd|codegen|full>\n" "$0"
+    printf "Usage: %s <program> <lex|parse|validate|tacd|codegen|asm|obj|full>\n" "$0"
 }
 
 if [[ $# -ne 2 ]]; then
@@ -25,6 +25,8 @@ case "$STAGE_OPT" in
     "validate") STAGE=(--validate);;
     "tacd") STAGE=(--tacd);;
     "codegen") STAGE=(--codegen);;
+    "asm") STAGE=(-S);;
+    "obj") STAGE=(-c);;
     "full") STAGE=();;
     *) usage; exit 1;;
 esac
@@ -60,6 +62,19 @@ for test_case in "${test_cases[@]}"; do
         failed+=("$test_case")
     else
         printf "    %sPASS%s\n" "$COLOR_PASS" "$COLOR_RESET"
+    fi
+
+    if [[ $STAGE_OPT == "asm" ]]; then
+        asm_file=${test_case/%.c/.s}
+        echo "removing $asm_file"
+        rm $asm_file
+    elif [[ $STAGE_OPT == "obj" ]]; then
+        obj_file=${test_case/%.c/.o}
+        echo "removing $obj_file"
+        rm $obj_file
+    elif [[ $STAGE_OPT == "full" ]]; then
+        executable=${test_case/%.c}
+        rm $executable
     fi
 done
 elapsed=$SECONDS
