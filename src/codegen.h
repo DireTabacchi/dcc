@@ -5,12 +5,6 @@
 #include "ast.h"
 #include "tacd.h"
 
-
-typedef enum asmNodeKind_ {
-    ASMNODE_PROGRAM,
-    ASMNODE_FUNCTION,
-} AsmNodeKind;
-
 typedef enum asmInstrKind_ {
     ASM_INSTR_INVALID,
     ASM_ALLOCSTACK,     // instruction `subq $n, %rsp`
@@ -87,6 +81,12 @@ typedef enum register_ {
     R11
 } Register;
 
+typedef enum asmType_ {
+    ASMTYPE_BYTE,
+    ASMTYPE_DWORD,
+    ASMTYPE_QWORD
+} AsmType;
+
 static Register param_regs[6] = {
     DI, SI, DX, CX, R8, R9
 };
@@ -104,7 +104,7 @@ typedef struct operand_ {
 typedef struct asmInstr_ {
     AsmInstrKind kind;
     union {
-        struct { Operand src; Operand dest; } mov;
+        struct { Operand src; Operand dest; AsmType type; } mov;
         struct { UnaryOp unop; Operand op; } unary;
         struct { BinaryOp binop; Operand src; Operand dest; } binary;
         struct { Operand divisor; } idiv;
@@ -186,10 +186,6 @@ typedef struct compDriver_ CompDriver;
 
 /* Translate TACD to generated ASM instructions. First pass.    */
 void emit_asm(CompDriver *cd, TacdProgram *src);
-
-/* Resolve Pseudo registers to Stack offsets. Returns total stack offset. Second pass.  */
-//int resolve_pseudo_registers(CodegenDriver *cgd);
-
 
 void CodegenDriver_init(CodegenDriver *cgd);
 void CodegenDriver_deinit(CodegenDriver *cgd);

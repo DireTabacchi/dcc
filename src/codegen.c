@@ -291,6 +291,7 @@ static AsmInstr trx_binary_divide(AsmFn *asm_fn, TacdCode *tacd_code) {
     mov_src1_ax.kind = ASM_INSTR_MOV;
     mov_src1_ax.instr.mov.src = op_src1;
     mov_src1_ax.instr.mov.dest = op_ax;
+    mov_src1_ax.instr.mov.type = ASMTYPE_DWORD;
     InstrArray_append(&asm_fn->instrs, mov_src1_ax);
 
     AsmInstr cdq = {0};
@@ -306,6 +307,7 @@ static AsmInstr trx_binary_divide(AsmFn *asm_fn, TacdCode *tacd_code) {
     mov_ax_dest.kind = ASM_INSTR_MOV;
     mov_ax_dest.instr.mov.src = op_ax;
     mov_ax_dest.instr.mov.dest = op_dest;
+    mov_ax_dest.instr.mov.type = ASMTYPE_DWORD;
 
     return mov_ax_dest;
 }
@@ -320,6 +322,7 @@ static AsmInstr trx_binary_remainder(AsmFn *asm_fn, TacdCode *tacd_code) {
     mov_src1_ax.kind = ASM_INSTR_MOV;
     mov_src1_ax.instr.mov.src = op_src1;
     mov_src1_ax.instr.mov.dest = (Operand){ .type = OPERAND_REG, .val.reg = AX };
+    mov_src1_ax.instr.mov.type = ASMTYPE_DWORD;
     InstrArray_append(&asm_fn->instrs, mov_src1_ax);
 
     AsmInstr cdq = {0};
@@ -335,6 +338,7 @@ static AsmInstr trx_binary_remainder(AsmFn *asm_fn, TacdCode *tacd_code) {
     mov_dx_dest.kind = ASM_INSTR_MOV;
     mov_dx_dest.instr.mov.src = (Operand){ .type = OPERAND_REG, .val.reg = DX };
     mov_dx_dest.instr.mov.dest = op_dest;
+    mov_dx_dest.instr.mov.type = ASMTYPE_DWORD;
 
     return mov_dx_dest;
 }
@@ -388,6 +392,7 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
             asm_mov.instr.mov.src = op_src;
         }
         asm_mov.instr.mov.dest = op_dest;
+        asm_mov.instr.mov.type = ASMTYPE_DWORD;
         InstrArray_append(&asm_fn->instrs, asm_mov);
 
         AsmInstr asm_unary = {0};
@@ -427,6 +432,7 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
             AsmInstr mov_zero = { .kind = ASM_INSTR_MOV };
             mov_zero.instr.mov.src = (Operand){ .type = OPERAND_IMM, .val.imm = 0 };
             mov_zero.instr.mov.dest = op_dest;
+            mov_zero.instr.mov.type = ASMTYPE_DWORD;
             InstrArray_append(&asm_fn->instrs, mov_zero);
             AsmInstr setcc = { .kind = ASM_INSTR_SETCC };
             setcc.instr.setcc.cond_code = cond_code;
@@ -441,6 +447,7 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
         mov_src_dest.kind = ASM_INSTR_MOV;
         mov_src_dest.instr.mov.src = op_src1;
         mov_src_dest.instr.mov.dest = op_dest;
+        mov_src_dest.instr.mov.type = ASMTYPE_DWORD;
         InstrArray_append(&asm_fn->instrs, mov_src_dest);
 
         AsmInstr asm_binary = {0};
@@ -459,6 +466,7 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
         cpy_mov.kind = ASM_INSTR_MOV;
         cpy_mov.instr.mov.src = src;
         cpy_mov.instr.mov.dest = dest;
+        cpy_mov.instr.mov.type = ASMTYPE_DWORD;
         return cpy_mov;
     }
 
@@ -508,6 +516,7 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
         asm_mov.kind = ASM_INSTR_MOV;
         asm_mov.instr.mov.src = op_src;
         asm_mov.instr.mov.dest = (Operand){ .type = OPERAND_REG, .val.reg = AX };
+        asm_mov.instr.mov.type = ASMTYPE_DWORD;
 
         // Add generated code to asm_function.
         InstrArray_append(&asm_fn->instrs, asm_mov);
@@ -533,7 +542,6 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
                 reg_arg_count = va->len;
             }
             padding = stack_arg_count % 2 != 0 ? 8 : 0;
-            printf("Reg args: %d\nStack args: %d\n", reg_arg_count, stack_arg_count);
 
             if (padding != 0) {
                 AsmInstr alloc_padding = (AsmInstr){
@@ -554,7 +562,8 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
                         .dest = (Operand){
                             .type = OPERAND_REG,
                             .val.reg = param_regs[a_idx]
-                        }
+                        },
+                        .type = ASMTYPE_DWORD
                     }
                 };
                 InstrArray_append(&asm_fn->instrs, mov_arg);
@@ -573,7 +582,8 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
                         .kind = ASM_INSTR_MOV,
                         .instr.mov = {
                             .src = arg,
-                            .dest = reg_ax
+                            .dest = reg_ax,
+                            .type = ASMTYPE_DWORD
                         }
                     };
                     InstrArray_append(&asm_fn->instrs, mov_arg);
@@ -606,7 +616,8 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
             .kind = ASM_INSTR_MOV,
             .instr.mov = {
                 .src = reg_ax,
-                .dest = dest
+                .dest = dest,
+                .type = ASMTYPE_DWORD
             }
         };
 
@@ -636,7 +647,8 @@ static void mov_params_to_stack(AsmFn *asm_fn, ParamArray *tacd_params) {
             .instr.mov.dest = (Operand){
                 .type = OPERAND_PSEUDO,
                 .val.pseudo = tacd_params->params[p_idx]
-            }
+            },
+            .instr.mov.type = ASMTYPE_DWORD
         };
         InstrArray_append(&asm_fn->instrs, param_mov);
     }
@@ -653,7 +665,8 @@ static void mov_params_to_stack(AsmFn *asm_fn, ParamArray *tacd_params) {
                 .dest = (Operand){
                     .type = OPERAND_PSEUDO,
                     .val.pseudo = tacd_params->params[p_idx]
-                }
+                },
+                .type = ASMTYPE_DWORD
             }
         };
         InstrArray_append(&asm_fn->instrs, param_mov);
@@ -701,7 +714,7 @@ static AsmProgram *trx_program(TacdProgram *tacd_program) {
 static void resolve_function_stack(CodegenDriver *cgd, AsmFn *asm_fn, int resolved_offset) {
     int offset_remainder = resolved_offset % 16;
     int new_offset =
-        offset_remainder == 0 ? offset_remainder : resolved_offset + (16 - offset_remainder);
+        offset_remainder == 0 ? resolved_offset : resolved_offset + (16 - offset_remainder);
     AsmInstr stack_alloc = (AsmInstr){
         .kind = ASM_ALLOCSTACK,
         .instr.alloc_stack = new_offset
@@ -733,6 +746,7 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
                     .instr.mov = {
                         .src = (Operand){ .type = OPERAND_STACK, .val.stack = src },
                         .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
+                        .type = ASMTYPE_DWORD
                     }};
                 InstrArray_insert(func_instrs, new_instr, instr_idx);
             }
@@ -748,7 +762,8 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
                     .kind = ASM_INSTR_MOV,
                     .instr.mov = {
                         .src = (Operand){ .type = OPERAND_IMM, .val.imm = old_imm },
-                        .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 }
+                        .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
+                        .type = ASMTYPE_DWORD
                     }
                 };
                 InstrArray_insert(func_instrs, new_instr, instr_idx);
@@ -773,7 +788,8 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
                         .kind = ASM_INSTR_MOV,
                         .instr.mov = {
                             .src = (Operand){ .type = OPERAND_STACK, .val.stack = old_src },
-                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 }
+                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
+                            .type = ASMTYPE_DWORD
                         }};
                     InstrArray_insert(func_instrs, new_instr, instr_idx);
                 }
@@ -790,14 +806,16 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
                         .kind = ASM_INSTR_MOV,
                         .instr.mov = {
                             .src = (Operand){ .type = OPERAND_STACK, .val.stack = dest },
-                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R11 }
+                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R11 },
+                            .type = ASMTYPE_DWORD
                         }
                     };
                     AsmInstr second_mov = (AsmInstr){
                         .kind = ASM_INSTR_MOV,
                         .instr.mov = {
                             .src = (Operand){ .type = OPERAND_REG, .val.reg = R11 },
-                            .dest = (Operand){ .type = OPERAND_STACK, .val.stack = dest }
+                            .dest = (Operand){ .type = OPERAND_STACK, .val.stack = dest },
+                            .type = ASMTYPE_DWORD
                         }
                     };
 
@@ -819,7 +837,8 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
                         .kind = ASM_INSTR_MOV,
                         .instr.mov = {
                             .src = (Operand) { .type = OPERAND_STACK, .val.stack = src },
-                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = CX }
+                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = CX },
+                            .type = ASMTYPE_BYTE
                         }
                     };
                     InstrArray_insert(func_instrs, mov_stack_cl, instr_idx);
@@ -836,12 +855,14 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
                 AsmInstr mov = (AsmInstr){ .kind = ASM_INSTR_MOV };
                 mov.instr.mov.src = instr->instr.cmp.src1;
                 mov.instr.mov.dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 };
+                mov.instr.mov.type = ASMTYPE_DWORD;
                 instr->instr.cmp.src1 = (Operand){ .type = OPERAND_REG, .val.reg = R10 };
                 InstrArray_insert(func_instrs, mov, instr_idx);
             } else if (instr->instr.cmp.src2.type == OPERAND_IMM) {
                 AsmInstr mov = (AsmInstr){ .kind = ASM_INSTR_MOV };
                 mov.instr.mov.src = instr->instr.cmp.src2;
                 mov.instr.mov.dest = (Operand){ .type = OPERAND_REG, .val.reg = R11 };
+                mov.instr.mov.type = ASMTYPE_DWORD;
                 instr->instr.cmp.src2 = (Operand){ .type = OPERAND_REG, .val.reg = R11 };
                 InstrArray_insert(func_instrs, mov, instr_idx);
             }

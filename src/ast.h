@@ -268,14 +268,14 @@ Block *Block_create(void);
 void Block_destroy(Block *block);
 void Block_append(Block *block, BlockItem item);
 
-typedef struct func_ {
-    const String *name;
-    Block *block;
-} Function;
-
-Function *Function_create(void);
-void Function_destroy(Function *func);
-void Function_print(Function *func, int indent_lvl);
+//typedef struct func_ {
+//    const String *name;
+//    Block *block;
+//} Function;
+//
+//Function *Function_create(void);
+//void Function_destroy(Function *func);
+//void Function_print(Function *func, int indent_lvl);
 
 typedef struct declArray_ {
     Decl **decls;

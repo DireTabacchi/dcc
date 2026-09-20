@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "comp_driver.h"
 #include "codegen.h"
 #include "codegen_x86_64.h"
 
@@ -8,56 +9,34 @@ static void emit_operand(Operand *op, AsmOpSize size, FILE *dest) {
     case OPERAND_PSEUDO:
         break;
     case OPERAND_REG:
+        // TODO: eventually phase out this switch for better table-driven value retrieval
         switch (op->val.reg) {
         case AX:
-            switch (size) {
-            case AOS_BYTE:
-                fprintf(dest, "%%al");
-                break;
-            case AOS_DWORD:
-                fprintf(dest, "%%eax");
-                break;
-            }
+            fprintf(dest, "%s", reg_table[REG_AX][size]);
             break;
         case CX:
-            switch (size) {
-            case AOS_BYTE:
-                fprintf(dest, "%%cl");
-                break;
-            case AOS_DWORD:
-                fprintf(dest, "%%ecx");
-                break;
-            }
+            fprintf(dest, "%s", reg_table[REG_CX][size]);
             break;
         case DX:
-            switch (size) {
-            case AOS_BYTE:
-                fprintf(dest, "%%dl");
-                break;
-            case AOS_DWORD:
-                fprintf(dest, "%%edx");
-                break;
-            }
+            fprintf(dest, "%s", reg_table[REG_DX][size]);
+            break;
+        case DI:
+            fprintf(dest, "%s", reg_table[REG_DI][size]);
+            break;
+        case SI:
+            fprintf(dest, "%s", reg_table[REG_SI][size]);
+            break;
+        case R8:
+            fprintf(dest, "%s", reg_table[REG_R8][size]);
+            break;
+        case R9:
+            fprintf(dest, "%s", reg_table[REG_R9][size]);
             break;
         case R10:
-            switch (size) {
-            case AOS_BYTE:
-                fprintf(dest, "%%r10b");
-                break;
-            case AOS_DWORD:
-                fprintf(dest, "%%r10d");
-                break;
-            }
+            fprintf(dest, "%s", reg_table[REG_R10][size]);
             break;
         case R11:
-            switch (size) {
-            case AOS_BYTE:
-                fprintf(dest, "%%r11b");
-                break;
-            case AOS_DWORD:
-                fprintf(dest, "%%r11d");
-                break;
-            }
+            fprintf(dest, "%s", reg_table[REG_R11][size]);
             break;
         }
         break;
@@ -69,27 +48,40 @@ static void emit_operand(Operand *op, AsmOpSize size, FILE *dest) {
     case OPERAND_STACK:
         fprintf(dest, "%d(%%rbp)", op->val.stack);
         break;
-    //default:
-    //    /*  do nothing  */
-    //    break;
+    default:
+        /*  do nothing  */
+        break;
     }
 }
 
 static void emit_mov(AsmInstr *mov, FILE *dest) {
     fprintf(dest, "\tmov");
-    if (mov->instr.mov.dest.type == OPERAND_REG && mov->instr.mov.dest.val.reg == CX) {
+    switch (mov->instr.mov.type) {
+    case ASMTYPE_BYTE:
         fprintf(dest, "b\t");
         emit_operand(&mov->instr.mov.src, AOS_BYTE, dest);
-    } else {
+        break;
+    case ASMTYPE_DWORD:
         fprintf(dest, "l\t");
         emit_operand(&mov->instr.mov.src, AOS_DWORD, dest);
+        break;
+    case ASMTYPE_QWORD:
+        fprintf(dest, "q\t");
+        emit_operand(&mov->instr.mov.src, AOS_QWORD, dest);
+        break;
     }
     fprintf(dest, ", ");
 
-    if (mov->instr.mov.dest.type == OPERAND_REG && mov->instr.mov.dest.val.reg == CX) {
+    switch (mov->instr.mov.type) {
+    case ASMTYPE_BYTE:
         emit_operand(&mov->instr.mov.dest, AOS_BYTE, dest);
-    } else {
+        break;
+    case ASMTYPE_DWORD:
         emit_operand(&mov->instr.mov.dest, AOS_DWORD, dest);
+        break;
+    case ASMTYPE_QWORD:
+        emit_operand(&mov->instr.mov.dest, AOS_QWORD, dest);
+        break;
     }
     fprintf(dest, "\n");
 }
@@ -118,7 +110,7 @@ static void emit_unary(AsmInstr *unary, FILE *dest) {
 
 // TODO: encode sizes in Instructions (Operands?)
 // TODO: improve logic for binary shift with previous TODO
-static void emit_function(AsmFn *asm_fn, FILE *dest) {
+static void emit_function(CompDriver *cd, AsmFn *asm_fn, FILE *dest) {
     fprintf(dest, "\t.globl %1$s\n%1$s:\n", asm_fn->name->cstr);
     fprintf(dest, "\tpushq\t%%rbp\n\tmovq\t%%rsp, %%rbp\n");
     for (size_t instr_idx = 0; instr_idx < asm_fn->instrs.len; instr_idx++) {
@@ -189,7 +181,11 @@ static void emit_function(AsmFn *asm_fn, FILE *dest) {
 //#ifdef DEBUG
 //            fprintf(dest, "# Allocate Stack\n");
 //#endif
-            fprintf(dest, "\tsubq\t$%d, %%rsp\n", -instr->instr.alloc_stack);
+            fprintf(dest, "\tsubq\t$%d, %%rsp\n", instr->instr.alloc_stack);
+            break;
+
+        case ASM_DEALLOCSTACK:
+            fprintf(dest, "\taddq\t$%d, %%rsp\n", instr->instr.dealloc_stack);
             break;
 
         case ASM_INSTR_UNARY:
@@ -285,21 +281,44 @@ static void emit_function(AsmFn *asm_fn, FILE *dest) {
             fprintf(dest, "\n");
 
             break;
+
+        case ASM_INSTR_PUSH:
+            fprintf(dest, "\tpushq\t");
+            emit_operand(&instr->instr.push, AOS_QWORD, dest);
+            fprintf(dest, "\n");
+            break;
+
+        case ASM_INSTR_CALL: {
+            SymEntry *fn_entry =
+                SymTable_get(cd->sema.symbol_table, instr->instr.call->cstr, SYMTYPE_SYMBOL);
+            if (fn_entry == NULL) {
+                puts("[DCC] CRITICAL INTERNAL ERROR: ATTEMPT TO CALL FN THAT DOES NOT EXIST");
+                return;
+            }
+            fprintf(dest, "\tcall\t%s", instr->instr.call->cstr);
+            if (fn_entry->as.symbol.as.fn_type.defined) {
+                fprintf(dest, "\n");
+            } else {
+                fprintf(dest, "@PLT\n");
+            }
+            break;
+        }
+
         }
     }
 }
 
-void emit_program(CodegenDriver *cgd) {
-    if (cgd->program == NULL) return;
+void emit_program(CompDriver *cd) {
+    if (cd->cgd.program == NULL) return;
 
-    FILE *asm_file = fopen(cgd->dest.cstr, "w");
+    FILE *asm_file = fopen(cd->cgd.dest.cstr, "w");
     if (asm_file == NULL) {
         puts("Failed to open file");
         return;
     }
 
-    for (size_t fn_idx = 0; fn_idx < cgd->program->fns.len; fn_idx++) {
-        emit_function(&cgd->program->fns.fns[fn_idx], asm_file);
+    for (size_t fn_idx = 0; fn_idx < cd->cgd.program->fns.len; fn_idx++) {
+        emit_function(cd, &cd->cgd.program->fns.fns[fn_idx], asm_file);
     }
 
     fprintf(asm_file, "\t.section .note.GNU-stack,\"\",@progbits\n");

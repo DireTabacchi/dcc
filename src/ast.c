@@ -8,9 +8,6 @@
 #include "ast.h"
 #include "sym_table.h"
 
-// TODO: write DeclArray_* functions
-// NOTE: I don't think I'll need the `Function` structure once everything runs on declarations...
-
 // How many spaces to include per indent level. Used in AstNode_print
 #define SPACES_PER_INDENT 2
 
@@ -302,21 +299,6 @@ void DeclArray_append(DeclArray *da, Decl *decl) {
     da->len += 1;
 }
 
-Function *Function_create() {
-    Function *func = (Function *)malloc(sizeof(Function));
-    func->name = NULL;
-    func->block = NULL;
-    //func->block = Block_create();
-    return func;
-}
-
-void Function_destroy(Function *func) {
-    if (func == NULL) return;
-    Block_destroy(func->block);
-    free(func);
-}
-
-// TODO: Function list?
 void Program_init(AstProgram *prog) {
     DeclArray_init(&prog->decls);
 }
@@ -804,25 +786,6 @@ static void Block_print(Block *block, int indent_lvl) {
     for (size_t idx = 0; idx < block->len; idx++) {
         BlockItem_print(&block->items[idx], indent_lvl);
     }
-}
-
-void Function_print(Function *func, int indent_lvl) {
-    if (func == NULL) return;
-
-    int spaces = indent_lvl * SPACES_PER_INDENT;
-
-    printf("%2$*1$s\n", spaces+9, "Function(");
-    indent_lvl += 1;
-    spaces = indent_lvl * SPACES_PER_INDENT;
-    printf("%2$*1$s=\"%3$s\"\n%5$*4$s=(\n",
-        spaces+4, "name", func->name->cstr, spaces+4, "body");
-    for (size_t b_idx = 0; b_idx < func->block->len; b_idx++) {
-        BlockItem_print(&func->block->items[b_idx], indent_lvl+1);
-    }
-    printf("%2$*1$c\n", spaces+1, ')');
-    indent_lvl -= 1;
-    spaces = indent_lvl * SPACES_PER_INDENT;
-    printf("%2$*1$c\n", spaces+1, ')');
 }
 
 void Program_print(AstProgram *prog) {

@@ -812,29 +812,7 @@ static Block *parse_block(CompDriver *cd) {
     return block;
 }
 
-// TODO: rewrite to use the function declaration
-static Function *parse_function(CompDriver *cd) {
-    expect_token(cd, TOKEN_KW_INT);
-    const String *name = parse_identifier(cd);
-    expect_token(cd, TOKEN_LEFT_PAREN);
-    expect_token(cd, TOKEN_KW_VOID);
-    expect_token(cd, TOKEN_RIGHT_PAREN);
-    Token peeked = peek_token(cd);
-    Block *fn_block = NULL;
-    if (peeked.kind == TOKEN_LEFT_BRACE) {
-        fn_block = parse_block(cd);
-    }
-
-    Function *func = Function_create();
-    func->name = name;
-    func->block = fn_block;
-
-    return func;
-}
-
-// TODO: rewrite to parse all declarations in a source file, not just one function
 void parse(CompDriver *cd) {
-    //Program_init(cd->parser.program);
     Token peeked = peek_token(cd);
     while (peeked.kind != TOKEN_EOF) {
         Decl *decl = parse_declaration(cd);
