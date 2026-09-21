@@ -24,6 +24,8 @@ void TokenList_destroy(TokenList* tl) {
         case TOKEN_OPERATORS_ASSIGN_BEGIN: case TOKEN_OPERATORS_ASSIGN_END:
         case TOKEN_OPERATORS_BINARY_BEGIN: case TOKEN_OPERATORS_BINARY_END:
         case TOKEN_OPERATORS_UNARY_BEGIN: case TOKEN_OPERATORS_UNARY_END:
+        case TOKEN_TYPE_SPECIFIERS_BEGIN: case TOKEN_TYPE_SPECIFIERS_END:
+        case TOKEN_STORAGE_CLASS_BEGIN: case TOKEN_STORAGE_CLASS_END:
         case TOKENKIND_LEN:
             /* Above aren't interned, nor do they have any string memory */
         case TOKEN_INVALID: case TOKEN_UNKNOWN:
@@ -47,6 +49,7 @@ void TokenList_destroy(TokenList* tl) {
         case TOKEN_KW_ELSE: case TOKEN_KW_DO: case TOKEN_KW_WHILE: case TOKEN_KW_FOR:
         case TOKEN_KW_BREAK: case TOKEN_KW_CONTINUE: case TOKEN_KW_SWITCH: case TOKEN_KW_CASE:
         case TOKEN_KW_DEFAULT: case TOKEN_KW_GOTO:
+        case TOKEN_KW_STATIC: case TOKEN_KW_EXTERN:
         case TOKEN_EOF:
             /* Interned String */
             break;

@@ -13,7 +13,7 @@ typedef struct parser_ {
     // (prev_idx == curr_idx) -> end of input
     ssize_t prev_idx;
     ssize_t curr_idx;
-    AstProgram *program;
+    AstTU *ast_tu;
 } Parser;
 
 typedef struct compDriver_ CompDriver;

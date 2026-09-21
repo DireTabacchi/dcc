@@ -144,6 +144,8 @@ static void scan_identifier(CompDriver *cd, long offset) {
     case 'e':
         if (is_keyword(ident, 1, 3, "lse")) { // else
             tok.kind = TOKEN_KW_ELSE;
+        } else if (is_keyword(ident, 1, 5, "xtern")) {
+            tok.kind = TOKEN_KW_EXTERN;
         }
         break;
     case 'f':
@@ -178,6 +180,8 @@ static void scan_identifier(CompDriver *cd, long offset) {
     case 's':
         if (is_keyword(ident, 1, 5, "witch")) {
             tok.kind = TOKEN_KW_SWITCH;
+        } else if (is_keyword(ident, 1, 5, "tatic")) {
+            tok.kind = TOKEN_KW_STATIC;
         }
         break;
     case 'v':

@@ -299,12 +299,12 @@ void DeclArray_append(DeclArray *da, Decl *decl) {
     da->len += 1;
 }
 
-void Program_init(AstProgram *prog) {
-    DeclArray_init(&prog->decls);
+void AstTU_init(AstTU *tu) {
+    DeclArray_init(&tu->decls);
 }
 
-void Program_deinit(AstProgram *prog) {
-    DeclArray_deinit(&prog->decls);
+void AstTU_deinit(AstTU *tu) {
+    DeclArray_deinit(&tu->decls);
 }
 
 /*
@@ -788,15 +788,15 @@ static void Block_print(Block *block, int indent_lvl) {
     }
 }
 
-void Program_print(AstProgram *prog) {
-    if (prog == NULL) {
+void AstTU_print(AstTU *tu) {
+    if (tu == NULL) {
         printf("NULL PROGRAM\n");
         return;
     }
 
-    printf("Program(\n");
-    for (size_t pd_idx = 0; pd_idx < prog->decls.len; pd_idx++) {
-        Decl_print(prog->decls.decls[pd_idx], 1);
+    printf("Translation Unit(\n");
+    for (size_t pd_idx = 0; pd_idx < tu->decls.len; pd_idx++) {
+        Decl_print(tu->decls.decls[pd_idx], 1);
     }
     printf(")\n");
 }

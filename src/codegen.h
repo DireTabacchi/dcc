@@ -146,12 +146,12 @@ void AsmFnArray_init(AsmFnArray *afa);
 void AsmFnArray_deinit(AsmFnArray *afa);
 void AsmFnArray_append(AsmFnArray *afa, AsmFn afn);
 
-typedef struct asmProgram_ {
+typedef struct asmTu_ {
     AsmFnArray fns;
-} AsmProgram;
+} AsmTU;
 
-AsmProgram *AsmProgram_create(void);
-void AsmProgram_destroy(AsmProgram *prog);
+AsmTU *AsmTU_create(void);
+void AsmTU_destroy(AsmTU *asm_tu);
 
 /*
     Map Pseudo(identifier) -> Stack(int)
@@ -179,13 +179,13 @@ typedef struct codegen_ {
     TacdGenerator tacd_gen;
     PseudoSymMap stack_offsets;
 
-    AsmProgram *program;
+    AsmTU *program;
 } CodegenDriver;
 
 typedef struct compDriver_ CompDriver;
 
 /* Translate TACD to generated ASM instructions. First pass.    */
-void emit_asm(CompDriver *cd, TacdProgram *src);
+void emit_asm(CompDriver *cd, TacdTU *src);
 
 void CodegenDriver_init(CodegenDriver *cgd);
 void CodegenDriver_deinit(CodegenDriver *cgd);

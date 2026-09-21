@@ -165,29 +165,19 @@ void AsmFnArray_append(AsmFnArray *afa, AsmFn afn) {
     afa->len += 1;
 }
 
-AsmProgram *AsmProgram_create(void) {
-    AsmProgram *prog = malloc(sizeof(AsmProgram));
-    *prog = (AsmProgram){0};
-    AsmFnArray_init(&prog->fns);
-    return prog;
+AsmTU *AsmProgram_create(void) {
+    AsmTU *asm_tu = malloc(sizeof(AsmTU));
+    *asm_tu = (AsmTU){0};
+    AsmFnArray_init(&asm_tu->fns);
+    return asm_tu;
 }
 
-void AsmProgram_destroy(AsmProgram *prog) {
-    if (prog == NULL) return;
+void AsmProgram_destroy(AsmTU *asm_tu) {
+    if (asm_tu == NULL) return;
 
-    AsmFnArray_deinit(&prog->fns);
-    free(prog);
-    prog = NULL;
-    //switch (node->kind) {
-    //case ASMNODE_PROGRAM:
-    //    AsmNode_destroy(node->node.program.function);
-    //    free(node);
-    //    break;
-
-    //case ASMNODE_FUNCTION:
-    //    AsmNode_function_destroy(node);
-    //    break;
-    //}
+    AsmFnArray_deinit(&asm_tu->fns);
+    free(asm_tu);
+    asm_tu = NULL;
 }
 
 /*
@@ -695,20 +685,20 @@ static AsmFn trx_function(TacdFunction *tacd_fn) {
     return asm_fn;
 }
 
-static AsmProgram *trx_program(TacdProgram *tacd_program) {
+static AsmTU *trx_program(TacdTU *tacd_tu) {
     /*  TODO: these checks should result in internal compiler error.    */
-    if (tacd_program == NULL) return NULL;
+    if (tacd_tu == NULL) return NULL;
 
-    AsmProgram *prog = AsmProgram_create();
+    AsmTU *asm_tu = AsmProgram_create();
     // TODO: Now a list of TacdFunction
     //prog->node.program.function = trx_function(tacd_program->node.program.function);
-    for (size_t fn_idx = 0; fn_idx < tacd_program->fn_defs.len; fn_idx++) {
-        TacdFunction *tacd_fn = &tacd_program->fn_defs.fns[fn_idx];
+    for (size_t fn_idx = 0; fn_idx < tacd_tu->fn_defs.len; fn_idx++) {
+        TacdFunction *tacd_fn = &tacd_tu->fn_defs.fns[fn_idx];
         AsmFn asm_fn = trx_function(tacd_fn);
-        AsmFnArray_append(&prog->fns, asm_fn);
+        AsmFnArray_append(&asm_tu->fns, asm_fn);
     }
 
-    return prog;
+    return asm_tu;
 }
 
 static void resolve_function_stack(CodegenDriver *cgd, AsmFn *asm_fn, int resolved_offset) {
@@ -971,9 +961,9 @@ static int resolve_pseudo_registers(CodegenDriver *cgd, AsmFn *asm_fn) {
     return total_offset;
 }
 
-static void AsmProgram_print(AsmProgram *prog, int indent_lvl);
+static void AsmTU_print(AsmTU *prog, int indent_lvl);
 
-void emit_asm(CompDriver *cd, TacdProgram *src) {
+void emit_asm(CompDriver *cd, TacdTU *src) {
     CodegenDriver *cgd = &cd->cgd;
     // First pass of TACD -> ASM; Generate preliminary ASM.
     cgd->program = trx_program(src);
@@ -981,7 +971,7 @@ void emit_asm(CompDriver *cd, TacdProgram *src) {
 #ifdef DEBUG
     if (cd->opts.dev_debug_flags[DDF_PRINT_CODEGEN] || cd->opts.dev_debug_flags[DDF_PRINT_ALL]) {
         puts("Generated ASM Structure ([1] Initial Generation)\n================================================");
-        AsmProgram_print(cgd->program, 0);
+        AsmTU_print(cgd->program, 0);
     }
 #endif
 
@@ -997,7 +987,7 @@ void emit_asm(CompDriver *cd, TacdProgram *src) {
 #ifdef DEBUG
     if (cd->opts.dev_debug_flags[DDF_PRINT_CODEGEN] || cd->opts.dev_debug_flags[DDF_PRINT_ALL]) {
         puts("Generated ASM Structure ([4] Fix Bad Instructions)\n==================================================");
-        AsmProgram_print(cgd->program, 0);
+        AsmTU_print(cgd->program, 0);
     }
 #endif
 
@@ -1252,13 +1242,13 @@ static void AsmFn_print(AsmFn *asm_fn, int indent_lvl) {
     printf("%2$*1$c\n", spaces+1, ')');
 }
 
-static void AsmProgram_print(AsmProgram *prog, int indent_lvl) {
-    if (prog == NULL) return;
+static void AsmTU_print(AsmTU *asm_tu, int indent_lvl) {
+    if (asm_tu == NULL) return;
     int spaces = indent_lvl * 4;
 
     printf("%*s\n", spaces+8, "Program(");
-    for (size_t fn_idx = 0; fn_idx < prog->fns.len; fn_idx++) {
-        AsmFn_print(&prog->fns.fns[fn_idx], indent_lvl+1);
+    for (size_t fn_idx = 0; fn_idx < asm_tu->fns.len; fn_idx++) {
+        AsmFn_print(&asm_tu->fns.fns[fn_idx], indent_lvl+1);
     }
     printf("%2$*1$c\n", spaces, ')');
 }

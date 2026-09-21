@@ -127,12 +127,12 @@ void TacdFunctionArray_init(TacdFunctionArray *tfa);
 void TacdFunctionArray_deinit(TacdFunctionArray *tfa);
 void TacdFunctionArray_append(TacdFunctionArray *tfa, TacdFunction fn);
 
-typedef struct tacdProgram_ {
+typedef struct tacdTu_ {
     TacdFunctionArray fn_defs;
-} TacdProgram;
+} TacdTU;
 
-TacdProgram *TacdProgram_create();
-void TacdProgram_destroy(TacdProgram *node);
+TacdTU *TacdTU_create();
+void TacdTU_destroy(TacdTU *node);
 
 typedef struct tacdGenerator_ {
     const String *func_name;    // Current function generating code for.
@@ -140,7 +140,7 @@ typedef struct tacdGenerator_ {
                                 // names, e.g. "main.tmp.0". (func_name.tmp.tmpvar_count)
     int label_count;            // Current count of ASM labels generated.
 
-    TacdProgram *program;
+    TacdTU *tacd_tu;
 } TacdGenerator;
 
 /*  TODO: refactor this API */
@@ -148,12 +148,12 @@ typedef struct tacdGenerator_ {
 void TacdGenerator_init(TacdGenerator *tg);
 void TacdGenerator_deinit(TacdGenerator *tg);
 typedef struct compDriver_ CompDriver;
-void generate_tacd(CompDriver *cd, AstProgram *ast_prog);
+void generate_tacd(CompDriver *cd, AstTU *ast_tu);
 
 void CodeList_init(CodeList *il);
 void CodeList_deinit(CodeList* il);
 void CodeList_append(CodeList* il, TacdCode code);
 
-void Tacd_print(TacdProgram *program);
+void Tacd_print(TacdTU *program);
 
 #endif // TACD_H

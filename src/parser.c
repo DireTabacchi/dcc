@@ -708,18 +708,7 @@ static ParamArray *parse_param_list(CompDriver *cd, const String *fn_name) {
         expect_token(cd, TOKEN_KW_INT);
         next_token = peek_token(cd);
         const String *param_name = parse_identifier(cd);
-        //for (size_t pl_idx = 0; pl_idx < param_list->len; pl_idx++) {
-        //    if (param_list->params[pl_idx] == NULL) {
-        //        break;
-        //    }
-            // This if should go in semantic analyzer
-            //if (param_list->params[pl_idx] == param_name) {
-            //    err_redefined_param(&cd->errors, cd->tokenizer.src_path, next_token, fn_name);
-            //}
-        //}
         ParamArray_append(param_list, param_name);
-        //param_list->params[p_idx] = param_name;
-        //p_idx += 1;
         next_token = peek_token(cd);
     }
 
@@ -816,7 +805,7 @@ void parse(CompDriver *cd) {
     Token peeked = peek_token(cd);
     while (peeked.kind != TOKEN_EOF) {
         Decl *decl = parse_declaration(cd);
-        DeclArray_append(&cd->parser.program->decls, decl);
+        DeclArray_append(&cd->parser.ast_tu->decls, decl);
         peeked = peek_token(cd);
     }
     // TODO: parse tokens via `parse_declaration` until EOF
@@ -827,19 +816,19 @@ void parse(CompDriver *cd) {
 // Parser management
 
 void Parser_init(Parser *p) {
-    p->program = (AstProgram *)malloc(sizeof(AstProgram));
-    Program_init(p->program);
+    p->ast_tu = (AstTU *)malloc(sizeof(AstTU));
+    AstTU_init(p->ast_tu);
     p->curr_idx = 0;
     p->prev_idx = p->curr_idx-1;
 }
 
 void Parser_destroy(Parser *p) {
     if (p == NULL) return;
-    if (p->program == NULL) return;
-    Program_deinit(p->program);
-    free(p->program);
+    if (p->ast_tu == NULL) return;
+    AstTU_deinit(p->ast_tu);
+    free(p->ast_tu);
 }
 
 void Parser_print_ast(Parser *p) {
-    Program_print(p->program);
+    AstTU_print(p->ast_tu);
 }

@@ -6,7 +6,7 @@
 #include "string_array.h"
 #include "comp_driver.h"
 
-#define VERSION_STRING "0.0.8"
+#define VERSION_STRING "0.0.9"
 
 void CompDriver_init(CompDriver *cd) {
     cd->opts = (Options){0};
@@ -23,7 +23,12 @@ void CompDriver_init(CompDriver *cd) {
 
     for (size_t i = 0; i < TOKENKIND_LEN; i++) {
         if (i == TOKEN_OPERATORS_BEGIN || i == TOKEN_OPERATORS_END ||
-            i == TOKEN_KEYWORDS_BEGIN || i == TOKEN_KEYWORDS_END) continue;
+            i == TOKEN_KEYWORDS_BEGIN || i == TOKEN_KEYWORDS_END ||
+            i == TOKEN_OPERATORS_BINARY_BEGIN || i == TOKEN_OPERATORS_BINARY_END ||
+            i == TOKEN_OPERATORS_ASSIGN_BEGIN || i == TOKEN_OPERATORS_ASSIGN_END ||
+            i == TOKEN_OPERATORS_UNARY_BEGIN || i == TOKEN_OPERATORS_UNARY_END ||
+            i == TOKEN_TYPE_SPECIFIERS_BEGIN || i == TOKEN_TYPE_SPECIFIERS_END||
+            i == TOKEN_STORAGE_CLASS_BEGIN || i == TOKEN_STORAGE_CLASS_END) continue;
         StrInterner_intern(&cd->str_table, token_literals[i]);
     }
 

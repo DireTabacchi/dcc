@@ -478,8 +478,8 @@ label_loop_statement( CompDriver *cd, Stmt *stmt, LoopSwitchStatus lss, const St
 
 // TODO: transition from Function to decls in program
 static void label_loop_statements(CompDriver *cd) {
-    for (size_t d_idx = 0; d_idx < cd->parser.program->decls.len; d_idx++) {
-        Decl *decl = cd->parser.program->decls.decls[d_idx];
+    for (size_t d_idx = 0; d_idx < cd->parser.ast_tu->decls.len; d_idx++) {
+        Decl *decl = cd->parser.ast_tu->decls.decls[d_idx];
         if (decl->kind == DECL_FUNCTION && decl->as.fn.body != NULL) {
             for (size_t block_idx = 0; block_idx < decl->as.fn.body->len; block_idx++) {
                 BlockItem *item = &decl->as.fn.body->items[block_idx];
@@ -587,8 +587,8 @@ label_switch_statement(CompDriver *cd, Stmt *stmt, LoopSwitchStatus lss, const S
 
 // TODO: transition from Function to decls in program
 static void label_switch_statements(CompDriver *cd) {
-    for (size_t d_idx = 0; d_idx < cd->parser.program->decls.len; d_idx++) {
-        Decl *decl = cd->parser.program->decls.decls[d_idx];
+    for (size_t d_idx = 0; d_idx < cd->parser.ast_tu->decls.len; d_idx++) {
+        Decl *decl = cd->parser.ast_tu->decls.decls[d_idx];
         if (decl->kind == DECL_FUNCTION && decl->as.fn.body != NULL) {
             for (size_t block_idx = 0; block_idx < decl->as.fn.body->len; block_idx++) {
                 BlockItem *item = &decl->as.fn.body->items[block_idx];
@@ -840,8 +840,8 @@ static void typecheck_block(CompDriver *cd, Block *block) {
 }
 
 static void typecheck_program(CompDriver *cd) {
-    for (size_t d_idx = 0; d_idx < cd->parser.program->decls.len; d_idx++) {
-        Decl *decl = cd->parser.program->decls.decls[d_idx];
+    for (size_t d_idx = 0; d_idx < cd->parser.ast_tu->decls.len; d_idx++) {
+        Decl *decl = cd->parser.ast_tu->decls.decls[d_idx];
         switch (decl->kind) {
         case DECL_INVALID:
             break;
@@ -859,9 +859,9 @@ static void typecheck_program(CompDriver *cd) {
 }
 
 void sem_analyze(CompDriver *cd) {
-    for (size_t d_idx = 0; d_idx < cd->parser.program->decls.len; d_idx++) {
+    for (size_t d_idx = 0; d_idx < cd->parser.ast_tu->decls.len; d_idx++) {
         cd->sema.lbl_table = SymTable_create(cd->sema.lbl_table, 0);
-        resolve_declaration(cd, cd->parser.program->decls.decls[d_idx]);
+        resolve_declaration(cd, cd->parser.ast_tu->decls.decls[d_idx]);
         resolve_labels(cd);
         cd->sema.lbl_table = SymTable_destroy(cd->sema.lbl_table);
     }

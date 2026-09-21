@@ -287,12 +287,12 @@ void DeclArray_init(DeclArray *da);
 void DeclArray_deinit(DeclArray *da);
 void DeclArray_append(DeclArray *da, Decl *decl);
 
-typedef struct astProgram_ {
+typedef struct astTU_ {
     DeclArray decls;
-} AstProgram;
+} AstTU;
 
-void Program_init(AstProgram *prog);
-void Program_deinit(AstProgram *prog);
-void Program_print(AstProgram *prog);
+void AstTU_init(AstTU *prog);
+void AstTU_deinit(AstTU *prog);
+void AstTU_print(AstTU *prog);
 
 #endif //AST_H

@@ -21,18 +21,18 @@ static void trx_declaration(CompDriver *cd, TacdFunction *tacd_fn, Decl *decl);
 
 // Structural & helpers
 
-TacdProgram *TacdProgram_create(void) {
-    TacdProgram *prog = malloc(sizeof(TacdProgram));
-    *prog = (TacdProgram){0};
-    TacdFunctionArray_init(&prog->fn_defs);
-    return prog;
+TacdTU *TacdTU_create(void) {
+    TacdTU *tacd_tu = malloc(sizeof(TacdTU));
+    *tacd_tu = (TacdTU){0};
+    TacdFunctionArray_init(&tacd_tu->fn_defs);
+    return tacd_tu;
 }
 
-void TacdProgram_destroy(TacdProgram *prog) {
-    if (prog == NULL) return;
+void TacdTU_destroy(TacdTU *tacd_tu) {
+    if (tacd_tu == NULL) return;
 
-    TacdFunctionArray_deinit(&prog->fn_defs);
-    free(prog);
+    TacdFunctionArray_deinit(&tacd_tu->fn_defs);
+    free(tacd_tu);
 }
 
 void TacdFunctionArray_init(TacdFunctionArray *tfa) {
@@ -148,11 +148,11 @@ void CodeList_append(CodeList* cl, TacdCode code) {
 }
 
 void TacdGenerator_init(TacdGenerator *tg) {
-    tg->program = TacdProgram_create();
+    tg->tacd_tu = TacdTU_create();
 }
 
 void TacdGenerator_deinit(TacdGenerator *tg) {
-    TacdProgram_destroy(tg->program);
+    TacdTU_destroy(tg->tacd_tu);
 }
 
 static const String *create_temporary_var(CompDriver *cd) {
@@ -1136,18 +1136,18 @@ static void trx_fn_definition(CompDriver *cd, TacdFunction *tacd_fn, Decl *ast_f
 }
 
 // TODO: trx_function no more... Program is list of declarations
-void generate_tacd(CompDriver *cd, AstProgram *ast_prog) {
+void generate_tacd(CompDriver *cd, AstTU *ast_tu) {
     TacdGenerator *tg = &cd->cgd.tacd_gen;
 
     //tg->program = TacdProgram_create();
-    for (size_t d_idx = 0; d_idx < ast_prog->decls.len; d_idx++) {
-        Decl *fn_decl = ast_prog->decls.decls[d_idx];
+    for (size_t d_idx = 0; d_idx < ast_tu->decls.len; d_idx++) {
+        Decl *fn_decl = ast_tu->decls.decls[d_idx];
         if (fn_decl->kind != DECL_FUNCTION) continue;
         if (fn_decl->as.fn.body == NULL) continue;
 
         TacdFunction tacd_fn = {0};
         trx_fn_definition(cd, &tacd_fn, fn_decl);
-        TacdFunctionArray_append(&tg->program->fn_defs, tacd_fn);
+        TacdFunctionArray_append(&tg->tacd_tu->fn_defs, tacd_fn);
     }
 }
 
@@ -1319,18 +1319,18 @@ static void TacdFunction_print(TacdFunction *fn, int indent_lvl) {
     indent_lvl -= 1;
 }
 
-static void TacdProgram_print(TacdProgram *prog, int indent_lvl) {
+static void TacdProgram_print(TacdTU *tacd_tu, int indent_lvl) {
     int spaces = indent_lvl * 4;
     printf("%2$*1$s\n", spaces+8, "Program:");
-    for (size_t d_idx = 0; d_idx < prog->fn_defs.len; d_idx++) {
-        TacdFunction_print(&prog->fn_defs.fns[d_idx], indent_lvl);
-        if (d_idx+1 < prog->fn_defs.len) {
+    for (size_t d_idx = 0; d_idx < tacd_tu->fn_defs.len; d_idx++) {
+        TacdFunction_print(&tacd_tu->fn_defs.fns[d_idx], indent_lvl);
+        if (d_idx+1 < tacd_tu->fn_defs.len) {
             printf("\n");
         }
     }
 }
 
-void Tacd_print(TacdProgram *prog) {
+void Tacd_print(TacdTU *tacd_tu) {
     puts("Generated TACD\n==============");
-    TacdProgram_print(prog, 0);
+    TacdProgram_print(tacd_tu, 0);
 }

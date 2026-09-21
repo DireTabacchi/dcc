@@ -144,18 +144,18 @@ int main(int argc, char *argv[]) {
 
         CodegenDriver_init(&driver.cgd);
         if (!compiler_erred && (driver.opts.dbf >= DBF_TACD || driver.opts.dbf == DBF_NONE)) {
-            generate_tacd(&driver, driver.parser.program);
+            generate_tacd(&driver, driver.parser.ast_tu);
 #ifdef DEBUG
             if (driver.opts.dev_debug_flags[DDF_PRINT_TACD] ||
                 driver.opts.dev_debug_flags[DDF_PRINT_ALL]) {
-                Tacd_print(driver.cgd.tacd_gen.program);
+                Tacd_print(driver.cgd.tacd_gen.tacd_tu);
             }
 #endif
         }
 
         if (!compiler_erred && (driver.opts.dbf >= DBF_CODEGEN || driver.opts.dbf == DBF_NONE)) {
             // TODO: pass whole driver
-            emit_asm(&driver, driver.cgd.tacd_gen.program);
+            emit_asm(&driver, driver.cgd.tacd_gen.tacd_tu);
         }
         driver.cgd.dest = String_init_length(basename_len+2);
         memcpy(driver.cgd.dest.cstr, tu_name.cstr, basename_len);
@@ -170,8 +170,6 @@ int main(int argc, char *argv[]) {
             remove(preproc_filename.cstr);
         }
 
-        printf("About to build object\n");
-        printf("compiler_erred: %s\n", compiler_erred ? "true" : "false");
         if (!compiler_erred &&
             driver.opts.dbf == DBF_NONE && 
             (driver.opts.bf >= BF_EMIT_ASSEMBLY || driver.opts.bf == BF_NONE)
