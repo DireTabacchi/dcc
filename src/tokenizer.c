@@ -70,7 +70,7 @@ void Tokenizer_init(CompDriver *cd, const char *src_path) {
 void Tokenizer_destroy(Tokenizer *t) {
     String_free(&t->src);
     String_free(&t->src_path);
-    TokenList_destroy(&t->tokens);
+    TokenList_deinit(&t->tokens);
 }
 
 // Check if a char `c` is a whitespace character.

@@ -31,18 +31,61 @@ typedef enum {
 } ScopeStatus;
 
 typedef enum {
+    LINKAGE_NONE,
     LINKAGE_INTERNAL,
     LINKAGE_EXTERNAL
 } LinkageKind;
 
 typedef enum {
-    TYPE_INT,
-    TYPE_FN
-} TypeKind;
+    SYMBOL_TYPE_AUTO,   // Automatic storage duration
+    SYMBOL_TYPE_STATIC, // Static storage duration
+    SYMBOL_TYPE_FN
+} SymbolTypeKind;
+
+typedef enum {
+    DATATYPE_INT
+} DataType;
+
+typedef enum {
+    IV_NO_INITIALIZER,
+    IV_TENTATIVE,
+    IV_INITIAL
+} InitValueKind;
 
 typedef struct fnType_ {
     size_t arity;
 } FnType;
+
+typedef struct fnAttrs_ {
+    LinkageKind linkage;
+    bool defined;
+} FnAttr;
+
+typedef struct initVal_ {
+    InitValueKind kind;
+    union {
+        int initial;
+    } as;
+} InitVal;
+
+typedef struct staticAttrs_ {
+    LinkageKind linkage;
+    InitVal initial_value;
+} StaticAttr;
+
+typedef struct localAttrs_ {
+    LinkageKind linkage;
+} LocalAttr;
+
+typedef struct symbol_ {
+    SymbolTypeKind type;
+    const String *origin_name;
+    union {
+        struct { FnType type; FnAttr attr; } fn;
+        struct { DataType type; StaticAttr attr; } static_var;
+        struct { DataType type; LocalAttr attr; } auto_var;
+    } as;
+} Symbol;
 
 typedef struct symEntry_ {
     size_t hash;
@@ -54,13 +97,7 @@ typedef struct symEntry_ {
         struct { const String *name; size_t scope; LinkageKind linkage; } mapping;
         struct { LabelStatus status; } lbl;
         struct { int val; } case_lbl;
-        struct {
-            TypeKind type;
-            const String *origin_name;
-            union {
-                struct { FnType type; bool defined; } fn_type;
-            } as;
-        } symbol;
+        Symbol sym;
     } as;
 } SymEntry;
 
@@ -83,8 +120,12 @@ void SymTable_insert_mapping(SymTable *table, Position pos, const String *key, c
     LinkageKind linkage);
 void SymTable_insert_label(SymTable *table, Position pos, const String *txt, LabelStatus status);
 void SymTable_insert_case_label(SymTable *table, Position pos, const String *lbl, int val);
-void SymTable_insert_symbol( SymTable *table, Position pos, const String *key, TypeKind type,
-    const String *origin_name, size_t param_cnt, bool defined);
+void SymTable_insert_auto_var_symbol(SymTable *table, Position pos, const String *key,
+    const String *origin_name);
+void SymTable_insert_static_var_symbol(SymTable *table, Position pos, const String *key,
+    const String *origin_name, StaticAttr attr);
+void SymTable_insert_fn_symbol(SymTable *table, Position pos, const String *key,
+    const String *origin_name, size_t param_cnt, FnAttr attr);
 bool SymTable_contains(SymTable *table, char *key, SymType type);
 SymEntry *SymTable_get(SymTable *table, char *key, SymType type);
 bool SymTable_scope_contains(SymTable *table, char *key, SymType type);

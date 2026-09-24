@@ -249,8 +249,8 @@ void Decl_destroy(Decl *decl) {
         case DECL_INVALID:
             free(decl);
             break;
-        case DECL_LCL_VAR:
-            Expr_destroy(decl->as.loc_var.init);
+        case DECL_VARIABLE:
+            Expr_destroy(decl->as.variable.init);
             free(decl);
             break;
         case DECL_FUNCTION:
@@ -712,16 +712,19 @@ void Decl_print(Decl *decl, int indent_lvl) {
     case DECL_INVALID:
         printf("%2$*1$s\n", spaces+12, "INVALID DECL");
         break;
-    case DECL_LCL_VAR:
-        printf("%2$*1$s(\n", spaces+14, "Local Var Decl");
+    case DECL_VARIABLE:
+        printf("%2$*1$s(\n", spaces+14, "Variable Decl");
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
-        printf("%2$*1$s=%3$s\n", spaces+4, "name", decl->as.loc_var.identifier->cstr);
-        printf("%2$*1$s=(%3$s", spaces+4, "init", (decl->as.loc_var.init == NULL) ? "NULL\n" : "\n");
-        if (decl->as.loc_var.init != NULL) {
-            Expr_print(decl->as.loc_var.init, indent_lvl+1);
+        printf("%2$*1$s=%3$s\n", spaces+4, "name", decl->as.variable.identifier->cstr);
+        printf("%2$*1$s=%3$s\n", spaces+13, "Storage Class",
+            decl->as.variable.sc == SC_STATIC ? "static" :
+                decl->as.variable.sc == SC_EXTERN ? "extern" : "none");
+        printf("%2$*1$s=(%3$s", spaces+4, "init", (decl->as.variable.init == NULL) ? "NULL)\n" : "\n");
+        if (decl->as.variable.init != NULL) {
+            Expr_print(decl->as.variable.init, indent_lvl+1);
+            printf("%2$*1$c\n", spaces+1, ')');
         }
-        printf("%2$*1$c\n", spaces+1, ')');
         indent_lvl -= 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$c\n", spaces+1, ')');
@@ -731,6 +734,9 @@ void Decl_print(Decl *decl, int indent_lvl) {
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$s=`%3$s`\n", spaces+4, "name", decl->as.fn.name->cstr);
+        printf("%2$*1$s=%3$s\n", spaces+13, "Storage Class",
+            decl->as.fn.sc == SC_STATIC ? "static" :
+                decl->as.fn.sc == SC_EXTERN ? "extern" : "none");
         printf("%2$*1$s=", spaces+6, "params");
         if (decl->as.fn.params->len == 0) {
             printf("void\n");

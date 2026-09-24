@@ -230,15 +230,15 @@ int main(int argc, char *argv[]) {
         printf("Emitting objects.\n");
     }
 
-#ifdef DEBUG
-    printf("Final Interned Strings [%ld/%ld] (load/cap):\n",
-        driver.str_table.load, driver.str_table.cap);
-    for (size_t is_idx = 0; is_idx < driver.str_table.cap; is_idx++) {
-        if (driver.str_table.strs[is_idx].status == ISS_OCCUPIED) {
-            printf("\t[%4ld] `%s`\n", is_idx, driver.str_table.strs[is_idx].str->cstr);
-        }
-    }
-#endif
+//#ifdef DEBUG
+//    printf("Final Interned Strings [%ld/%ld] (load/cap):\n",
+//        driver.str_table.load, driver.str_table.cap);
+//    for (size_t is_idx = 0; is_idx < driver.str_table.cap; is_idx++) {
+//        if (driver.str_table.strs[is_idx].status == ISS_OCCUPIED) {
+//            printf("\t[%4ld] `%s`\n", is_idx, driver.str_table.strs[is_idx].str->cstr);
+//        }
+//    }
+//#endif
 
     CompDriver_deinit(&driver);
 

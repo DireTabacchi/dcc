@@ -90,7 +90,7 @@ typedef enum stmtKind_ {
 
 typedef enum declKind_ {
     DECL_INVALID,
-    DECL_LCL_VAR,
+    DECL_VARIABLE,
     DECL_FUNCTION
 } DeclarationKind;
 
@@ -106,6 +106,12 @@ typedef enum forInitKind_ {
     FOR_INIT_DECL,
     FOR_INIT_EXP
 } ForInitKind;
+
+typedef enum storageClass_ {
+    SC_NONE,
+    SC_STATIC,
+    SC_EXTERN
+} StorageClass;
 
 typedef struct exprArray_ ExprArray;
 
@@ -178,12 +184,14 @@ typedef struct decl_ {
             const String *identifier;
             const String *origin_name;
             Expr *init;
-        } loc_var;
+            StorageClass sc;
+        } variable;
         struct {
             const String *name;
             const String *old_name;
             ParamArray *params;
             Block *body;
+            StorageClass sc;
         } fn;
     } as;
 } Decl;
@@ -267,15 +275,6 @@ typedef struct blockItem_ {
 Block *Block_create(void);
 void Block_destroy(Block *block);
 void Block_append(Block *block, BlockItem item);
-
-//typedef struct func_ {
-//    const String *name;
-//    Block *block;
-//} Function;
-//
-//Function *Function_create(void);
-//void Function_destroy(Function *func);
-//void Function_print(Function *func, int indent_lvl);
 
 typedef struct declArray_ {
     Decl **decls;

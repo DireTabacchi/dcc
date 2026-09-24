@@ -1071,14 +1071,14 @@ static void trx_statement(CompDriver *cd, TacdFunction *tacd_fn, Stmt *stmt) {
 // TODO: eventually handle other declarations
 static void trx_declaration(CompDriver *cd, TacdFunction *tacd_fn, Decl *decl) {
     switch (decl->kind) {
-    case DECL_LCL_VAR: {
-        if (decl->as.loc_var.init == NULL) return;
+    case DECL_VARIABLE: {
+        if (decl->as.variable.init == NULL) return;
 
         TacdValue lhs = {
             .kind = TACD_VALUE_IDENTIFIER,
-            .val.identifier = decl->as.loc_var.identifier
+            .val.identifier = decl->as.variable.identifier
         };
-        TacdValue rhs = trx_expression(cd, tacd_fn, decl->as.loc_var.init);
+        TacdValue rhs = trx_expression(cd, tacd_fn, decl->as.variable.init);
         TacdCode assign_copy = {0};
         assign_copy.kind = TACD_CODE_COPY;
         assign_copy.code.copy.dest = lhs;

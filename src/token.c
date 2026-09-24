@@ -11,7 +11,7 @@ void TokenList_init(TokenList* tl) {
     tl->toks = (Token *)calloc(tl->cap, sizeof(Token));
 }
 
-void TokenList_destroy(TokenList* tl) {
+void TokenList_deinit(TokenList* tl) {
     if (tl == NULL) return;
     for (size_t i = 0; i < tl->len; i++){
         switch (tl->toks[i].kind) {
@@ -26,6 +26,7 @@ void TokenList_destroy(TokenList* tl) {
         case TOKEN_OPERATORS_UNARY_BEGIN: case TOKEN_OPERATORS_UNARY_END:
         case TOKEN_TYPE_SPECIFIERS_BEGIN: case TOKEN_TYPE_SPECIFIERS_END:
         case TOKEN_STORAGE_CLASS_BEGIN: case TOKEN_STORAGE_CLASS_END:
+        case TOKEN_TYPE_STORAGE_BEGIN: case TOKEN_TYPE_STORAGE_END:
         case TOKENKIND_LEN:
             /* Above aren't interned, nor do they have any string memory */
         case TOKEN_INVALID: case TOKEN_UNKNOWN:

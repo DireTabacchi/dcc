@@ -62,6 +62,7 @@
     TOKENKIND(TOKEN_OPERATORS_END, ""), \
 \
     TOKENKIND(TOKEN_KEYWORDS_BEGIN, ""), \
+    TOKENKIND(TOKEN_TYPE_STORAGE_BEGIN, ""), \
     TOKENKIND(TOKEN_TYPE_SPECIFIERS_BEGIN, ""), \
     TOKENKIND(TOKEN_KW_INT, "int"), \
     TOKENKIND(TOKEN_KW_VOID, "void"), \
@@ -70,6 +71,7 @@
     TOKENKIND(TOKEN_KW_STATIC, "static"), \
     TOKENKIND(TOKEN_KW_EXTERN, "extern"), \
     TOKENKIND(TOKEN_STORAGE_CLASS_END, ""), \
+    TOKENKIND(TOKEN_TYPE_STORAGE_END, ""), \
     TOKENKIND(TOKEN_KW_RETURN, "return"), \
     TOKENKIND(TOKEN_KW_IF, "if"), \
     TOKENKIND(TOKEN_KW_ELSE, "else"), \
@@ -118,6 +120,15 @@ typedef struct token_ {
 #define TOKENKIND_IS_KEYWORD(tk) \
     ((tk) > TOKEN_KEYWORDS_BEGIN && (tk) < TOKEN_KEYWORDS_END)
 
+#define TOKENKIND_IS_TYPE_STORAGE(tk) \
+    ((tk) > TOKEN_TYPE_STORAGE_BEGIN && (tk) < TOKEN_TYPE_STORAGE_END)
+
+#define TOKENKIND_IS_TYPE_SPECIFIER(tk) \
+    ((tk) > TOKEN_TYPE_SPECIFIERS_BEGIN && (tk) < TOKEN_TYPE_SPECIFIERS_END)
+
+#define TOKENKIND_IS_STORAGE_CLASS(tk) \
+    ((tk) > TOKEN_STORAGE_CLASS_BEGIN && (tk) < TOKEN_STORAGE_CLASS_END)
+
 typedef struct tokenList_ {
     Token *toks;
     size_t len;
@@ -125,7 +136,7 @@ typedef struct tokenList_ {
 } TokenList;
 
 void TokenList_init(TokenList *tl);
-void TokenList_destroy(TokenList* tl);
+void TokenList_deinit(TokenList* tl);
 void TokenList_append(TokenList* tl, Token tok);
 void TokenList_print(TokenList *tl);
 

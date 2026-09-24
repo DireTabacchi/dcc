@@ -296,7 +296,7 @@ static void emit_function(CompDriver *cd, AsmFn *asm_fn, FILE *dest) {
                 return;
             }
             fprintf(dest, "\tcall\t%s", instr->instr.call->cstr);
-            if (fn_entry->as.symbol.as.fn_type.defined) {
+            if (fn_entry->as.sym.as.fn.attr.defined) {
                 fprintf(dest, "\n");
             } else {
                 fprintf(dest, "@PLT\n");
