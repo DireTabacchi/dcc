@@ -1,5 +1,6 @@
-program = Program(function_definition*)
-function_definition = Function(identifier, identifier* params, instruction* body)
+program = Program(tu_def*)
+tu_def = Function(identifier, linkage, identifier* params, instruction* body)
+       | StaticVariable(identifier, linkage, int init)
 instruction = Return(val)
             | Unary(unary_operator, val src, val dst)
             | Binary(binary_operator, val src1, val src2, val dst)
@@ -11,6 +12,9 @@ instruction = Return(val)
             | FnCall(identifier fn_name, val* args, val dst)
 val = Constant(int)
     | Var(identifier)
+linkage = None
+        | External
+        | Internal
 unary_operator = Complement | Negate | Not
 binary_operator = Add | Subtract | Multiply | Divide | Remainder
                 | BitAnd | BitOr | BitXor | LShift | RShift
