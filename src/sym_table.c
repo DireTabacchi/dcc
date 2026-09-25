@@ -269,13 +269,25 @@ void SymTable_print(SymTable *table) {
                     printf("(static) int, ");
                     switch(table->syms[idx].as.sym.as.static_var.attr.linkage) {
                     case LINKAGE_NONE:
-                        printf("No linkage\n");
+                        printf("No linkage, ");
                         break;
                     case LINKAGE_EXTERNAL:
-                        printf("External linkage\n");
+                        printf("External linkage, ");
                         break;
                     case LINKAGE_INTERNAL:
-                        printf("Internal linkage\n");
+                        printf("Internal linkage, ");
+                        break;
+                    }
+                    switch(table->syms[idx].as.sym.as.static_var.attr.initial_value.kind) {
+                    case IV_NO_INITIALIZER:
+                        printf("No Initializer\n");
+                        break;
+                    case IV_INITIAL:
+                        printf("Initial(%d)\n",
+                            table->syms[idx].as.sym.as.static_var.attr.initial_value.as.initial);
+                        break;
+                    case IV_TENTATIVE:
+                        printf("Tentative\n");
                         break;
                     }
                     break;

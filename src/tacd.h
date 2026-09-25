@@ -55,6 +55,16 @@ typedef enum tacdBinaryOp_ {
     TACD_BINARY_GTE
 } TacdBinaryOp;
 
+typedef enum tacdLinkage_ {
+    TACD_LINKAGE_NONE,
+    TACD_LINKAGE_INTERNAL,
+    TACD_LINKAGE_EXTERNAL
+} TacdLinkage;
+
+typedef enum tacdDataType_ {
+    TACD_DATATYPE_INT
+} TacdDataType;
+
 typedef struct tacdValue_ {
     TacdValueKind kind;
     union {
@@ -113,14 +123,32 @@ typedef struct CodeList_ {
 
 typedef struct tacdFunction_ {
     const String *name;
+    TacdLinkage linkage;
     ParamArray *params;
     CodeList body;
 } TacdFunction;
 
-typedef struct tacdFunctionArray_ {
-    TacdFunction *fns;
+typedef struct tacdStaticVar_ {
+    const String *identifier;
+    TacdLinkage linkage;
+    TacdDataType type;
+    int init;
+} TacdStaticVar;
+
+typedef struct tacdStaticVarArray_ {
     size_t len;
     size_t cap;
+    TacdStaticVar *vars;
+} TacdStaticVarArray;
+
+void TacdStaticVarArray_init(TacdStaticVarArray *tsva);
+void TacdStaticVarArray_deinit(TacdStaticVarArray *tsva);
+void TacdStaticVarArray_append(TacdStaticVarArray *tsva, TacdStaticVar sv);
+
+typedef struct tacdFunctionArray_ {
+    size_t len;
+    size_t cap;
+    TacdFunction *fns;
 } TacdFunctionArray;
 
 void TacdFunctionArray_init(TacdFunctionArray *tfa);
@@ -128,6 +156,7 @@ void TacdFunctionArray_deinit(TacdFunctionArray *tfa);
 void TacdFunctionArray_append(TacdFunctionArray *tfa, TacdFunction fn);
 
 typedef struct tacdTu_ {
+    TacdStaticVarArray var_defs;
     TacdFunctionArray fn_defs;
 } TacdTU;
 

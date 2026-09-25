@@ -24,6 +24,7 @@ static void trx_declaration(CompDriver *cd, TacdFunction *tacd_fn, Decl *decl);
 TacdTU *TacdTU_create(void) {
     TacdTU *tacd_tu = malloc(sizeof(TacdTU));
     *tacd_tu = (TacdTU){0};
+    TacdStaticVarArray_init(&tacd_tu->var_defs);
     TacdFunctionArray_init(&tacd_tu->fn_defs);
     return tacd_tu;
 }
@@ -31,8 +32,44 @@ TacdTU *TacdTU_create(void) {
 void TacdTU_destroy(TacdTU *tacd_tu) {
     if (tacd_tu == NULL) return;
 
+    TacdStaticVarArray_deinit(&tacd_tu->var_defs);
     TacdFunctionArray_deinit(&tacd_tu->fn_defs);
     free(tacd_tu);
+}
+
+void TacdStaticVarArray_init(TacdStaticVarArray *tsva) {
+    if (tsva == NULL) return;
+
+    tsva->len = 0;
+    tsva->cap = 2;
+    tsva->vars = calloc(tsva->cap, sizeof(TacdStaticVar));
+}
+
+void TacdStaticVarArray_deinit(TacdStaticVarArray *tsva) {
+    if (tsva == NULL) return;
+
+    free(tsva->vars);
+    tsva->vars = NULL;
+    tsva->cap = 0;
+    tsva->len = 0;
+}
+
+void TacdStaticVarArray_append(TacdStaticVarArray *tsva, TacdStaticVar sv) {
+    if (tsva == NULL) return;
+    if (tsva->vars == NULL) return;
+
+    if (tsva->len == tsva->cap) {
+        size_t old_cap = tsva->cap;
+        size_t new_cap = old_cap / 2 + old_cap;
+        TacdStaticVar *new_vars = calloc(new_cap, sizeof(TacdStaticVar));
+        memcpy(new_vars, tsva->vars, old_cap*sizeof(TacdStaticVar));
+        free(tsva->vars);
+        tsva->vars = new_vars;
+        tsva->cap = new_cap;
+    }
+
+    memcpy(&tsva->vars[tsva->len], &sv, sizeof(TacdStaticVar));
+    tsva->len += 1;
 }
 
 void TacdFunctionArray_init(TacdFunctionArray *tfa) {
@@ -53,7 +90,7 @@ void TacdFunctionArray_deinit(TacdFunctionArray *tfa) {
 
     free(tfa->fns);
     tfa->fns = NULL;
-    tfa->cap =  0;
+    tfa->cap = 0;
     tfa->len = 0;
 }
 
@@ -1115,6 +1152,19 @@ static void trx_block(CompDriver *cd, TacdFunction *tacd_fn, Block *block) {
 static void trx_fn_definition(CompDriver *cd, TacdFunction *tacd_fn, Decl *ast_fn) {
     cd->cgd.tacd_gen.func_name = ast_fn->as.fn.name;
 
+    SymEntry *fn_sym = SymTable_get(cd->sema.symbol_table, ast_fn->as.fn.name->cstr, SYMTYPE_SYMBOL);
+    switch (fn_sym->as.sym.as.fn.attr.linkage) {
+    case LINKAGE_NONE:
+        tacd_fn->linkage = TACD_LINKAGE_NONE;
+        break;
+    case LINKAGE_INTERNAL:
+        tacd_fn->linkage = TACD_LINKAGE_INTERNAL;
+        break;
+    case LINKAGE_EXTERNAL:
+        tacd_fn->linkage = TACD_LINKAGE_EXTERNAL;
+        break;
+    }
+
     tacd_fn->name = ast_fn->as.fn.name;
     CodeList_init(&tacd_fn->body);
 
@@ -1135,6 +1185,42 @@ static void trx_fn_definition(CompDriver *cd, TacdFunction *tacd_fn, Decl *ast_f
     CodeList_append(&tacd_fn->body, implicit_ret);
 }
 
+static void trx_static_var(TacdStaticVarArray *tsva, SymEntry *var_sym) {
+    if (var_sym->type != SYMTYPE_SYMBOL) return;
+    if (var_sym->as.sym.type != SYMBOL_TYPE_STATIC) return;
+
+    TacdStaticVar sv = {0};
+    sv.identifier = var_sym->key;
+
+    switch (var_sym->as.sym.as.static_var.attr.initial_value.kind) {
+    case IV_NO_INITIALIZER:
+        // nothing to do
+        break;
+    case IV_INITIAL:
+        sv.init = var_sym->as.sym.as.static_var.attr.initial_value.as.initial;
+        break;
+    case IV_TENTATIVE:
+        sv.init = 0;
+        break;
+    }
+
+    switch (var_sym->as.sym.as.static_var.attr.linkage) {
+    case LINKAGE_NONE:
+        sv.linkage = TACD_LINKAGE_NONE;
+        break;
+    case LINKAGE_INTERNAL:
+        sv.linkage = TACD_LINKAGE_INTERNAL;
+        break;
+    case LINKAGE_EXTERNAL:
+        sv.linkage = TACD_LINKAGE_EXTERNAL;
+        break;
+    }
+
+    if (var_sym->as.sym.as.static_var.attr.initial_value.kind != IV_NO_INITIALIZER) {
+        TacdStaticVarArray_append(tsva, sv);
+    }
+}
+
 // TODO: trx_function no more... Program is list of declarations
 void generate_tacd(CompDriver *cd, AstTU *ast_tu) {
     TacdGenerator *tg = &cd->cgd.tacd_gen;
@@ -1148,6 +1234,13 @@ void generate_tacd(CompDriver *cd, AstTU *ast_tu) {
         TacdFunction tacd_fn = {0};
         trx_fn_definition(cd, &tacd_fn, fn_decl);
         TacdFunctionArray_append(&tg->tacd_tu->fn_defs, tacd_fn);
+    }
+
+    for (size_t sv_idx = 0; sv_idx < cd->sema.symbol_table->cap; sv_idx++) {
+        if (cd->sema.symbol_table->syms[sv_idx].status == STE_EMPTY) continue;
+
+        SymEntry *sym = &cd->sema.symbol_table->syms[sv_idx];
+        trx_static_var(&tg->tacd_tu->var_defs, sym);
     }
 }
 
@@ -1319,9 +1412,37 @@ static void TacdFunction_print(TacdFunction *fn, int indent_lvl) {
     indent_lvl -= 1;
 }
 
-static void TacdProgram_print(TacdTU *tacd_tu, int indent_lvl) {
+static void TacdStaticVar_print(TacdStaticVar *sv, int indent_lvl) {
     int spaces = indent_lvl * 4;
-    printf("%2$*1$s\n", spaces+8, "Program:");
+    switch (sv->linkage) {
+    case TACD_LINKAGE_NONE:
+        printf("%2$*1$s", spaces, "");
+        break;
+    case TACD_LINKAGE_INTERNAL:
+        printf("%2$*1$s ", spaces+8, "internal");
+        break;
+    case TACD_LINKAGE_EXTERNAL:
+        printf("%2$*1$s ", spaces+8, "external");
+        break;
+    }
+
+    switch (sv->type) {
+    case TACD_DATATYPE_INT:
+        printf("int ");
+        break;
+    }
+
+    printf("%s = %d\n", sv->identifier->cstr, sv->init);
+}
+
+static void TacdTU_print(TacdTU *tacd_tu, int indent_lvl) {
+    int spaces = indent_lvl * 4;
+    printf("%2$*1$s\n", spaces+17, "Translation Unit:");
+    for (size_t sv_idx = 0; sv_idx < tacd_tu->var_defs.len; sv_idx++) {
+        TacdStaticVar *s_var = &tacd_tu->var_defs.vars[sv_idx];
+        TacdStaticVar_print(&tacd_tu->var_defs.vars[sv_idx], indent_lvl);
+    }
+
     for (size_t d_idx = 0; d_idx < tacd_tu->fn_defs.len; d_idx++) {
         TacdFunction_print(&tacd_tu->fn_defs.fns[d_idx], indent_lvl);
         if (d_idx+1 < tacd_tu->fn_defs.len) {
@@ -1332,5 +1453,5 @@ static void TacdProgram_print(TacdTU *tacd_tu, int indent_lvl) {
 
 void Tacd_print(TacdTU *tacd_tu) {
     puts("Generated TACD\n==============");
-    TacdProgram_print(tacd_tu, 0);
+    TacdTU_print(tacd_tu, 0);
 }
