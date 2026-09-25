@@ -1,0 +1,1535 @@
+desc: (none)
+cmd: gcc break.c
+time_unit: i
+#-----------
+snapshot=0
+#-----------
+time=0
+mem_heap_B=0
+mem_heap_extra_B=0
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=1
+#-----------
+time=274100
+mem_heap_B=48
+mem_heap_extra_B=8
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=2
+#-----------
+time=283938
+mem_heap_B=140432
+mem_heap_extra_B=88
+mem_stacks_B=0
+heap_tree=detailed
+n3: 140432 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n0: 1168 in 5 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=3
+#-----------
+time=290704
+mem_heap_B=140437
+mem_heap_extra_B=107
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=4
+#-----------
+time=300448
+mem_heap_B=144403
+mem_heap_extra_B=293
+mem_stacks_B=0
+heap_tree=detailed
+n4: 144403 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n1: 2864 0x48CCA4B: _nl_intern_locale_data (loadlocale.c:156)
+  n1: 2864 0x48CC7F3: _nl_load_locale_from_archive (loadarchive.c:477)
+   n1: 2864 0x48CBABC: _nl_find_locale (findlocale.c:152)
+    n1: 2864 0x48CE942: setlocale (setlocale.c:414)
+     n1: 2864 0x48CE942: setlocale (setlocale.c:217)
+      n1: 2864 0x407741: UnknownInlinedFun (intl.cc:52)
+       n1: 2864 0x407741: UnknownInlinedFun (gcc.cc:8391)
+        n1: 2864 0x407741: UnknownInlinedFun (gcc.cc:8312)
+         n0: 2864 0x407741: main (gcc-main.cc:47)
+ n0: 2275 in 12 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=5
+#-----------
+time=313605
+mem_heap_B=149056
+mem_heap_extra_B=400
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=6
+#-----------
+time=322115
+mem_heap_B=151680
+mem_heap_extra_B=416
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=7
+#-----------
+time=342013
+mem_heap_B=152704
+mem_heap_extra_B=416
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=8
+#-----------
+time=357653
+mem_heap_B=148141
+mem_heap_extra_B=411
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=9
+#-----------
+time=363892
+mem_heap_B=148970
+mem_heap_extra_B=630
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=10
+#-----------
+time=374856
+mem_heap_B=165681
+mem_heap_extra_B=679
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=11
+#-----------
+time=389664
+mem_heap_B=214897
+mem_heap_extra_B=807
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=12
+#-----------
+time=397068
+mem_heap_B=239505
+mem_heap_extra_B=871
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=13
+#-----------
+time=408607
+mem_heap_B=266706
+mem_heap_extra_B=1054
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=14
+#-----------
+time=418955
+mem_heap_B=275786
+mem_heap_extra_B=1158
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=15
+#-----------
+time=432397
+mem_heap_B=275799
+mem_heap_extra_B=1169
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=16
+#-----------
+time=447263
+mem_heap_B=275799
+mem_heap_extra_B=1169
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=17
+#-----------
+time=459280
+mem_heap_B=276366
+mem_heap_extra_B=1226
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=18
+#-----------
+time=468717
+mem_heap_B=276805
+mem_heap_extra_B=1347
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=19
+#-----------
+time=477894
+mem_heap_B=281708
+mem_heap_extra_B=1428
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=20
+#-----------
+time=485630
+mem_heap_B=281670
+mem_heap_extra_B=1410
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=21
+#-----------
+time=494870
+mem_heap_B=281930
+mem_heap_extra_B=1494
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=22
+#-----------
+time=875151
+mem_heap_B=281978
+mem_heap_extra_B=1510
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=23
+#-----------
+time=888272
+mem_heap_B=291284
+mem_heap_extra_B=1612
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=24
+#-----------
+time=912378
+mem_heap_B=291736
+mem_heap_extra_B=1656
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=25
+#-----------
+time=926208
+mem_heap_B=292619
+mem_heap_extra_B=1685
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=26
+#-----------
+time=936838
+mem_heap_B=292822
+mem_heap_extra_B=1754
+mem_stacks_B=0
+heap_tree=detailed
+n6: 292822 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 98432 0x43A368: UnknownInlinedFun (xmalloc.c:179)
+  n1: 98432 0x43A368: UnknownInlinedFun (vec.h:318)
+   n1: 98432 0x43A368: UnknownInlinedFun (vec.h:1984)
+    n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2004)
+     n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2019)
+      n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2015)
+       n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:516)
+        n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:460)
+         n1: 98432 0x43A368: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:144)
+          n1: 98432 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 98432 0x4077DA: main (gcc-main.cc:47)
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n1: 32512 0x47CAE0: UnknownInlinedFun (xmalloc.c:149)
+  n1: 32512 0x47CAE0: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:66)
+   n1: 32512 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+    n7: 32512 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+     n1: 8128 0x47411C: UnknownInlinedFun (obstack.c:164)
+      n2: 8128 0x47411C: output_buffer::output_buffer() (pretty-print.cc:883)
+       n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+        n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+          n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 4064 0x4077DA: main (gcc-main.cc:47)
+       n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+           n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+            n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+             n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+              n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+               n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+                n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+                 n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x407AC6: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8431)
+       n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8312)
+        n0: 4064 0x407AC6: main (gcc-main.cc:47)
+     n1: 4064 0x407AEA: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8445)
+       n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8313)
+        n0: 4064 0x407AEA: main (gcc-main.cc:47)
+     n1: 4064 0x40835B: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8745)
+       n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8316)
+        n0: 4064 0x40835B: main (gcc-main.cc:47)
+     n1: 4064 0x408AE7: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8766)
+       n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8754)
+        n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8317)
+         n0: 4064 0x408AE7: main (gcc-main.cc:47)
+     n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+      n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+        n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+         n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+          n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+           n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+      n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+           n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+            n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+             n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+              n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+               n0: 4064 0x4077DA: main (gcc-main.cc:47)
+ n0: 18262 in 57 places, all below massif's threshold (1.00%)
+ n1: 4352 0x41DEC8: UnknownInlinedFun (xmalloc.c:149)
+  n1: 4352 0x41DEC8: driver::set_up_specs() const [clone .isra.0] (gcc.cc:8512)
+   n1: 4352 0x408224: UnknownInlinedFun (gcc.cc:8314)
+    n0: 4352 0x408224: main (gcc-main.cc:47)
+#-----------
+snapshot=27
+#-----------
+time=951937
+mem_heap_B=292903
+mem_heap_extra_B=1753
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=28
+#-----------
+time=966398
+mem_heap_B=292903
+mem_heap_extra_B=1753
+mem_stacks_B=0
+heap_tree=detailed
+n6: 292903 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 98432 0x43A368: UnknownInlinedFun (xmalloc.c:179)
+  n1: 98432 0x43A368: UnknownInlinedFun (vec.h:318)
+   n1: 98432 0x43A368: UnknownInlinedFun (vec.h:1984)
+    n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2004)
+     n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2019)
+      n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2015)
+       n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:516)
+        n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:460)
+         n1: 98432 0x43A368: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:144)
+          n1: 98432 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 98432 0x4077DA: main (gcc-main.cc:47)
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n1: 32512 0x47CAE0: UnknownInlinedFun (xmalloc.c:149)
+  n1: 32512 0x47CAE0: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:66)
+   n1: 32512 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+    n7: 32512 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+     n1: 8128 0x47411C: UnknownInlinedFun (obstack.c:164)
+      n2: 8128 0x47411C: output_buffer::output_buffer() (pretty-print.cc:883)
+       n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+        n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+          n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 4064 0x4077DA: main (gcc-main.cc:47)
+       n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+           n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+            n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+             n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+              n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+               n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+                n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+                 n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x407AC6: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8431)
+       n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8312)
+        n0: 4064 0x407AC6: main (gcc-main.cc:47)
+     n1: 4064 0x407AEA: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8445)
+       n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8313)
+        n0: 4064 0x407AEA: main (gcc-main.cc:47)
+     n1: 4064 0x40835B: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8745)
+       n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8316)
+        n0: 4064 0x40835B: main (gcc-main.cc:47)
+     n1: 4064 0x408AE7: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8766)
+       n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8754)
+        n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8317)
+         n0: 4064 0x408AE7: main (gcc-main.cc:47)
+     n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+      n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+        n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+         n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+          n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+           n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+      n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+           n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+            n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+             n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+              n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+               n0: 4064 0x4077DA: main (gcc-main.cc:47)
+ n0: 18343 in 58 places, all below massif's threshold (1.00%)
+ n1: 4352 0x41DEC8: UnknownInlinedFun (xmalloc.c:149)
+  n1: 4352 0x41DEC8: driver::set_up_specs() const [clone .isra.0] (gcc.cc:8512)
+   n1: 4352 0x408224: UnknownInlinedFun (gcc.cc:8314)
+    n0: 4352 0x408224: main (gcc-main.cc:47)
+#-----------
+snapshot=29
+#-----------
+time=975724
+mem_heap_B=293119
+mem_heap_extra_B=1793
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=30
+#-----------
+time=991704
+mem_heap_B=293052
+mem_heap_extra_B=1772
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=31
+#-----------
+time=1005303
+mem_heap_B=293433
+mem_heap_extra_B=1919
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=32
+#-----------
+time=1021760
+mem_heap_B=293256
+mem_heap_extra_B=1936
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=33
+#-----------
+time=1033432
+mem_heap_B=292105
+mem_heap_extra_B=1887
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=34
+#-----------
+time=1041601
+mem_heap_B=292105
+mem_heap_extra_B=1887
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=35
+#-----------
+time=1089600
+mem_heap_B=294894
+mem_heap_extra_B=1898
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=36
+#-----------
+time=1132256
+mem_heap_B=297773
+mem_heap_extra_B=1907
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=37
+#-----------
+time=1174836
+mem_heap_B=300646
+mem_heap_extra_B=1922
+mem_stacks_B=0
+heap_tree=detailed
+n7: 300646 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 98432 0x43A368: UnknownInlinedFun (xmalloc.c:179)
+  n1: 98432 0x43A368: UnknownInlinedFun (vec.h:318)
+   n1: 98432 0x43A368: UnknownInlinedFun (vec.h:1984)
+    n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2004)
+     n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2019)
+      n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2015)
+       n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:516)
+        n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:460)
+         n1: 98432 0x43A368: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:144)
+          n1: 98432 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 98432 0x4077DA: main (gcc-main.cc:47)
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n1: 32512 0x47CAE0: UnknownInlinedFun (xmalloc.c:149)
+  n1: 32512 0x47CAE0: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:66)
+   n1: 32512 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+    n7: 32512 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+     n1: 8128 0x47411C: UnknownInlinedFun (obstack.c:164)
+      n2: 8128 0x47411C: output_buffer::output_buffer() (pretty-print.cc:883)
+       n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+        n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+          n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 4064 0x4077DA: main (gcc-main.cc:47)
+       n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+           n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+            n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+             n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+              n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+               n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+                n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+                 n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x407AC6: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8431)
+       n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8312)
+        n0: 4064 0x407AC6: main (gcc-main.cc:47)
+     n1: 4064 0x407AEA: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8445)
+       n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8313)
+        n0: 4064 0x407AEA: main (gcc-main.cc:47)
+     n1: 4064 0x40835B: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8745)
+       n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8316)
+        n0: 4064 0x40835B: main (gcc-main.cc:47)
+     n1: 4064 0x408AE7: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8766)
+       n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8754)
+        n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8317)
+         n0: 4064 0x408AE7: main (gcc-main.cc:47)
+     n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+      n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+        n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+         n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+          n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+           n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+      n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+           n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+            n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+             n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+              n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+               n0: 4064 0x4077DA: main (gcc-main.cc:47)
+ n0: 17443 in 69 places, all below massif's threshold (1.00%)
+ n1: 8643 0x41D363: UnknownInlinedFun (xmalloc.c:149)
+  n2: 8643 0x41D363: save_string(char const*, int) [clone .lto_priv.0] (gcc.cc:9476)
+   n1: 8637 0x414F2C: UnknownInlinedFun (gcc.cc:7550)
+    n1: 8637 0x414F2C: handle_braces(char const*) (gcc.cc:7460)
+     n2: 8637 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+      n1: 5752 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+       n1: 5752 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+        n1: 5752 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+         n0: 5752 in 3 places, all below massif's threshold (1.00%)
+      n0: 2885 in 4 places, all below massif's threshold (1.00%)
+   n0: 6 in 3 places, all below massif's threshold (1.00%)
+ n1: 4352 0x41DEC8: UnknownInlinedFun (xmalloc.c:149)
+  n1: 4352 0x41DEC8: driver::set_up_specs() const [clone .isra.0] (gcc.cc:8512)
+   n1: 4352 0x408224: UnknownInlinedFun (gcc.cc:8314)
+    n0: 4352 0x408224: main (gcc-main.cc:47)
+#-----------
+snapshot=38
+#-----------
+time=1217364
+mem_heap_B=303512
+mem_heap_extra_B=1944
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=39
+#-----------
+time=1259777
+mem_heap_B=306372
+mem_heap_extra_B=1956
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=40
+#-----------
+time=1302121
+mem_heap_B=309225
+mem_heap_extra_B=1975
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=41
+#-----------
+time=1316740
+mem_heap_B=309766
+mem_heap_extra_B=2034
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=42
+#-----------
+time=1332091
+mem_heap_B=310463
+mem_heap_extra_B=2281
+mem_stacks_B=0
+heap_tree=peak
+n7: 310463 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 98432 0x43A368: UnknownInlinedFun (xmalloc.c:179)
+  n1: 98432 0x43A368: UnknownInlinedFun (vec.h:318)
+   n1: 98432 0x43A368: UnknownInlinedFun (vec.h:1984)
+    n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2004)
+     n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2019)
+      n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2015)
+       n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:516)
+        n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:460)
+         n1: 98432 0x43A368: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:144)
+          n1: 98432 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 98432 0x4077DA: main (gcc-main.cc:47)
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n1: 32512 0x47CAE0: UnknownInlinedFun (xmalloc.c:149)
+  n1: 32512 0x47CAE0: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:66)
+   n1: 32512 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+    n7: 32512 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+     n1: 8128 0x47411C: UnknownInlinedFun (obstack.c:164)
+      n2: 8128 0x47411C: output_buffer::output_buffer() (pretty-print.cc:883)
+       n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+        n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+          n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 4064 0x4077DA: main (gcc-main.cc:47)
+       n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+           n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+            n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+             n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+              n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+               n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+                n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+                 n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x407AC6: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8431)
+       n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8312)
+        n0: 4064 0x407AC6: main (gcc-main.cc:47)
+     n1: 4064 0x407AEA: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8445)
+       n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8313)
+        n0: 4064 0x407AEA: main (gcc-main.cc:47)
+     n1: 4064 0x40835B: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8745)
+       n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8316)
+        n0: 4064 0x40835B: main (gcc-main.cc:47)
+     n1: 4064 0x408AE7: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8766)
+       n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8754)
+        n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8317)
+         n0: 4064 0x408AE7: main (gcc-main.cc:47)
+     n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+      n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+        n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+         n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+          n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+           n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+      n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+           n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+            n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+             n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+              n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+               n0: 4064 0x4077DA: main (gcc-main.cc:47)
+ n1: 18192 0x41D363: UnknownInlinedFun (xmalloc.c:149)
+  n2: 18192 0x41D363: save_string(char const*, int) [clone .lto_priv.0] (gcc.cc:9476)
+   n1: 18140 0x414F2C: UnknownInlinedFun (gcc.cc:7550)
+    n1: 18140 0x414F2C: handle_braces(char const*) (gcc.cc:7460)
+     n2: 18140 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+      n1: 15140 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+       n1: 15140 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+        n2: 15140 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+         n1: 12164 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+          n1: 12164 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+           n2: 12164 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+            n1: 9209 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+             n1: 9209 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+              n2: 9209 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+               n1: 6320 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+                n1: 6320 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+                 n2: 6320 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+                  n1: 3460 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+                   n1: 3460 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+                    n1: 3460 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+                     n0: 3460 in 2 places, all below massif's threshold (1.00%)
+                  n0: 2860 in 2 places, all below massif's threshold (1.00%)
+               n0: 2889 in 3 places, all below massif's threshold (1.00%)
+            n0: 2955 in 3 places, all below massif's threshold (1.00%)
+         n0: 2976 in 3 places, all below massif's threshold (1.00%)
+      n0: 3000 in 5 places, all below massif's threshold (1.00%)
+   n0: 52 in 3 places, all below massif's threshold (1.00%)
+ n0: 17711 in 69 places, all below massif's threshold (1.00%)
+ n1: 4352 0x41DEC8: UnknownInlinedFun (xmalloc.c:149)
+  n1: 4352 0x41DEC8: driver::set_up_specs() const [clone .isra.0] (gcc.cc:8512)
+   n1: 4352 0x408224: UnknownInlinedFun (gcc.cc:8314)
+    n0: 4352 0x408224: main (gcc-main.cc:47)
+#-----------
+snapshot=43
+#-----------
+time=1341661
+mem_heap_B=310146
+mem_heap_extra_B=2198
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=44
+#-----------
+time=1356508
+mem_heap_B=310372
+mem_heap_extra_B=2220
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=45
+#-----------
+time=1366741
+mem_heap_B=309636
+mem_heap_extra_B=2100
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=46
+#-----------
+time=1378875
+mem_heap_B=310391
+mem_heap_extra_B=2121
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=47
+#-----------
+time=1392497
+mem_heap_B=310996
+mem_heap_extra_B=2132
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=48
+#-----------
+time=1408315
+mem_heap_B=311998
+mem_heap_extra_B=2154
+mem_stacks_B=0
+heap_tree=detailed
+n7: 311998 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 98432 0x43A368: UnknownInlinedFun (xmalloc.c:179)
+  n1: 98432 0x43A368: UnknownInlinedFun (vec.h:318)
+   n1: 98432 0x43A368: UnknownInlinedFun (vec.h:1984)
+    n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2004)
+     n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2019)
+      n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2015)
+       n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:516)
+        n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:460)
+         n1: 98432 0x43A368: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:144)
+          n1: 98432 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 98432 0x4077DA: main (gcc-main.cc:47)
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n1: 32512 0x47CAE0: UnknownInlinedFun (xmalloc.c:149)
+  n1: 32512 0x47CAE0: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:66)
+   n1: 32512 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+    n7: 32512 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+     n1: 8128 0x47411C: UnknownInlinedFun (obstack.c:164)
+      n2: 8128 0x47411C: output_buffer::output_buffer() (pretty-print.cc:883)
+       n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+        n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+          n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 4064 0x4077DA: main (gcc-main.cc:47)
+       n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+           n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+            n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+             n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+              n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+               n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+                n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+                 n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x407AC6: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8431)
+       n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8312)
+        n0: 4064 0x407AC6: main (gcc-main.cc:47)
+     n1: 4064 0x407AEA: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8445)
+       n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8313)
+        n0: 4064 0x407AEA: main (gcc-main.cc:47)
+     n1: 4064 0x40835B: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8745)
+       n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8316)
+        n0: 4064 0x40835B: main (gcc-main.cc:47)
+     n1: 4064 0x408AE7: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8766)
+       n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8754)
+        n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8317)
+         n0: 4064 0x408AE7: main (gcc-main.cc:47)
+     n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+      n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+        n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+         n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+          n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+           n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+      n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+           n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+            n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+             n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+              n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+               n0: 4064 0x4077DA: main (gcc-main.cc:47)
+ n1: 19589 0x41D363: UnknownInlinedFun (xmalloc.c:149)
+  n2: 19589 0x41D363: save_string(char const*, int) [clone .lto_priv.0] (gcc.cc:9476)
+   n1: 19578 0x414F2C: UnknownInlinedFun (gcc.cc:7550)
+    n1: 19578 0x414F2C: handle_braces(char const*) (gcc.cc:7460)
+     n2: 19578 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+      n1: 15938 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+       n1: 15938 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+        n2: 15938 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+         n1: 12454 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+          n1: 12454 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+           n2: 12454 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+            n1: 9069 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+             n1: 9069 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+              n2: 9069 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+               n1: 5713 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+                n1: 5713 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+                 n1: 5713 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+                  n0: 5713 in 3 places, all below massif's threshold (1.00%)
+               n0: 3356 in 4 places, all below massif's threshold (1.00%)
+            n0: 3385 in 5 places, all below massif's threshold (1.00%)
+         n0: 3484 in 5 places, all below massif's threshold (1.00%)
+      n0: 3640 in 7 places, all below massif's threshold (1.00%)
+   n0: 11 in 3 places, all below massif's threshold (1.00%)
+ n0: 17849 in 69 places, all below massif's threshold (1.00%)
+ n1: 4352 0x41DEC8: UnknownInlinedFun (xmalloc.c:149)
+  n1: 4352 0x41DEC8: driver::set_up_specs() const [clone .isra.0] (gcc.cc:8512)
+   n1: 4352 0x408224: UnknownInlinedFun (gcc.cc:8314)
+    n0: 4352 0x408224: main (gcc-main.cc:47)
+#-----------
+snapshot=49
+#-----------
+time=1418917
+mem_heap_B=312303
+mem_heap_extra_B=2193
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=50
+#-----------
+time=1425468
+mem_heap_B=310391
+mem_heap_extra_B=2121
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=51
+#-----------
+time=1438031
+mem_heap_B=309641
+mem_heap_extra_B=2119
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=52
+#-----------
+time=1445096
+mem_heap_B=309662
+mem_heap_extra_B=2114
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=53
+#-----------
+time=1452433
+mem_heap_B=310061
+mem_heap_extra_B=2187
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=54
+#-----------
+time=1458710
+mem_heap_B=310266
+mem_heap_extra_B=2222
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=55
+#-----------
+time=1465382
+mem_heap_B=310074
+mem_heap_extra_B=2182
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=56
+#-----------
+time=1471738
+mem_heap_B=310124
+mem_heap_extra_B=2156
+mem_stacks_B=0
+heap_tree=detailed
+n7: 310124 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 98432 0x43A368: UnknownInlinedFun (xmalloc.c:179)
+  n1: 98432 0x43A368: UnknownInlinedFun (vec.h:318)
+   n1: 98432 0x43A368: UnknownInlinedFun (vec.h:1984)
+    n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2004)
+     n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2019)
+      n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2015)
+       n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:516)
+        n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:460)
+         n1: 98432 0x43A368: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:144)
+          n1: 98432 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 98432 0x4077DA: main (gcc-main.cc:47)
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n1: 32512 0x47CAE0: UnknownInlinedFun (xmalloc.c:149)
+  n1: 32512 0x47CAE0: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:66)
+   n1: 32512 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+    n7: 32512 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+     n1: 8128 0x47411C: UnknownInlinedFun (obstack.c:164)
+      n2: 8128 0x47411C: output_buffer::output_buffer() (pretty-print.cc:883)
+       n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+        n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+          n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 4064 0x4077DA: main (gcc-main.cc:47)
+       n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+           n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+            n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+             n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+              n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+               n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+                n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+                 n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x407AC6: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8431)
+       n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8312)
+        n0: 4064 0x407AC6: main (gcc-main.cc:47)
+     n1: 4064 0x407AEA: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8445)
+       n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8313)
+        n0: 4064 0x407AEA: main (gcc-main.cc:47)
+     n1: 4064 0x40835B: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8745)
+       n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8316)
+        n0: 4064 0x40835B: main (gcc-main.cc:47)
+     n1: 4064 0x408AE7: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8766)
+       n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8754)
+        n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8317)
+         n0: 4064 0x408AE7: main (gcc-main.cc:47)
+     n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+      n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+        n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+         n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+          n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+           n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+      n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+           n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+            n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+             n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+              n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+               n0: 4064 0x4077DA: main (gcc-main.cc:47)
+ n0: 18337 in 69 places, all below massif's threshold (1.00%)
+ n1: 17227 0x41D363: UnknownInlinedFun (xmalloc.c:149)
+  n2: 17227 0x41D363: save_string(char const*, int) [clone .lto_priv.0] (gcc.cc:9476)
+   n1: 17216 0x414F2C: UnknownInlinedFun (gcc.cc:7550)
+    n1: 17216 0x414F2C: handle_braces(char const*) (gcc.cc:7460)
+     n2: 17216 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+      n1: 14331 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+       n1: 14331 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+        n2: 14331 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+         n1: 11452 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+          n1: 11452 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+           n2: 11452 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+            n1: 8579 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+             n1: 8579 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+              n2: 8579 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+               n1: 5713 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+                n1: 5713 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+                 n1: 5713 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+                  n0: 5713 in 4 places, all below massif's threshold (1.00%)
+               n0: 2866 in 4 places, all below massif's threshold (1.00%)
+            n0: 2873 in 5 places, all below massif's threshold (1.00%)
+         n0: 2879 in 6 places, all below massif's threshold (1.00%)
+      n0: 2885 in 8 places, all below massif's threshold (1.00%)
+   n0: 11 in 3 places, all below massif's threshold (1.00%)
+ n1: 4352 0x41DEC8: UnknownInlinedFun (xmalloc.c:149)
+  n1: 4352 0x41DEC8: driver::set_up_specs() const [clone .isra.0] (gcc.cc:8512)
+   n1: 4352 0x408224: UnknownInlinedFun (gcc.cc:8314)
+    n0: 4352 0x408224: main (gcc-main.cc:47)
+#-----------
+snapshot=57
+#-----------
+time=1488295
+mem_heap_B=310748
+mem_heap_extra_B=2156
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=58
+#-----------
+time=1499157
+mem_heap_B=311462
+mem_heap_extra_B=2170
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=59
+#-----------
+time=1509879
+mem_heap_B=312158
+mem_heap_extra_B=2186
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=60
+#-----------
+time=1517535
+mem_heap_B=312343
+mem_heap_extra_B=2233
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=61
+#-----------
+time=1524558
+mem_heap_B=311814
+mem_heap_extra_B=2234
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=62
+#-----------
+time=1543396
+mem_heap_B=311223
+mem_heap_extra_B=2249
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=63
+#-----------
+time=1554865
+mem_heap_B=311972
+mem_heap_extra_B=2260
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=64
+#-----------
+time=1566194
+mem_heap_B=312703
+mem_heap_extra_B=2273
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=65
+#-----------
+time=1573328
+mem_heap_B=312888
+mem_heap_extra_B=2320
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=66
+#-----------
+time=1580366
+mem_heap_B=313064
+mem_heap_extra_B=2352
+mem_stacks_B=0
+heap_tree=detailed
+n7: 313064 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 98432 0x43A368: UnknownInlinedFun (xmalloc.c:179)
+  n1: 98432 0x43A368: UnknownInlinedFun (vec.h:318)
+   n1: 98432 0x43A368: UnknownInlinedFun (vec.h:1984)
+    n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2004)
+     n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2019)
+      n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2015)
+       n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:516)
+        n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:460)
+         n1: 98432 0x43A368: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:144)
+          n1: 98432 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 98432 0x4077DA: main (gcc-main.cc:47)
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n1: 32512 0x47CAE0: UnknownInlinedFun (xmalloc.c:149)
+  n1: 32512 0x47CAE0: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:66)
+   n1: 32512 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+    n7: 32512 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+     n1: 8128 0x47411C: UnknownInlinedFun (obstack.c:164)
+      n2: 8128 0x47411C: output_buffer::output_buffer() (pretty-print.cc:883)
+       n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+        n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+          n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 4064 0x4077DA: main (gcc-main.cc:47)
+       n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+           n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+            n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+             n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+              n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+               n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+                n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+                 n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x407AC6: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8431)
+       n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8312)
+        n0: 4064 0x407AC6: main (gcc-main.cc:47)
+     n1: 4064 0x407AEA: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8445)
+       n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8313)
+        n0: 4064 0x407AEA: main (gcc-main.cc:47)
+     n1: 4064 0x40835B: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8745)
+       n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8316)
+        n0: 4064 0x40835B: main (gcc-main.cc:47)
+     n1: 4064 0x408AE7: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8766)
+       n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8754)
+        n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8317)
+         n0: 4064 0x408AE7: main (gcc-main.cc:47)
+     n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+      n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+        n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+         n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+          n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+           n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+      n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+           n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+            n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+             n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+              n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+               n0: 4064 0x4077DA: main (gcc-main.cc:47)
+ n1: 19471 0x41D363: UnknownInlinedFun (xmalloc.c:149)
+  n2: 19471 0x41D363: save_string(char const*, int) [clone .lto_priv.0] (gcc.cc:9476)
+   n1: 19451 0x414F2C: UnknownInlinedFun (gcc.cc:7550)
+    n1: 19451 0x414F2C: handle_braces(char const*) (gcc.cc:7460)
+     n2: 19451 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+      n1: 16566 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+       n1: 16566 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+        n2: 16566 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+         n1: 13687 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+          n1: 13687 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+           n2: 13687 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+            n1: 10814 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+             n1: 10814 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+              n2: 10814 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+               n1: 7948 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+                n1: 7948 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+                 n2: 7948 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+                  n1: 5088 0x4150E0: UnknownInlinedFun (gcc.cc:7553)
+                   n1: 5088 0x4150E0: handle_braces(char const*) (gcc.cc:7460)
+                    n1: 5088 0x41624F: do_spec_1(char const*, int, char const*) [clone .lto_priv.0] (gcc.cc:6867)
+                     n0: 5088 in 3 places, all below massif's threshold (1.00%)
+                  n0: 2860 in 3 places, all below massif's threshold (1.00%)
+               n0: 2866 in 4 places, all below massif's threshold (1.00%)
+            n0: 2873 in 5 places, all below massif's threshold (1.00%)
+         n0: 2879 in 6 places, all below massif's threshold (1.00%)
+      n0: 2885 in 8 places, all below massif's threshold (1.00%)
+   n0: 20 in 3 places, all below massif's threshold (1.00%)
+ n0: 19033 in 69 places, all below massif's threshold (1.00%)
+ n1: 4352 0x41DEC8: UnknownInlinedFun (xmalloc.c:149)
+  n1: 4352 0x41DEC8: driver::set_up_specs() const [clone .isra.0] (gcc.cc:8512)
+   n1: 4352 0x408224: UnknownInlinedFun (gcc.cc:8314)
+    n0: 4352 0x408224: main (gcc-main.cc:47)
+#-----------
+snapshot=67
+#-----------
+time=1592153
+mem_heap_B=311170
+mem_heap_extra_B=2382
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=68
+#-----------
+time=1599366
+mem_heap_B=311219
+mem_heap_extra_B=2381
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=69
+#-----------
+time=1606795
+mem_heap_B=311175
+mem_heap_extra_B=2353
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=70
+#-----------
+time=1613828
+mem_heap_B=311408
+mem_heap_extra_B=2440
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=71
+#-----------
+time=1620457
+mem_heap_B=311077
+mem_heap_extra_B=2355
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=72
+#-----------
+time=1627164
+mem_heap_B=311488
+mem_heap_extra_B=2368
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=73
+#-----------
+time=1635076
+mem_heap_B=311488
+mem_heap_extra_B=2368
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=74
+#-----------
+time=1642035
+mem_heap_B=311179
+mem_heap_extra_B=2349
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=75
+#-----------
+time=1649013
+mem_heap_B=311339
+mem_heap_extra_B=2349
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=76
+#-----------
+time=1657256
+mem_heap_B=294018
+mem_heap_extra_B=2214
+mem_stacks_B=0
+heap_tree=detailed
+n6: 294018 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 98432 0x43A368: UnknownInlinedFun (xmalloc.c:179)
+  n1: 98432 0x43A368: UnknownInlinedFun (vec.h:318)
+   n1: 98432 0x43A368: UnknownInlinedFun (vec.h:1984)
+    n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2004)
+     n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2019)
+      n1: 98432 0x43A368: UnknownInlinedFun (vec.h:2015)
+       n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:516)
+        n1: 98432 0x43A368: UnknownInlinedFun (file-cache.cc:460)
+         n1: 98432 0x43A368: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:144)
+          n1: 98432 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 98432 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 98432 0x4077DA: main (gcc-main.cc:47)
+ n1: 73728 0x40B17F: pool (eh_alloc.cc:235)
+  n1: 73728 0x40B17F: __static_initialization_and_destruction_0 (eh_alloc.cc:373)
+   n1: 73728 0x40B17F: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:456)
+    n1: 73728 0x48C0933: call_init (libc-start.c:144)
+     n1: 73728 0x48C0933: __libc_start_main@@GLIBC_2.34 (libc-start.c:359)
+      n0: 73728 0x40B244: (below main) (in /usr/bin/gcc)
+ n1: 65536 0x47CB15: UnknownInlinedFun (xmalloc.c:149)
+  n1: 65536 0x47CB15: UnknownInlinedFun (memory-block.h:59)
+   n1: 65536 0x47CB15: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:64)
+    n1: 65536 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+     n1: 65536 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+      n1: 65536 0x407631: UnknownInlinedFun (obstack.c:164)
+       n1: 65536 0x407631: UnknownInlinedFun (opts.cc:431)
+        n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8375)
+         n1: 65536 0x407631: UnknownInlinedFun (gcc.cc:8311)
+          n0: 65536 0x407631: main (gcc-main.cc:47)
+ n1: 32512 0x47CAE0: UnknownInlinedFun (xmalloc.c:149)
+  n1: 32512 0x47CAE0: mempool_obstack_chunk_alloc(unsigned long) (memory-block.cc:66)
+   n1: 32512 0x4B4A95: UnknownInlinedFun (obstack.c:94)
+    n7: 32512 0x4B4A95: _obstack_begin_worker.isra.0 (obstack.c:141)
+     n1: 8128 0x47411C: UnknownInlinedFun (obstack.c:164)
+      n2: 8128 0x47411C: output_buffer::output_buffer() (pretty-print.cc:883)
+       n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+        n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+          n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+           n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+            n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+             n0: 4064 0x4077DA: main (gcc-main.cc:47)
+       n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+           n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+            n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+             n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+              n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+               n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+                n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+                 n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x407AC6: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8431)
+       n1: 4064 0x407AC6: UnknownInlinedFun (gcc.cc:8312)
+        n0: 4064 0x407AC6: main (gcc-main.cc:47)
+     n1: 4064 0x407AEA: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8445)
+       n1: 4064 0x407AEA: UnknownInlinedFun (gcc.cc:8313)
+        n0: 4064 0x407AEA: main (gcc-main.cc:47)
+     n1: 4064 0x40835B: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8745)
+       n1: 4064 0x40835B: UnknownInlinedFun (gcc.cc:8316)
+        n0: 4064 0x40835B: main (gcc-main.cc:47)
+     n1: 4064 0x408AE7: UnknownInlinedFun (obstack.c:164)
+      n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8766)
+       n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8754)
+        n1: 4064 0x408AE7: UnknownInlinedFun (gcc.cc:8317)
+         n0: 4064 0x408AE7: main (gcc-main.cc:47)
+     n1: 4064 0x43A27D: UnknownInlinedFun (pretty-print.cc:2571)
+      n1: 4064 0x43A27D: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A27D: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:142)
+        n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+         n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+          n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+           n0: 4064 0x4077DA: main (gcc-main.cc:47)
+     n1: 4064 0x485FFE: pretty_printer::pretty_printer(pretty_printer const&) (pretty-print.cc:2597)
+      n1: 4064 0x43A5F5: UnknownInlinedFun (unique_ptr.h:1105)
+       n1: 4064 0x43A5F5: UnknownInlinedFun (pretty-print.cc:2635)
+        n1: 4064 0x43A5F5: UnknownInlinedFun (context.h:553)
+         n1: 4064 0x43A5F5: UnknownInlinedFun (sink.h:133)
+          n1: 4064 0x43A5F5: UnknownInlinedFun (text-sink.h:50)
+           n1: 4064 0x43A5F5: diagnostics::context::initialize(int) [clone .constprop.0] (context.cc:209)
+            n1: 4064 0x4077DA: UnknownInlinedFun (diagnostic.h:70)
+             n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8393)
+              n1: 4064 0x4077DA: UnknownInlinedFun (gcc.cc:8312)
+               n0: 4064 0x4077DA: main (gcc-main.cc:47)
+ n0: 19458 in 70 places, all below massif's threshold (1.00%)
+ n1: 4352 0x41DEC8: UnknownInlinedFun (xmalloc.c:149)
+  n1: 4352 0x41DEC8: driver::set_up_specs() const [clone .isra.0] (gcc.cc:8512)
+   n1: 4352 0x408224: UnknownInlinedFun (gcc.cc:8314)
+    n0: 4352 0x408224: main (gcc-main.cc:47)
+#-----------
+snapshot=77
+#-----------
+time=1663548
+mem_heap_B=286913
+mem_heap_extra_B=1623
+mem_stacks_B=0
+heap_tree=empty

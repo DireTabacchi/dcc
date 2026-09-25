@@ -1,6 +1,5 @@
 dcc
 .clangd
-tests
 debug
 release
 src/mem_util.c
