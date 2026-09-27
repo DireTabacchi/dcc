@@ -6,7 +6,7 @@
 #include "string_array.h"
 #include "comp_driver.h"
 
-#define VERSION_STRING "0.0.9"
+#define VERSION_STRING "0.1.0"
 
 void CompDriver_init(CompDriver *cd) {
     cd->opts = (Options){0};
