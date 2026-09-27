@@ -48,6 +48,10 @@ static void emit_operand(Operand *op, AsmOpSize size, FILE *dest) {
     case OPERAND_STACK:
         fprintf(dest, "%d(%%rbp)", op->val.stack);
         break;
+
+    case OPERAND_DATA:
+        fprintf(dest, "%s(%%rip)", op->val.data->cstr);
+        break;
     default:
         /*  do nothing  */
         break;
@@ -111,7 +115,15 @@ static void emit_unary(AsmInstr *unary, FILE *dest) {
 // TODO: encode sizes in Instructions (Operands?)
 // TODO: improve logic for binary shift with previous TODO
 static void emit_function(CompDriver *cd, AsmFn *asm_fn, FILE *dest) {
-    fprintf(dest, "\t.globl %1$s\n%1$s:\n", asm_fn->name->cstr);
+    switch (asm_fn->linkage) {
+    case ASM_LINKAGE_NONE:
+    case ASM_LINKAGE_INTERNAL:
+        break;
+    case ASM_LINKAGE_EXTERNAL:
+        fprintf(dest, "\t.globl %s\n", asm_fn->name->cstr);
+        break;
+    }
+    fprintf(dest, "\t.text\n%s:\n", asm_fn->name->cstr);
     fprintf(dest, "\tpushq\t%%rbp\n\tmovq\t%%rsp, %%rbp\n");
     for (size_t instr_idx = 0; instr_idx < asm_fn->instrs.len; instr_idx++) {
         AsmInstr *instr = &asm_fn->instrs.instrs[instr_idx];
@@ -308,6 +320,23 @@ static void emit_function(CompDriver *cd, AsmFn *asm_fn, FILE *dest) {
     }
 }
 
+static void emit_var(AsmStaticVar *var, FILE *dest) {
+    switch (var->linkage) {
+    case ASM_LINKAGE_NONE:
+    case ASM_LINKAGE_INTERNAL:
+        break;
+    case ASM_LINKAGE_EXTERNAL:
+        fprintf(dest, "\t.globl %s\n", var->identifier->cstr);
+        break;
+    }
+
+    if (var->init == 0) {
+        fprintf(dest, "\t.bss\n\t.balign 4\n%s:\n\t.zero 4\n", var->identifier->cstr);
+    } else {
+        fprintf(dest, "\t.data\n\t.balign 4\n%s:\n\t.long %d\n", var->identifier->cstr, var->init);
+    }
+}
+
 void emit_program(CompDriver *cd) {
     if (cd->cgd.program == NULL) return;
 
@@ -319,6 +348,10 @@ void emit_program(CompDriver *cd) {
 
     for (size_t fn_idx = 0; fn_idx < cd->cgd.program->fns.len; fn_idx++) {
         emit_function(cd, &cd->cgd.program->fns.fns[fn_idx], asm_file);
+    }
+
+    for (size_t v_idx = 0; v_idx < cd->cgd.program->vars.len; v_idx++) {
+        emit_var(&cd->cgd.program->vars.elems[v_idx], asm_file);
     }
 
     fprintf(asm_file, "\t.section .note.GNU-stack,\"\",@progbits\n");

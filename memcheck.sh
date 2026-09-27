@@ -67,14 +67,14 @@ for test_case in "${test_cases[@]}"; do
     if [[ $STAGE_OPT == "asm" ]]; then
         asm_file=${test_case/%.c/.s}
         echo "removing $asm_file"
-        rm $asm_file
+        rm $asm_file >/dev/null 2>&1
     elif [[ $STAGE_OPT == "obj" ]]; then
         obj_file=${test_case/%.c/.o}
         echo "removing $obj_file"
-        rm $obj_file
+        rm $obj_file >/dev/null 2>&1
     elif [[ $STAGE_OPT == "full" ]]; then
         executable=${test_case/%.c}
-        rm $executable
+        rm $executable >/dev/null 2>&1
     fi
 done
 elapsed=$SECONDS

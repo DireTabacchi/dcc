@@ -776,27 +776,14 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
             if ((src.type == OPERAND_STACK || src.type == OPERAND_DATA) &&
                 (dest.type == OPERAND_STACK || dest.type == OPERAND_DATA)
             ) {
-                AsmInstr new_instr = {0};
-                if (src.type == OPERAND_STACK) {
-                    int src = instr->instr.mov.src.val.stack;
-                    new_instr = (AsmInstr){
-                        .kind = ASM_INSTR_MOV,
-                        .instr.mov = {
-                            .src = (Operand){ .type = OPERAND_STACK, .val.stack = src },
-                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
-                            .type = ASMTYPE_DWORD
-                        }
-                    };
-                } else if (src.type == OPERAND_DATA) {
-                    const String *src = instr->instr.mov.src.val.data;
-                    new_instr = (AsmInstr){
-                        .instr.mov = {
-                            .src = (Operand){ .type = OPERAND_DATA, .val.data = src },
-                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10},
-                            .type = ASMTYPE_DWORD
-                        }
-                    };
-                }
+                AsmInstr new_instr = {
+                    .kind = ASM_INSTR_MOV,
+                    .instr.mov = {
+                        .src = instr->instr.mov.src,
+                        .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
+                        .type = ASMTYPE_DWORD
+                    }
+                };
                 instr->instr.mov.src.type = OPERAND_REG;
                 instr->instr.mov.src.val.reg = R10;
                 InstrArray_insert(func_instrs, new_instr, instr_idx);
@@ -831,8 +818,8 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
             case BINARYOP_BITAND:
             case BINARYOP_BITOR:
             case BINARYOP_BITXOR: {
-                Operand src = instr->instr.mov.src;
-                Operand dest = instr->instr.mov.dest;
+                Operand src = instr->instr.binary.src;
+                Operand dest = instr->instr.binary.dest;
                 if ((src.type == OPERAND_STACK || src.type == OPERAND_DATA) &&
                     (dest.type == OPERAND_STACK || dest.type == OPERAND_DATA)
                 ) {

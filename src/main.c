@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
 
         if (!compiler_erred &&
             driver.opts.dbf == DBF_NONE && 
-            (driver.opts.bf >= BF_EMIT_ASSEMBLY || driver.opts.bf == BF_NONE)
+            (driver.opts.bf > BF_EMIT_ASSEMBLY || driver.opts.bf == BF_NONE)
         ) {
             // allocate space for command:
             //     11 characters ((3)exe, (4)flags, (4)spaces, (2)file extension) +
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
             String assemble_command = String_init_length(13 + driver.cgd.dest.len + tu_name.len);
             snprintf(assemble_command.cstr, assemble_command.len+1,
                 "gcc -c -o %s.o %s", tu_name.cstr, driver.cgd.dest.cstr);
-            printf("[debug] assemble_command:\n%s\n", assemble_command.cstr);
+            //printf("[debug] assemble_command:\n%s\n", assemble_command.cstr);
             int obj_res = system(assemble_command.cstr);
             if (obj_res != 0) {
                 puts("[DEBUG:ERROR] Error in building object.");
@@ -196,9 +196,8 @@ int main(int argc, char *argv[]) {
         //String_free(&tu_name);
     }
 
-    if (!compiler_erred && driver.opts.bf != BF_EMIT_OBJECT && driver.opts.dbf < DBF_LEX) {
+    if (!compiler_erred && driver.opts.bf < BF_EMIT_PREPROCESSOR && driver.opts.dbf < DBF_LEX) {
         // link all objects into executable
-        printf("linking objects\n");
         size_t command_len = driver.tu_names.strs[0].len+7;
         size_t next_offset = command_len;
         for (size_t tu_idx = 0; tu_idx < driver.tu_names.len; tu_idx++) {
@@ -213,9 +212,7 @@ int main(int argc, char *argv[]) {
                 " %s.o", driver.tu_names.strs[tu_idx].cstr);
             next_offset += driver.tu_names.strs[tu_idx].len+3;
         }
-        printf("[DEBUG] link command:\n%s\n", link_command.cstr);
         int link_res = system(link_command.cstr);
-        printf("link_res was %d\n", link_res);
         String_free(&link_command);
     }
 
@@ -226,8 +223,6 @@ int main(int argc, char *argv[]) {
             remove(obj_path.cstr);
             String_free(&obj_path);
         }
-    } else {
-        printf("Emitting objects.\n");
     }
 
 //#ifdef DEBUG

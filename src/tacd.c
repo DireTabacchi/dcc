@@ -1110,6 +1110,7 @@ static void trx_declaration(CompDriver *cd, TacdFunction *tacd_fn, Decl *decl) {
     switch (decl->kind) {
     case DECL_VARIABLE: {
         if (decl->as.variable.init == NULL) return;
+        if (decl->as.variable.sc != SC_NONE) return;
 
         TacdValue lhs = {
             .kind = TACD_VALUE_IDENTIFIER,
