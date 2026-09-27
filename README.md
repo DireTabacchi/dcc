@@ -27,7 +27,7 @@ Alternatively, running `./build.sh debug` create a debug build, which can be fou
 
 DCC development is following along with the *Writing a C Compiler* book, and as such supports all features included up to the current chapter of the book.
 
-As of now, DCC can compile to x86-64 all features up through chapter 9, functions. The current chapter is 10, *File-Scope Declarations and Storage Specifiers*. As of current, DCC can handle as far as semantic analysis of file-scope declarations and storage specifiers.
+As of now, DCC can compile to x86-64 all features up through chapter 10, *File-Scope Declarations and Storage Class Specifiers*.
 
 ## Credit
 

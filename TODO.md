@@ -9,6 +9,7 @@
 - Param list should track position (param structure?)
 
 ## Compiler Infrastructure
+- rework flag logic in main driver code
 - Scoped symbol table in AST (Stack of tables) ((already done?))
 - Arena allocator
     - TRIGGER: compilation speed is slow
