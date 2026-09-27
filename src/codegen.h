@@ -4,6 +4,7 @@
 #include "dd_string.h"
 #include "ast.h"
 #include "tacd.h"
+#include "dyn_array.h"
 
 typedef enum asmInstrKind_ {
     ASM_INSTR_INVALID,
@@ -56,7 +57,8 @@ typedef enum operandType_ {
     OPERAND_IMM,
     OPERAND_REG,
     OPERAND_PSEUDO,
-    OPERAND_STACK
+    OPERAND_STACK,
+    OPERAND_DATA
 } OperandType;
 
 typedef enum conditionCode_ {
@@ -87,6 +89,12 @@ typedef enum asmType_ {
     ASMTYPE_QWORD
 } AsmType;
 
+typedef enum asmLinkage_ {
+    ASM_LINKAGE_NONE,
+    ASM_LINKAGE_INTERNAL,
+    ASM_LINKAGE_EXTERNAL
+} AsmLinkage;
+
 static Register param_regs[6] = {
     DI, SI, DX, CX, R8, R9
 };
@@ -98,6 +106,7 @@ typedef struct operand_ {
         Register reg;
         const String *pseudo;
         int stack;
+        const String *data;
     } val;
 } Operand;
 
@@ -133,6 +142,7 @@ void InstrArray_insert(InstrArray *ia, AsmInstr in, size_t idx);
 
 typedef struct asmFunction_ {
     const String *name;
+    AsmLinkage linkage;
     InstrArray instrs;
 } AsmFn;
 
@@ -146,8 +156,18 @@ void AsmFnArray_init(AsmFnArray *afa);
 void AsmFnArray_deinit(AsmFnArray *afa);
 void AsmFnArray_append(AsmFnArray *afa, AsmFn afn);
 
+typedef struct asmStaticVar_ {
+    const String *identifier;
+    AsmLinkage linkage;
+    AsmType type;
+    int init;
+} AsmStaticVar;
+
+GEN_DYN_ARRAY_DECL(AsmStaticVarArray, AsmStaticVar)
+
 typedef struct asmTu_ {
     AsmFnArray fns;
+    AsmStaticVarArray vars;
 } AsmTU;
 
 AsmTU *AsmTU_create(void);

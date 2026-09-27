@@ -6,6 +6,7 @@
 #include "comp_driver.h"
 #include "dd_string.h"
 #include "tacd.h"
+#include "dyn_array.h"
 
 #include "codegen.h"
 
@@ -165,10 +166,13 @@ void AsmFnArray_append(AsmFnArray *afa, AsmFn afn) {
     afa->len += 1;
 }
 
+GEN_DYN_ARRAY_IMPL(AsmStaticVarArray, AsmStaticVar)
+
 AsmTU *AsmProgram_create(void) {
     AsmTU *asm_tu = malloc(sizeof(AsmTU));
     *asm_tu = (AsmTU){0};
     AsmFnArray_init(&asm_tu->fns);
+    AsmStaticVarArray_init(&asm_tu->vars);
     return asm_tu;
 }
 
@@ -176,8 +180,8 @@ void AsmProgram_destroy(AsmTU *asm_tu) {
     if (asm_tu == NULL) return;
 
     AsmFnArray_deinit(&asm_tu->fns);
+    AsmStaticVarArray_deinit(&asm_tu->vars);
     free(asm_tu);
-    asm_tu = NULL;
 }
 
 /*
@@ -668,6 +672,19 @@ static AsmFn trx_function(TacdFunction *tacd_fn) {
 
     AsmFn asm_fn = (AsmFn){0};
     asm_fn.name = tacd_fn->name;
+
+    switch (tacd_fn->linkage) {
+    case TACD_LINKAGE_NONE:
+        asm_fn.linkage = ASM_LINKAGE_NONE;
+        break;
+    case TACD_LINKAGE_INTERNAL:
+        asm_fn.linkage = ASM_LINKAGE_INTERNAL;
+        break;
+    case TACD_LINKAGE_EXTERNAL:
+        asm_fn.linkage = ASM_LINKAGE_EXTERNAL;
+        break;
+    }
+
     InstrArray_init(&asm_fn.instrs);
 
     if (tacd_fn->params != NULL) {
@@ -698,6 +715,32 @@ static AsmTU *trx_program(TacdTU *tacd_tu) {
         AsmFnArray_append(&asm_tu->fns, asm_fn);
     }
 
+    for (size_t v_idx = 0; v_idx < tacd_tu->var_defs.len; v_idx++) {
+        TacdStaticVar *tacd_var = &tacd_tu->var_defs.vars[v_idx];
+        AsmStaticVar asm_var = (AsmStaticVar){
+            .identifier = tacd_var->identifier,
+            .init = tacd_var->init
+        };
+        switch (tacd_var->linkage) {
+        case TACD_LINKAGE_NONE:
+            break;
+        case TACD_LINKAGE_INTERNAL:
+            asm_var.linkage = ASM_LINKAGE_INTERNAL;
+            break;
+        case TACD_LINKAGE_EXTERNAL:
+            asm_var.linkage = ASM_LINKAGE_EXTERNAL;
+            break;
+        }
+
+        switch (tacd_var->type) {
+        case TACD_DATATYPE_INT:
+            asm_var.type = ASMTYPE_DWORD;
+            break;
+        }
+
+        AsmStaticVarArray_append(&asm_tu->vars, asm_var);
+    }
+
     return asm_tu;
 }
 
@@ -722,22 +765,40 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
         case ASM_INSTR_INVALID:
         case ASM_INSTR_UNARY:
         case ASM_ALLOCSTACK:
+        case ASM_DEALLOCSTACK:
         case ASM_INSTR_CDQ:
         case ASM_INSTR_RET:
                 break;
 
         case ASM_INSTR_MOV: {
-            if (instr->instr.mov.src.type == OPERAND_STACK && instr->instr.mov.dest.type == OPERAND_STACK) {
-                int src = instr->instr.mov.src.val.stack;
+            Operand src = instr->instr.mov.src;
+            Operand dest = instr->instr.mov.dest;
+            if ((src.type == OPERAND_STACK || src.type == OPERAND_DATA) &&
+                (dest.type == OPERAND_STACK || dest.type == OPERAND_DATA)
+            ) {
+                AsmInstr new_instr = {0};
+                if (src.type == OPERAND_STACK) {
+                    int src = instr->instr.mov.src.val.stack;
+                    new_instr = (AsmInstr){
+                        .kind = ASM_INSTR_MOV,
+                        .instr.mov = {
+                            .src = (Operand){ .type = OPERAND_STACK, .val.stack = src },
+                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
+                            .type = ASMTYPE_DWORD
+                        }
+                    };
+                } else if (src.type == OPERAND_DATA) {
+                    const String *src = instr->instr.mov.src.val.data;
+                    new_instr = (AsmInstr){
+                        .instr.mov = {
+                            .src = (Operand){ .type = OPERAND_DATA, .val.data = src },
+                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10},
+                            .type = ASMTYPE_DWORD
+                        }
+                    };
+                }
                 instr->instr.mov.src.type = OPERAND_REG;
                 instr->instr.mov.src.val.reg = R10;
-                AsmInstr new_instr = (AsmInstr){
-                    .kind = ASM_INSTR_MOV,
-                    .instr.mov = {
-                        .src = (Operand){ .type = OPERAND_STACK, .val.stack = src },
-                        .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
-                        .type = ASMTYPE_DWORD
-                    }};
                 InstrArray_insert(func_instrs, new_instr, instr_idx);
             }
             break;
@@ -770,44 +831,86 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
             case BINARYOP_BITAND:
             case BINARYOP_BITOR:
             case BINARYOP_BITXOR: {
-                if (instr->instr.binary.src.type == OPERAND_STACK && instr->instr.binary.dest.type == OPERAND_STACK) {
-                    int old_src = instr->instr.binary.src.val.stack;
+                Operand src = instr->instr.mov.src;
+                Operand dest = instr->instr.mov.dest;
+                if ((src.type == OPERAND_STACK || src.type == OPERAND_DATA) &&
+                    (dest.type == OPERAND_STACK || dest.type == OPERAND_DATA)
+                ) {
+                    AsmInstr new_instr = {0};
+                    if (src.type == OPERAND_STACK) {
+                        int src = instr->instr.binary.src.val.stack;
+                        new_instr = (AsmInstr){
+                            .kind = ASM_INSTR_MOV,
+                            .instr.mov = {
+                                .src = (Operand){ .type = OPERAND_STACK, .val.stack = src },
+                                .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
+                                .type = ASMTYPE_DWORD
+                            }
+                        };
+                    } else if (src.type == OPERAND_DATA) {
+                        const String *src = instr->instr.binary.src.val.data;
+                        new_instr = (AsmInstr){
+                            .kind = ASM_INSTR_MOV,
+                            .instr.mov = {
+                                .src = (Operand){ .type = OPERAND_DATA, .val.data = src },
+                                .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
+                                .type = ASMTYPE_DWORD
+                            }
+                        };
+                    }
                     instr->instr.binary.src.type = OPERAND_REG;
                     instr->instr.binary.src.val.reg = R10;
-                    AsmInstr new_instr = (AsmInstr){
-                        .kind = ASM_INSTR_MOV,
-                        .instr.mov = {
-                            .src = (Operand){ .type = OPERAND_STACK, .val.stack = old_src },
-                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 },
-                            .type = ASMTYPE_DWORD
-                        }};
                     InstrArray_insert(func_instrs, new_instr, instr_idx);
                 }
                 break;
             }   // case BINARYOP_ADD/SUB/BITAND/BITOR/BITXOR
 
             case BINARYOP_MULT: {
-                if (instr->instr.binary.dest.type == OPERAND_STACK) {
-                    int dest = instr->instr.binary.dest.val.stack;
+                Operand dest = instr->instr.binary.dest;
+                if (dest.type == OPERAND_STACK || dest.type == OPERAND_DATA) {
+                    AsmInstr first_mov = {0};
+                    AsmInstr second_mov = {0};
+
+                    if (dest.type == OPERAND_STACK) {
+                        int dest = instr->instr.binary.dest.val.stack;
+                        first_mov = (AsmInstr){
+                            .kind = ASM_INSTR_MOV,
+                            .instr.mov = {
+                                .src = (Operand){ .type = OPERAND_STACK, .val.stack = dest },
+                                .dest = (Operand){ .type = OPERAND_REG, .val.reg = R11 },
+                                .type = ASMTYPE_DWORD
+                            }
+                        };
+                        second_mov = (AsmInstr){
+                            .kind = ASM_INSTR_MOV,
+                            .instr.mov = {
+                                .src = (Operand){ .type = OPERAND_REG, .val.reg = R11 },
+                                .dest = (Operand){ .type = OPERAND_STACK, .val.stack = dest },
+                                .type = ASMTYPE_DWORD
+                            }
+                        };
+                    } else if (dest.type == OPERAND_DATA) {
+                        const String *dest = instr->instr.binary.dest.val.data;
+                        first_mov = (AsmInstr){
+                            .kind = ASM_INSTR_MOV,
+                            .instr.mov = {
+                                .src = (Operand){ .type = OPERAND_DATA, .val.data = dest },
+                                .dest = (Operand){ .type = OPERAND_REG, .val.reg = R11 },
+                                .type = ASMTYPE_DWORD
+                            }
+                        };
+                        second_mov = (AsmInstr){
+                            .kind = ASM_INSTR_MOV,
+                            .instr.mov = {
+                                .src = (Operand){ .type = OPERAND_REG, .val.reg = R11 },
+                                .dest = (Operand){ .type = OPERAND_DATA, .val.data = dest },
+                                .type = ASMTYPE_DWORD
+                            }
+                        };
+                    }
                     instr->instr.binary.dest.type = OPERAND_REG;
                     instr->instr.binary.dest.val.reg = R11;
 
-                    AsmInstr first_mov = (AsmInstr){
-                        .kind = ASM_INSTR_MOV,
-                        .instr.mov = {
-                            .src = (Operand){ .type = OPERAND_STACK, .val.stack = dest },
-                            .dest = (Operand){ .type = OPERAND_REG, .val.reg = R11 },
-                            .type = ASMTYPE_DWORD
-                        }
-                    };
-                    AsmInstr second_mov = (AsmInstr){
-                        .kind = ASM_INSTR_MOV,
-                        .instr.mov = {
-                            .src = (Operand){ .type = OPERAND_REG, .val.reg = R11 },
-                            .dest = (Operand){ .type = OPERAND_STACK, .val.stack = dest },
-                            .type = ASMTYPE_DWORD
-                        }
-                    };
 
                     InstrArray_insert(func_instrs, second_mov, instr_idx+1);
                     InstrArray_insert(func_instrs, first_mov, instr_idx);
@@ -817,20 +920,41 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
 
             case BINARYOP_LSHFT:
             case BINARYOP_RSHFT: {
-                if (instr->instr.binary.src.type == OPERAND_STACK) {
-                    // TODO: This may have to be more detailed later, reg = CL
-                    int src = instr->instr.binary.src.val.stack;
-                    instr->instr.binary.src.type = OPERAND_REG;
-                    instr->instr.binary.src.val.reg = CX;
-
-                    AsmInstr mov_stack_cl = (AsmInstr){
+                Operand src = instr->instr.binary.src;
+                if (src.type == OPERAND_STACK || src.type == OPERAND_DATA) {
+                    AsmInstr mov_stack_cl = {
                         .kind = ASM_INSTR_MOV,
                         .instr.mov = {
-                            .src = (Operand) { .type = OPERAND_STACK, .val.stack = src },
+                            .src = instr->instr.binary.src,
                             .dest = (Operand){ .type = OPERAND_REG, .val.reg = CX },
                             .type = ASMTYPE_BYTE
                         }
                     };
+                    //if (src.type == OPERAND_STACK) {
+                    //    int src = instr->instr.binary.src.val.stack;
+                    //    mov_stack_cl = (AsmInstr){
+                    //        .kind = ASM_INSTR_MOV,
+                    //        .instr.mov = {
+                    //            .src = (Operand) { .type = OPERAND_STACK, .val.stack = src },
+                    //            .dest = (Operand){ .type = OPERAND_REG, .val.reg = CX },
+                    //            .type = ASMTYPE_BYTE
+                    //        }
+                    //    };
+                    //} else if (src.type == OPERAND_DATA) {
+                    //    const String *src = instr->instr.binary.src.val.data;
+                    //    mov_stack_cl = (AsmInstr){
+                    //        .kind = ASM_INSTR_MOV,
+                    //        .instr.mov = {
+                    //            .src = (Operand) { .type = OPERAND_DATA, .val.data = src },
+                    //            .dest = (Operand){ .type = OPERAND_REG, .val.reg = CX },
+                    //            .type = ASMTYPE_BYTE
+                    //        }
+                    //    };
+                    //}
+                    // TODO: This may have to be more detailed later, reg = CL
+                    instr->instr.binary.src.type = OPERAND_REG;
+                    instr->instr.binary.src.val.reg = CX;
+
                     InstrArray_insert(func_instrs, mov_stack_cl, instr_idx);
                 }
                 break;
@@ -841,7 +965,11 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
         }   // case ASM_INSTR_BINARY
 
         case ASM_INSTR_CMP: {
-            if (instr->instr.cmp.src1.type == OPERAND_STACK && instr->instr.cmp.src2.type == OPERAND_STACK) {
+            Operand src1 = instr->instr.cmp.src1;
+            Operand src2 = instr->instr.cmp.src2;
+            if ((src1.type == OPERAND_STACK || src1.type == OPERAND_DATA) &&
+                (src2.type == OPERAND_STACK || src2.type == OPERAND_DATA)
+            ) {
                 AsmInstr mov = (AsmInstr){ .kind = ASM_INSTR_MOV };
                 mov.instr.mov.src = instr->instr.cmp.src1;
                 mov.instr.mov.dest = (Operand){ .type = OPERAND_REG, .val.reg = R10 };
@@ -863,28 +991,32 @@ static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
     }
 }
 
-static void resolve_pseudo_operand(CodegenDriver *cgd, Operand *op, int *total_offset) {
+static void resolve_pseudo_operand(CompDriver *cd, Operand *op, int *total_offset) {
     int val = 0;
-    if (PseudoSymMap_contains(&cgd->stack_offsets, *op->val.pseudo, &val)) {
-        Operand new_op = {0};
+    Operand new_op = {0};
+    if (PseudoSymMap_contains(&cd->cgd.stack_offsets, *op->val.pseudo, &val)) {
         new_op.type = OPERAND_STACK;
         new_op.val.stack = val;
-        *op = new_op;
     } else {
-        *total_offset += 4;
-        PseudoStackMapping mapping = {0};
-        mapping.stack_offset = -(*total_offset);
-        mapping.ident = String_copy(*op->val.pseudo);
-        PseudoSymMap_append(&cgd->stack_offsets, mapping);
+        SymEntry *sym = SymTable_get(cd->sema.symbol_table, op->val.pseudo->cstr, SYMTYPE_SYMBOL);
+        if (sym != NULL && sym->as.sym.type == SYMBOL_TYPE_STATIC) {
+            new_op.type = OPERAND_DATA;
+            new_op.val.data = sym->key;
+        } else {
+            *total_offset += 4;
+            PseudoStackMapping mapping = {0};
+            mapping.stack_offset = -(*total_offset);
+            mapping.ident = String_copy(*op->val.pseudo);
+            PseudoSymMap_append(&cd->cgd.stack_offsets, mapping);
     
-        Operand new_op = {0};
-        new_op.type = OPERAND_STACK;
-        new_op.val.stack = mapping.stack_offset;
-        *op = new_op;
+            new_op.type = OPERAND_STACK;
+            new_op.val.stack = mapping.stack_offset;
+        }
     }
+    *op = new_op;
 }
 
-static void resolve_instr_pseudo_ops(CodegenDriver *cgd, AsmInstr *instr, int *total_offset) {
+static void resolve_instr_pseudo_ops(CompDriver *cd, AsmInstr *instr, int *total_offset) {
     switch (instr->kind) {
     case ASM_INSTR_INVALID:
     case ASM_INSTR_CDQ:
@@ -894,68 +1026,69 @@ static void resolve_instr_pseudo_ops(CodegenDriver *cgd, AsmInstr *instr, int *t
 
     case ASM_INSTR_MOV:
         if (instr->instr.mov.src.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.mov.src, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.mov.src, total_offset);
         }
         if (instr->instr.mov.dest.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.mov.dest, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.mov.dest, total_offset);
         }
         break;
 
     case ASM_INSTR_CMP:
         if (instr->instr.cmp.src1.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.cmp.src1, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.cmp.src1, total_offset);
         }
         if (instr->instr.cmp.src2.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.cmp.src2, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.cmp.src2, total_offset);
 
         }
         break;
 
     case ASM_INSTR_SETCC:
         if (instr->instr.setcc.dest.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.setcc.dest, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.setcc.dest, total_offset);
         }
         break;
 
     case ASM_INSTR_UNARY:
         if (instr->instr.unary.op.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.unary.op, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.unary.op, total_offset);
         }
         break;
 
     case ASM_INSTR_BINARY:
         if (instr->instr.binary.src.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.binary.src, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.binary.src, total_offset);
         }
         if (instr->instr.binary.dest.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.binary.dest, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.binary.dest, total_offset);
         }
         break;
 
     case ASM_INSTR_IDIV:
         if (instr->instr.idiv.divisor.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.idiv.divisor, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.idiv.divisor, total_offset);
         }
         break;
     case ASM_INSTR_PUSH:
         if (instr->instr.push.type == OPERAND_PSEUDO) {
-            resolve_pseudo_operand(cgd, &instr->instr.push, total_offset);
+            resolve_pseudo_operand(cd, &instr->instr.push, total_offset);
         }
         break;
     }
 }
 
 // Second pass of TACD -> ASM; Replace Pseudo registers with stack offsets.
-static int resolve_pseudo_registers(CodegenDriver *cgd, AsmFn *asm_fn) {
-    if (cgd == NULL || asm_fn == NULL) return -1;
-    if (cgd->program == NULL) return -1;
+static int resolve_pseudo_registers(CompDriver *cd, AsmFn *asm_fn) {
+    if (cd == NULL) return -1;
+    if (asm_fn == NULL) return -1;
+    if (cd->cgd.program == NULL) return -1;
 
     InstrArray *instructions = &asm_fn->instrs;
     int total_offset = 0;
 
     for (size_t instr_idx = 0; instr_idx < instructions->len; instr_idx++) {
         AsmInstr *instr = &instructions->instrs[instr_idx];
-        resolve_instr_pseudo_ops(cgd, instr, &total_offset);
+        resolve_instr_pseudo_ops(cd, instr, &total_offset);
     }
 
     return total_offset;
@@ -978,7 +1111,7 @@ void emit_asm(CompDriver *cd, TacdTU *src) {
     // Second pass of TACD -> ASM; Replace Pseudo registers with stack offsets.
     for (size_t fn_idx = 0; fn_idx < cgd->program->fns.len; fn_idx++) {
         AsmFn *asm_fn = &cgd->program->fns.fns[fn_idx];
-        int resolved_offset = resolve_pseudo_registers(cgd, asm_fn);
+        int resolved_offset = resolve_pseudo_registers(cd, asm_fn);
         resolve_function_stack(cgd, asm_fn, resolved_offset);
         resolve_invalid_instructions(cgd, asm_fn);
     }
@@ -1044,6 +1177,10 @@ static void Operand_print(Operand op) {
 
     case OPERAND_STACK:
         printf("%d(%%rbp)", op.val.stack);
+        break;
+
+    case OPERAND_DATA:
+        printf("%s(%%rip)", op.val.data->cstr);
         break;
 
     case OPERAND_INVALID:
@@ -1228,27 +1365,64 @@ static void AsmInstr_print(AsmInstr *instr, int indent_lvl) {
 static void AsmFn_print(AsmFn *asm_fn, int indent_lvl) {
     int spaces = indent_lvl * 4;
 
-    printf("%2$*1$s\n", spaces+9, "Function(");
-    indent_lvl += 1;
-    spaces = indent_lvl * 4;
-    printf("%2$*1$s\"%3$s\"\n%5$*4$s\n",
-        spaces+5, "name=", asm_fn->name->cstr, spaces+6, "body=(");
+    switch(asm_fn->linkage) {
+    case ASM_LINKAGE_NONE:
+    case ASM_LINKAGE_INTERNAL:
+        printf("%2$*1$s", spaces, "");
+        break;
+    case ASM_LINKAGE_EXTERNAL:
+        printf("%2$*1$s", spaces+5, "globl ");
+        break;
+    }
+
+    printf("fn %s:\n", asm_fn->name->cstr);
     for (size_t instr_idx = 0; instr_idx < asm_fn->instrs.len; instr_idx++) {
         AsmInstr_print(&asm_fn->instrs.instrs[instr_idx], indent_lvl+1);
     }
-    printf("%2$*1$c\n", spaces+1, ')');
-    indent_lvl -= 1;
-    spaces = indent_lvl * 4;
-    printf("%2$*1$c\n", spaces+1, ')');
+}
+
+static void AsmStaticVar_print(AsmStaticVar *var, int indent_lvl) {
+    if (var == NULL) return;
+    int spaces = indent_lvl * 4;
+
+    // TODO: turn these switches into a table
+    switch (var->linkage) {
+    case ASM_LINKAGE_NONE:
+        // Nothing should be here
+    case ASM_LINKAGE_INTERNAL:
+        printf("%2$*1$s", spaces, "");
+        break;
+    case ASM_LINKAGE_EXTERNAL:
+        printf("%2$*1$s ", spaces+5, "globl");
+        break;
+    }
+
+    switch (var->type) {
+    case ASMTYPE_BYTE:
+        printf("byte ");
+        break;
+    case ASMTYPE_DWORD:
+        printf("long ");
+        break;
+    case ASMTYPE_QWORD:
+        printf("quad ");
+        break;
+    }
+
+    printf("%s = %d\n", var->identifier->cstr, var->init);
 }
 
 static void AsmTU_print(AsmTU *asm_tu, int indent_lvl) {
     if (asm_tu == NULL) return;
     int spaces = indent_lvl * 4;
 
-    printf("%*s\n", spaces+8, "Program(");
+    printf("%*s\n\n", spaces+8, "Translation Unit:");
     for (size_t fn_idx = 0; fn_idx < asm_tu->fns.len; fn_idx++) {
-        AsmFn_print(&asm_tu->fns.fns[fn_idx], indent_lvl+1);
+        AsmFn_print(&asm_tu->fns.fns[fn_idx], indent_lvl);
+        puts("");
     }
-    printf("%2$*1$c\n", spaces, ')');
+
+    for (size_t v_idx = 0; v_idx < asm_tu->vars.len; v_idx++) {
+        AsmStaticVar_print(&asm_tu->vars.elems[v_idx], indent_lvl);
+    }
 }
