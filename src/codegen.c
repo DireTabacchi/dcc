@@ -10,65 +10,7 @@
 
 #include "codegen.h"
 
-/*
-   InstrArray
-*/
-
-void InstrArray_init(InstrArray *ia) {
-    ia->cap = 2;
-    ia->len = 0;
-    ia->instrs = (AsmInstr *)calloc(ia->cap, sizeof(AsmInstr));
-}
-
-void InstrArray_deinit(InstrArray *ia) {
-    if (ia == NULL) return;
-    if (ia->instrs == NULL) return;
-
-    free(ia->instrs);
-    ia->cap = 0;
-    ia->len = 0;
-}
-
-void InstrArray_insert(InstrArray *ia, AsmInstr in, size_t idx) {
-    if (ia == NULL) return;
-    if (ia->instrs == NULL) return;
-
-    if (ia->len == ia->cap) {
-        size_t old_cap = ia->cap;
-        size_t new_cap = (old_cap == 0) ? 2 : old_cap / 2 + old_cap;
-        AsmInstr *new_instrs = realloc(ia->instrs, new_cap*sizeof(AsmInstr));
-
-        if (new_instrs == NULL) return;
-
-        ia->instrs = new_instrs;
-        ia->cap = new_cap;
-    }
-
-    if (idx < ia->len) {
-        memmove(ia->instrs+idx+1, ia->instrs+idx, (ia->len - idx) * sizeof(AsmInstr));
-    }
-
-    ia->instrs[idx] = in;
-    ia->len += 1;
-}
-
-void InstrArray_append(InstrArray *ia, AsmInstr in) {
-    if (ia == NULL) return;
-    if (ia->instrs == NULL) return;
-
-    if (ia->len == ia->cap) {
-        size_t old_cap = ia->cap;
-        size_t new_cap = old_cap / 2 + old_cap;
-        AsmInstr *new_instrs = calloc(new_cap, sizeof(AsmInstr));
-        memcpy(new_instrs, ia->instrs, old_cap*sizeof(AsmInstr));
-        free(ia->instrs);
-        ia->instrs = new_instrs;
-        ia->cap = new_cap;
-    }
-
-    memcpy(&ia->instrs[ia->len], &in, sizeof(AsmInstr));
-    ia->len += 1;
-}
+GEN_DYN_ARRAY_IMPL(InstrArray, AsmInstr)
 
 /*
    PseudoSymMap
@@ -548,7 +490,7 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
             // Move args to regs and stack
             size_t tacd_arg_idx = 0; // will remain on last arg to push to stack
             for (size_t a_idx = 0; a_idx < reg_arg_count; a_idx++, tacd_arg_idx++) {
-                Operand arg = trx_operand(va->vals[tacd_arg_idx]);
+                Operand arg = trx_operand(va->elems[tacd_arg_idx]);
                 AsmInstr mov_arg = (AsmInstr){
                     .kind = ASM_INSTR_MOV,
                     .instr.mov = {
@@ -564,7 +506,7 @@ static AsmInstr trx_code(AsmFn *asm_fn, TacdCode *tacd_code) {
             }
 
             for (size_t a_idx = va->len-1; a_idx >= tacd_arg_idx; a_idx--) {
-                Operand arg = trx_operand(va->vals[a_idx]);
+                Operand arg = trx_operand(va->elems[a_idx]);
                 if (arg.type == OPERAND_REG || arg.type == OPERAND_IMM) {
                     AsmInstr push_arg = (AsmInstr){
                         .kind = ASM_INSTR_PUSH,
@@ -716,7 +658,7 @@ static AsmTU *trx_program(TacdTU *tacd_tu) {
     }
 
     for (size_t v_idx = 0; v_idx < tacd_tu->var_defs.len; v_idx++) {
-        TacdStaticVar *tacd_var = &tacd_tu->var_defs.vars[v_idx];
+        TacdStaticVar *tacd_var = &tacd_tu->var_defs.elems[v_idx];
         AsmStaticVar asm_var = (AsmStaticVar){
             .identifier = tacd_var->identifier,
             .init = tacd_var->init
@@ -760,7 +702,7 @@ static void resolve_function_stack(CodegenDriver *cgd, AsmFn *asm_fn, int resolv
 static void resolve_invalid_instructions(CodegenDriver *cgd, AsmFn *asm_fn) {
     InstrArray *func_instrs = &asm_fn->instrs;
     for (size_t instr_idx = 0; instr_idx < func_instrs->len; instr_idx++) {
-        AsmInstr *instr = &func_instrs->instrs[instr_idx];
+        AsmInstr *instr = &func_instrs->elems[instr_idx];
         switch (instr->kind) {
         case ASM_INSTR_INVALID:
         case ASM_INSTR_UNARY:
@@ -1074,7 +1016,7 @@ static int resolve_pseudo_registers(CompDriver *cd, AsmFn *asm_fn) {
     int total_offset = 0;
 
     for (size_t instr_idx = 0; instr_idx < instructions->len; instr_idx++) {
-        AsmInstr *instr = &instructions->instrs[instr_idx];
+        AsmInstr *instr = &instructions->elems[instr_idx];
         resolve_instr_pseudo_ops(cd, instr, &total_offset);
     }
 
@@ -1364,7 +1306,7 @@ static void AsmFn_print(AsmFn *asm_fn, int indent_lvl) {
 
     printf("fn %s:\n", asm_fn->name->cstr);
     for (size_t instr_idx = 0; instr_idx < asm_fn->instrs.len; instr_idx++) {
-        AsmInstr_print(&asm_fn->instrs.instrs[instr_idx], indent_lvl+1);
+        AsmInstr_print(&asm_fn->instrs.elems[instr_idx], indent_lvl+1);
     }
 }
 

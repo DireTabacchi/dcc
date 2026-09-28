@@ -129,15 +129,15 @@ typedef struct token_ {
 #define TOKENKIND_IS_STORAGE_CLASS(tk) \
     ((tk) > TOKEN_STORAGE_CLASS_BEGIN && (tk) < TOKEN_STORAGE_CLASS_END)
 
-typedef struct tokenList_ {
+typedef struct tokenArray_ {
     Token *toks;
     size_t len;
     size_t cap;
-} TokenList;
+} TokenArray;
 
-void TokenList_init(TokenList *tl);
-void TokenList_deinit(TokenList* tl);
-void TokenList_append(TokenList* tl, Token tok);
-void TokenList_print(TokenList *tl);
+void TokenArray_init(TokenArray *tl);
+void TokenArray_deinit(TokenArray* tl);
+void TokenArray_append(TokenArray* tl, Token tok);
+void TokenArray_print(TokenArray *tl);
 
 #endif // TOKEN_H

@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
             if (driver.opts.dev_debug_flags[DDF_PRINT_TOKENS] ||
                 driver.opts.dev_debug_flags[DDF_PRINT_ALL]
             ) {
-                TokenList_print(&driver.tokenizer.tokens);
+                TokenArray_print(&driver.tokenizer.tokens);
             }
 #endif
         }

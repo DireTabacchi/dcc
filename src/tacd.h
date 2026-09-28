@@ -5,6 +5,7 @@
 
 #include "param_array.h"
 #include "ast.h"
+#include "dyn_array.h"
 
 typedef enum tacdCodeKind_ {
     TACD_CODE_INVALID,
@@ -73,15 +74,7 @@ typedef struct tacdValue_ {
     } val;
 } TacdValue;
 
-typedef struct valueArray_ {
-    TacdValue *vals;
-    size_t len;
-    size_t cap;
-} ValueArray;
-
-ValueArray *ValueArray_create(void);
-void ValueArray_destroy(ValueArray *va);
-void ValueArray_append(ValueArray *va, TacdValue val);
+GEN_DYN_ARRAY_DECL(ValueArray, TacdValue)
 
 typedef struct tacdCode_ {
     TacdCodeKind kind;
@@ -135,15 +128,7 @@ typedef struct tacdStaticVar_ {
     int init;
 } TacdStaticVar;
 
-typedef struct tacdStaticVarArray_ {
-    size_t len;
-    size_t cap;
-    TacdStaticVar *vars;
-} TacdStaticVarArray;
-
-void TacdStaticVarArray_init(TacdStaticVarArray *tsva);
-void TacdStaticVarArray_deinit(TacdStaticVarArray *tsva);
-void TacdStaticVarArray_append(TacdStaticVarArray *tsva, TacdStaticVar sv);
+GEN_DYN_ARRAY_DECL(TacdStaticVarArray, TacdStaticVar)
 
 typedef struct tacdFunctionArray_ {
     size_t len;

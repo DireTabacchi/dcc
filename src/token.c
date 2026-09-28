@@ -5,13 +5,13 @@
 #include "dd_string.h"
 #include "token.h"
 
-void TokenList_init(TokenList* tl) {
+void TokenArray_init(TokenArray* tl) {
     tl->cap = 2;
     tl->len = 0;
     tl->toks = (Token *)calloc(tl->cap, sizeof(Token));
 }
 
-void TokenList_deinit(TokenList* tl) {
+void TokenArray_deinit(TokenArray* tl) {
     if (tl == NULL) return;
     for (size_t i = 0; i < tl->len; i++){
         switch (tl->toks[i].kind) {
@@ -59,7 +59,7 @@ void TokenList_deinit(TokenList* tl) {
     free(tl->toks);
 }
 
-void TokenList_append(TokenList* tl, Token tok) {
+void TokenArray_append(TokenArray* tl, Token tok) {
     if (tl == NULL) return;
 
     if (tl->len == tl->cap) {
@@ -75,7 +75,7 @@ void TokenList_append(TokenList* tl, Token tok) {
     tl->len += 1;
 }
 
-void TokenList_print(TokenList *tl) {
+void TokenArray_print(TokenArray *tl) {
     printf("%-24s | %-32s | %-11s | %-6s | %-6s\n", "Token Kind", "Token Text", "File Offset", "Line", "Column");
     printf("===========================================================================================\n");
     for (size_t tl_idx = 0; tl_idx < tl->len; tl_idx++) {

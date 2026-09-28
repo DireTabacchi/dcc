@@ -129,16 +129,7 @@ typedef struct asmInstr_ {
     } instr;
 } AsmInstr;
 
-typedef struct instrArray_ {
-    size_t len;
-    size_t cap;
-    AsmInstr *instrs;
-} InstrArray;
-
-void InstrArray_init(InstrArray *ia);
-void InstrArray_deinit(InstrArray *ia);
-void InstrArray_append(InstrArray *ia, AsmInstr in);
-void InstrArray_insert(InstrArray *ia, AsmInstr in, size_t idx);
+GEN_DYN_ARRAY_DECL(InstrArray, AsmInstr)
 
 typedef struct asmFunction_ {
     const String *name;

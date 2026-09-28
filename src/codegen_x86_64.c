@@ -126,7 +126,7 @@ static void emit_function(CompDriver *cd, AsmFn *asm_fn, FILE *dest) {
     fprintf(dest, "\t.text\n%s:\n", asm_fn->name->cstr);
     fprintf(dest, "\tpushq\t%%rbp\n\tmovq\t%%rsp, %%rbp\n");
     for (size_t instr_idx = 0; instr_idx < asm_fn->instrs.len; instr_idx++) {
-        AsmInstr *instr = &asm_fn->instrs.instrs[instr_idx];
+        AsmInstr *instr = &asm_fn->instrs.elems[instr_idx];
         switch (instr->kind) {
         case ASM_INSTR_INVALID:
             fprintf(dest, "# ERROR: INVALID INSTRUCTION\n");

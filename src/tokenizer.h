@@ -14,7 +14,7 @@ typedef struct tokenizer_ {
     long line;          // current line number
     long line_offset;   // offset of beginning of line
 
-    TokenList tokens;
+    TokenArray tokens;
 } Tokenizer;
 
 typedef struct compDriver_ CompDriver;

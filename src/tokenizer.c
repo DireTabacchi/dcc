@@ -54,7 +54,7 @@ void Tokenizer_init(CompDriver *cd, const char *src_path) {
     }
 #endif
 
-    TokenList_init(&t->tokens);
+    TokenArray_init(&t->tokens);
 
     t->ch = 0;
     t->offset = -1;
@@ -70,7 +70,7 @@ void Tokenizer_init(CompDriver *cd, const char *src_path) {
 void Tokenizer_destroy(Tokenizer *t) {
     String_free(&t->src);
     String_free(&t->src_path);
-    TokenList_deinit(&t->tokens);
+    TokenArray_deinit(&t->tokens);
 }
 
 // Check if a char `c` is a whitespace character.
@@ -197,7 +197,7 @@ static void scan_identifier(CompDriver *cd, long offset) {
     }
 
     tok.text = (String *)StrInterner_intern(&cd->str_table, ident);
-    TokenList_append(&cd->tokenizer.tokens, tok);
+    TokenArray_append(&cd->tokenizer.tokens, tok);
 }
 
 static void scan_number(CompDriver *cd, Tokenizer *t, long offset) {
@@ -224,7 +224,7 @@ static void scan_number(CompDriver *cd, Tokenizer *t, long offset) {
     tok.text = num_str;
     tok.kind = TOKEN_CONSTANT;
 
-    TokenList_append(&t->tokens, tok);
+    TokenArray_append(&t->tokens, tok);
 }
 
 void tokenize(CompDriver *cd) {
@@ -247,7 +247,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
                 
             case ')':
@@ -255,7 +255,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '{':
@@ -263,7 +263,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '}':
@@ -271,7 +271,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case ',':
@@ -279,7 +279,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case ';':
@@ -287,7 +287,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '=':
@@ -296,7 +296,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -304,7 +304,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '~':
@@ -312,7 +312,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '+': {
@@ -323,7 +323,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 } else if (peeked == '=') {
@@ -331,7 +331,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -340,7 +340,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
             }
 
@@ -350,7 +350,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -358,7 +358,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '/':
@@ -367,7 +367,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -375,7 +375,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '%':
@@ -384,7 +384,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -392,7 +392,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '-': {
@@ -402,7 +402,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 } else if (peeked == '=') {
@@ -410,7 +410,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -418,7 +418,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
             }
 
@@ -428,7 +428,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -436,7 +436,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '&': {
@@ -446,7 +446,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 } else if (peeked == '=') {
@@ -454,7 +454,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -462,7 +462,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
             }
 
@@ -473,7 +473,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 } else if (peeked == '=') {
@@ -481,7 +481,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -489,7 +489,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
             }
 
@@ -499,7 +499,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -507,7 +507,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case '<': {
@@ -518,7 +518,7 @@ void tokenize(CompDriver *cd) {
                         lit.cstr = &t->src.cstr[offset];
                         lit.len = 3;
                         tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                        TokenList_append(&t->tokens, tok);
+                        TokenArray_append(&t->tokens, tok);
                         advance(t);
                         advance(t);
                         break;
@@ -527,7 +527,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 } else if (peeked == '=') {
@@ -535,7 +535,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -543,7 +543,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
             }
 
@@ -555,7 +555,7 @@ void tokenize(CompDriver *cd) {
                         lit.cstr = &t->src.cstr[offset];
                         lit.len = 3;
                         tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                        TokenList_append(&t->tokens, tok);
+                        TokenArray_append(&t->tokens, tok);
                         advance(t);
                         advance(t);
                         break;
@@ -564,7 +564,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 } else if (peeked == '=') {
@@ -572,7 +572,7 @@ void tokenize(CompDriver *cd) {
                     lit.cstr = &t->src.cstr[offset];
                     lit.len = 2;
                     tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                    TokenList_append(&t->tokens, tok);
+                    TokenArray_append(&t->tokens, tok);
                     advance(t);
                     break;
                 }
@@ -580,7 +580,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
             }
 
@@ -589,7 +589,7 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case ':':
@@ -597,13 +597,13 @@ void tokenize(CompDriver *cd) {
                 lit.cstr = &t->src.cstr[offset];
                 lit.len = 1;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, lit);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             case -1:    // EOF
                 tok.kind = TOKEN_EOF;
                 tok.text = (String *)StrInterner_intern(&cd->str_table, token_literals[TOKEN_EOF]);
-                TokenList_append(&t->tokens, tok);
+                TokenArray_append(&t->tokens, tok);
                 break;
 
             default: {

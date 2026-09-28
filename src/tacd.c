@@ -37,40 +37,7 @@ void TacdTU_destroy(TacdTU *tacd_tu) {
     free(tacd_tu);
 }
 
-void TacdStaticVarArray_init(TacdStaticVarArray *tsva) {
-    if (tsva == NULL) return;
-
-    tsva->len = 0;
-    tsva->cap = 2;
-    tsva->vars = calloc(tsva->cap, sizeof(TacdStaticVar));
-}
-
-void TacdStaticVarArray_deinit(TacdStaticVarArray *tsva) {
-    if (tsva == NULL) return;
-
-    free(tsva->vars);
-    tsva->vars = NULL;
-    tsva->cap = 0;
-    tsva->len = 0;
-}
-
-void TacdStaticVarArray_append(TacdStaticVarArray *tsva, TacdStaticVar sv) {
-    if (tsva == NULL) return;
-    if (tsva->vars == NULL) return;
-
-    if (tsva->len == tsva->cap) {
-        size_t old_cap = tsva->cap;
-        size_t new_cap = old_cap / 2 + old_cap;
-        TacdStaticVar *new_vars = calloc(new_cap, sizeof(TacdStaticVar));
-        memcpy(new_vars, tsva->vars, old_cap*sizeof(TacdStaticVar));
-        free(tsva->vars);
-        tsva->vars = new_vars;
-        tsva->cap = new_cap;
-    }
-
-    memcpy(&tsva->vars[tsva->len], &sv, sizeof(TacdStaticVar));
-    tsva->len += 1;
-}
+GEN_DYN_ARRAY_IMPL(TacdStaticVarArray, TacdStaticVar)
 
 void TacdFunctionArray_init(TacdFunctionArray *tfa) {
     if (tfa == NULL) return;
@@ -112,38 +79,7 @@ void TacdFunctionArray_append(TacdFunctionArray *tfa, TacdFunction fn) {
     tfa->len += 1;
 }
 
-ValueArray *ValueArray_create(void) {
-    ValueArray *va = malloc(sizeof(ValueArray));
-    va->len = 0;
-    va->cap = 2;
-    va->vals = calloc(va->cap, sizeof(TacdValue));
-    return va;
-}
-
-void ValueArray_destroy(ValueArray *va) {
-    if (va == NULL) return;
-    free(va->vals);
-    free(va);
-    va = NULL;
-}
-
-void ValueArray_append(ValueArray *va, TacdValue val) {
-    if (va == NULL) return;
-    if (va->vals == NULL) return;
-
-    if (va->len == va->cap) {
-        size_t old_cap = va->cap;
-        size_t new_cap = old_cap / 2 + old_cap;
-        TacdValue *new_vals = calloc(new_cap, sizeof(TacdValue));
-        memcpy(new_vals, va->vals, old_cap*sizeof(TacdValue));
-        free(va->vals);
-        va->vals = new_vals;
-        va->cap = new_cap;
-    }
-
-    memcpy(&va->vals[va->len], &val, sizeof(TacdValue));
-    va->len += 1;
-}
+GEN_DYN_ARRAY_IMPL(ValueArray, TacdValue)
 
 void CodeList_init(CodeList *il) {
     il->cap = 2;
@@ -1380,7 +1316,7 @@ static void TacdCode_print(TacdCode *code, int indent_lvl) {
         if (code->code.fn_call.args != NULL) {
             printf("(");
             for (size_t v_idx = 0; v_idx < code->code.fn_call.args->len; v_idx++) {
-                TacdValue_print(code->code.fn_call.args->vals[v_idx], 0);
+                TacdValue_print(code->code.fn_call.args->elems[v_idx], 0);
                 if (v_idx+1 < code->code.fn_call.args->len) {
                     printf(", ");
                 }
@@ -1440,8 +1376,8 @@ static void TacdTU_print(TacdTU *tacd_tu, int indent_lvl) {
     int spaces = indent_lvl * 4;
     printf("%2$*1$s\n", spaces+17, "Translation Unit:");
     for (size_t sv_idx = 0; sv_idx < tacd_tu->var_defs.len; sv_idx++) {
-        TacdStaticVar *s_var = &tacd_tu->var_defs.vars[sv_idx];
-        TacdStaticVar_print(&tacd_tu->var_defs.vars[sv_idx], indent_lvl);
+        TacdStaticVar *s_var = &tacd_tu->var_defs.elems[sv_idx];
+        TacdStaticVar_print(&tacd_tu->var_defs.elems[sv_idx], indent_lvl);
     }
 
     for (size_t d_idx = 0; d_idx < tacd_tu->fn_defs.len; d_idx++) {

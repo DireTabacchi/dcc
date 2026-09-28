@@ -489,19 +489,19 @@ static Expr *parse_optional_expression(CompDriver *cd, TokenKind sentinel) {
 }
 
 static StorageClass parse_type_storage(CompDriver *cd) {
-    TokenList types = {0};
-    TokenList storage_classes = {0};
+    TokenArray types = {0};
+    TokenArray storage_classes = {0};
 
-    TokenList_init(&types);
-    TokenList_init(&storage_classes);
+    TokenArray_init(&types);
+    TokenArray_init(&storage_classes);
 
     Token first_tok;
     Token tok = first_tok = peek_token(cd);
     while (TOKENKIND_IS_TYPE_STORAGE(tok.kind)) {
         if (TOKENKIND_IS_TYPE_SPECIFIER(tok.kind)) {
-            TokenList_append(&types, tok);
+            TokenArray_append(&types, tok);
         } else if (TOKENKIND_IS_STORAGE_CLASS(tok.kind)) {
-            TokenList_append(&storage_classes, tok);
+            TokenArray_append(&storage_classes, tok);
         }
         advance_token(cd);
         tok = peek_token(cd);
@@ -534,8 +534,8 @@ static StorageClass parse_type_storage(CompDriver *cd) {
         }
     }
 
-    TokenList_deinit(&types);
-    TokenList_deinit(&storage_classes);
+    TokenArray_deinit(&types);
+    TokenArray_deinit(&storage_classes);
 
     return sc;
 }
