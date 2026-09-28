@@ -172,6 +172,11 @@ static void scan_identifier(CompDriver *cd, long offset) {
                 break;
         }
         break;
+    case 'l':
+        if (is_keyword(ident, 1, 3, "ong")) {
+            tok.kind = TOKEN_KW_LONG;
+        }
+        break;
     case 'r':
         if (is_keyword(ident, 1, 5, "eturn")) { // return
             tok.kind = TOKEN_KW_RETURN;
@@ -202,8 +207,16 @@ static void scan_identifier(CompDriver *cd, long offset) {
 
 static void scan_number(CompDriver *cd, Tokenizer *t, long offset) {
     Position tok_pos = { .offset = offset, .line = t->line, .column = offset - t->line_offset + 1 };
+    Token tok = {0};
     while(ISDIGIT(t->ch)) advance(t);
     // TODO: maybe advance to the next token? like space or some non-word character?
+    if (t->ch == 'l' || t->ch == 'L') {
+        tok.kind = TOKEN_CONSTANT_LONG;
+        advance(t);
+    } else {
+        tok.kind = TOKEN_CONSTANT_INT;
+    }
+
     if (ISALPHA(t->ch)) {
         // Swallow the remaining characters
         while (ISALPHA(t->ch)) advance(t);
@@ -219,10 +232,8 @@ static void scan_number(CompDriver *cd, Tokenizer *t, long offset) {
     *num_str = String_init_length(num_len);
     memcpy(num_str->cstr, &t->src.cstr[offset], num_len);
 
-    Token tok = {0};
     tok.pos = tok_pos;
     tok.text = num_str;
-    tok.kind = TOKEN_CONSTANT;
 
     TokenArray_append(&t->tokens, tok);
 }

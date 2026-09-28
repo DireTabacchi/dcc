@@ -99,7 +99,7 @@ void err_expected_token(ErrorList *el, String srcname, TokenKind expected, Token
     if (actual.kind == TOKEN_IDENTIFIER) {
         found_token_kind = String_init_length(actual.text->len + 13);
         snprintf(found_token_kind.cstr, found_token_kind.len+1, "identifier `%s`", actual.text->cstr);
-    } else if (actual.kind == TOKEN_CONSTANT) { 
+    } else if (actual.kind == TOKEN_CONSTANT_INT) { 
         found_token_kind = String_init_length(actual.text->len + 11);
         snprintf(found_token_kind.cstr, found_token_kind.len+1, "constant `%s`", actual.text->cstr);
     } else if (actual.kind == TOKEN_EOF) {

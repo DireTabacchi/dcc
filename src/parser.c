@@ -306,8 +306,8 @@ static Expr *parse_fn_call(CompDriver *cd) {
 static Expr *parse_primary(CompDriver *cd) {
     Token tok = peek_token(cd);
     switch (tok.kind) {
-    case TOKEN_CONSTANT: {
-        expect_token(cd, TOKEN_CONSTANT);
+    case TOKEN_CONSTANT_INT: {
+        expect_token(cd, TOKEN_CONSTANT_INT);
         Token constant_tok = cd->tokenizer.tokens.toks[cd->parser.prev_idx];
         int constant_val = strtol(constant_tok.text->cstr, NULL, 10);
 

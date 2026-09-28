@@ -15,7 +15,8 @@ void TokenArray_deinit(TokenArray* tl) {
     if (tl == NULL) return;
     for (size_t i = 0; i < tl->len; i++){
         switch (tl->toks[i].kind) {
-        case TOKEN_CONSTANT:
+        case TOKEN_CONSTANT_INT:
+        case TOKEN_CONSTANT_LONG:
             String_free((String *)tl->toks[i].text);
             free((String *)tl->toks[i].text);
             break;
@@ -27,6 +28,7 @@ void TokenArray_deinit(TokenArray* tl) {
         case TOKEN_TYPE_SPECIFIERS_BEGIN: case TOKEN_TYPE_SPECIFIERS_END:
         case TOKEN_STORAGE_CLASS_BEGIN: case TOKEN_STORAGE_CLASS_END:
         case TOKEN_TYPE_STORAGE_BEGIN: case TOKEN_TYPE_STORAGE_END:
+        case TOKEN_CONSTANTS_BEGIN: case TOKEN_CONSTANTS_END:
         case TOKENKIND_LEN:
             /* Above aren't interned, nor do they have any string memory */
         case TOKEN_INVALID: case TOKEN_UNKNOWN:
