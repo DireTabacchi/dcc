@@ -601,14 +601,15 @@ label_switch_statement(CompDriver *cd, Stmt *stmt, LoopSwitchStatus lss, const S
             err_case_lbl_not_constant(cd, stmt->pos);
             break;
         }
+        // TODO: better constant typing (const_int vs const_long)
         const String *case_lbl =
-            create_case_label(cd, lbl, stmt->as.case_stmt.lbl_expr->as.constant);
+            create_case_label(cd, lbl, stmt->as.case_stmt.lbl_expr->as.constant.as.const_int);
         if (SymTable_scope_contains(cd->sema.lbl_table, case_lbl->cstr, SYMTYPE_CASE_LABEL)) {
-            err_duplicate_case(cd, stmt->pos, stmt->as.case_stmt.lbl_expr->as.constant);
+            err_duplicate_case(cd, stmt->pos, stmt->as.case_stmt.lbl_expr->as.constant.as.const_int);
             break;
         }
         SymTable_insert_case_label(cd->sema.lbl_table,
-            stmt->pos, case_lbl, stmt->as.case_stmt.lbl_expr->as.constant);
+            stmt->pos, case_lbl, stmt->as.case_stmt.lbl_expr->as.constant.as.const_int);
         stmt->as.case_stmt.lbl = case_lbl;
         label_switch_statement(cd, stmt->as.case_stmt.stmt, lss, lbl);
         break;
@@ -776,7 +777,7 @@ static void typecheck_local_var_declaration(CompDriver *cd, Decl *var_decl) {
         } else if (var_decl->as.variable.init->kind == EXPR_CONSTANT) {
             init = (InitVal){
                 .kind = IV_INITIAL,
-                .as.initial = var_decl->as.variable.init->as.constant
+                .as.initial = var_decl->as.variable.init->as.constant.as.const_int
             };
         } else {
             err_lcl_var_stc_non_const_init(&cd->errors, cd->tokenizer.src_path, var_decl->pos,
@@ -852,7 +853,8 @@ static void typecheck_file_var_decl(CompDriver *cd, Decl *var_decl) {
         Expr *init = var_decl->as.variable.init;
         if (init->kind == EXPR_CONSTANT) {
             init_val.kind = IV_INITIAL;
-            init_val.as.initial = init->as.constant;
+            // TODO: better typing with const_int vs const_long
+            init_val.as.initial = init->as.constant.as.const_int;
         } else {
             err_file_var_non_const_init(&cd->errors, cd->tokenizer.src_path, var_decl->pos,
                 var_decl->as.variable.identifier);

@@ -4,6 +4,8 @@
 #include "common.h"
 #include "dd_string.h"
 
+#include "typing.h"
+
 #define TABLE_MIN_CAP 16
 #define TABLE_LOAD_FACTOR 0.7
 
@@ -31,30 +33,16 @@ typedef enum {
 } ScopeStatus;
 
 typedef enum {
-    LINKAGE_NONE,
-    LINKAGE_INTERNAL,
-    LINKAGE_EXTERNAL
-} LinkageKind;
-
-typedef enum {
     SYMBOL_TYPE_AUTO,   // Automatic storage duration
     SYMBOL_TYPE_STATIC, // Static storage duration
     SYMBOL_TYPE_FN
 } SymbolTypeKind;
 
 typedef enum {
-    DATATYPE_INT
-} DataType;
-
-typedef enum {
     IV_NO_INITIALIZER,
     IV_TENTATIVE,
     IV_INITIAL
 } InitValueKind;
-
-typedef struct fnType_ {
-    size_t arity;
-} FnType;
 
 typedef struct fnAttrs_ {
     LinkageKind linkage;

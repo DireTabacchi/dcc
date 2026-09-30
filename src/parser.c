@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "common.h"
 #include "dd_string.h"
@@ -14,6 +15,8 @@
 #include "parser.h"
 
 // TODO: write error creating util function (vargs?)
+
+#define CONSTANT_MAX_INT 2147483647
 
 // Parser Utilities
 
@@ -305,15 +308,30 @@ static Expr *parse_fn_call(CompDriver *cd) {
 
 static Expr *parse_primary(CompDriver *cd) {
     Token tok = peek_token(cd);
+    if (tok.kind == TOKEN_LEFT_PAREN) {
+    }
     switch (tok.kind) {
-    case TOKEN_CONSTANT_INT: {
-        expect_token(cd, TOKEN_CONSTANT_INT);
-        Token constant_tok = cd->tokenizer.tokens.toks[cd->parser.prev_idx];
-        int constant_val = strtol(constant_tok.text->cstr, NULL, 10);
-
+    case TOKEN_CONSTANT_INT:
+    case TOKEN_CONSTANT_LONG: {
+        Token constant_tok = advance_token(cd);
         Expr *constant = Expr_create(EXPR_CONSTANT);
+        long constant_val = strtol(constant_tok.text->cstr, NULL, 10);
         constant->pos = tok.pos;
-        constant->as.constant = constant_val;
+
+        if (errno == ERANGE) {
+            // TODO: error: constant too large
+            puts("Error: constant too large to reperesent as long or int");
+            constant->kind = EXPR_INVALID;
+            return constant;
+        }
+
+        if (constant_tok.kind == TOKEN_CONSTANT_INT && constant_val < CONSTANT_MAX_INT) {
+            constant->as.constant.kind = CONSTANT_INT;
+            constant->as.constant.as.const_int = constant_val;
+        } else {
+            constant->as.constant.kind = CONSTANT_LONG;
+            constant->as.constant.as.const_long = constant_val;
+        }
 
         return constant;
     }
@@ -336,9 +354,24 @@ static Expr *parse_primary(CompDriver *cd) {
 
     case TOKEN_LEFT_PAREN: {
         advance_token(cd);
-        Expr *exp = parse_expression(cd, 0);
-        expect_token(cd, TOKEN_RIGHT_PAREN);
-        return exp;
+        Token next_tok = peek_token(cd);
+        if (TOKENKIND_IS_TYPE_SPECIFIER(next_tok.kind)) {
+            Expr *cast_expr = Expr_create(EXPR_CAST);
+            if (next_tok.kind == TOKEN_KW_INT) {
+                cast_expr->as.cast.target = DATATYPE_INT;
+                advance_token(cd);
+            } else if (next_tok.kind == TOKEN_KW_LONG) {
+                cast_expr->as.cast.target = DATATYPE_LONG;
+                advance_token(cd);
+            }
+            expect_token(cd, TOKEN_RIGHT_PAREN);
+            cast_expr->as.cast.expr = parse_expression(cd, 0);
+            return cast_expr;
+        } else {
+            Expr *exp = parse_expression(cd, 0);
+            expect_token(cd, TOKEN_RIGHT_PAREN);
+            return exp;
+        }
     }
 
     default: {
@@ -437,6 +470,9 @@ static Expr *parse_expression(CompDriver *cd, int min_prec) {
     Expr *left = parse_unary(cd);
     if (left != NULL && left->kind == EXPR_INVALID) return left;
     Token next_tok = peek_token(cd);
+    if (next_tok.kind == TOKEN_LEFT_PAREN) {
+        puts("Maybe cast?");
+    }
     while (TOKENKIND_IS_BINARY_OPERATOR(next_tok.kind) && precedence(next_tok) >= min_prec) {
         if (TOKENKIND_IS_ASSIGNMENT(next_tok.kind)) {
             //advance_token(cd);
@@ -488,7 +524,37 @@ static Expr *parse_optional_expression(CompDriver *cd, TokenKind sentinel) {
     return res;
 }
 
-static StorageClass parse_type_storage(CompDriver *cd) {
+static DataType parse_type(CompDriver *cd, TokenArray *types, Token first_tok) {
+    if (types->len < 1) {
+        err_missing_type_specifier(&cd->errors, cd->tokenizer.src_path, first_tok.pos);
+        return DATATYPE_INVALID;
+    }
+
+    int int_count = 0;
+    int long_count = 0;
+
+    for (size_t t_idx = 0; t_idx < types->len; t_idx++) {
+        if (types->toks[t_idx].kind == TOKEN_KW_INT) {
+            int_count += 1;
+        } else if (types->toks[t_idx].kind == TOKEN_KW_LONG) {
+            long_count += 1;
+        }
+    }
+
+    DataType type = DATATYPE_INVALID;
+    if (int_count == 1 && long_count == 0) {
+        type = DATATYPE_INT;
+    } if (int_count <= 1 && long_count == 1) {
+        type = DATATYPE_LONG;
+    }
+
+    if (type == DATATYPE_INVALID) {
+        err_invalid_type_specifier(&cd->errors, cd->tokenizer.src_path, first_tok.pos);
+    }
+    return type;
+}
+
+static StorageType parse_type_storage(CompDriver *cd) {
     TokenArray types = {0};
     TokenArray storage_classes = {0};
 
@@ -502,22 +568,18 @@ static StorageClass parse_type_storage(CompDriver *cd) {
             TokenArray_append(&types, tok);
         } else if (TOKENKIND_IS_STORAGE_CLASS(tok.kind)) {
             TokenArray_append(&storage_classes, tok);
+        } else {
+            err_unexpected_token(&cd->errors, cd->tokenizer.src_path, tok);
         }
         advance_token(cd);
         tok = peek_token(cd);
     }
 
-    if (types.len < 1) {
-        err_missing_type_specifier(&cd->errors, cd->tokenizer.src_path, first_tok.pos);
-    } else if (types.len != 1) {
-        err_invalid_type_specifier(&cd->errors, cd->tokenizer.src_path, first_tok.pos);
-    }
+    DataType type = parse_type(cd, &types, first_tok);
+
     if (storage_classes.len > 1) {
         err_invalid_storage_class(&cd->errors, cd->tokenizer.src_path, first_tok.pos);
     }
-
-    // TODO: eventually track type
-    // WHEN: add more valid types supported by DCC
 
     StorageClass sc = SC_NONE;
     if (storage_classes.len == 1) {
@@ -537,7 +599,9 @@ static StorageClass parse_type_storage(CompDriver *cd) {
     TokenArray_deinit(&types);
     TokenArray_deinit(&storage_classes);
 
-    return sc;
+    StorageType st = (StorageType){ .st = sc, .ty = type };
+
+    return st;
 }
 
 static Decl *parse_declaration(CompDriver *cd);
@@ -657,13 +721,14 @@ static Stmt *parse_statement(CompDriver *cd) {
         ForInit init = {0};
         if (TOKENKIND_IS_TYPE_STORAGE(init_tok.kind)) {
             init.kind = FOR_INIT_DECL;
-            StorageClass sc = parse_type_storage(cd);
+            StorageType st = parse_type_storage(cd);
             const String *ident = parse_identifier(cd);
             Decl *init_decl = parse_var_declaration(cd);
             init_decl->pos = init_tok.pos;
             init_decl->as.variable.identifier = ident;
             init_decl->as.variable.origin_name = ident;
-            init_decl->as.variable.sc = sc;
+            init_decl->as.variable.sc = st.st;
+            init_decl->as.variable.type = st.ty;
 
             init.as.decl = init_decl;
         } else {
@@ -732,7 +797,8 @@ static Stmt *parse_statement(CompDriver *cd) {
     return expr_stmt;
 }
 
-static ParamArray *parse_param_list(CompDriver *cd, const String *fn_name) {
+// TODO: functions need to know their parameters' types
+static void parse_param_list(CompDriver *cd, Decl *fn_decl) {
     Token begin_param_list = peek_prev_token(cd);
 
     Token next_token = peek_token(cd);
@@ -740,30 +806,28 @@ static ParamArray *parse_param_list(CompDriver *cd, const String *fn_name) {
         advance_token(cd);
     }
 
-    ParamArray *param_list = ParamArray_create();
+    fn_decl->as.fn.params = ParamArray_create();
+    fn_decl->as.fn.type.param_types = DataTypeArray_create();
     next_token = peek_token(cd);
     if (next_token.kind == TOKEN_RIGHT_PAREN) goto finalize_param_list;
     
     // NOTE: do-while? (look at parse args function)
-    int p_cnt = 0;
     while (next_token.kind != TOKEN_RIGHT_PAREN) {
-        p_cnt += 1;
         if (next_token.kind == TOKEN_OP_COMMA) {
             advance_token(cd);
             next_token = peek_token(cd);
         }
-        if (next_token.kind == TOKEN_KW_EXTERN || next_token.kind == TOKEN_KW_STATIC) {
-            // TODO: error: storage class in parameter list
-            err_storage_class_on_param(&cd->errors, cd->tokenizer.src_path, next_token.pos);
-            advance_token(cd);
-            next_token = peek_token(cd);
-            continue;
-        }
+        //if (next_token.kind == TOKEN_KW_EXTERN || next_token.kind == TOKEN_KW_STATIC) {
+        //    err_storage_class_on_param(&cd->errors, cd->tokenizer.src_path, next_token.pos);
+        //    advance_token(cd);
+        //    next_token = peek_token(cd);
+        //    continue;
+        //}
         if (next_token.kind == TOKEN_LEFT_BRACE || next_token.kind == TOKEN_SEMICOLON
             || next_token.kind == TOKEN_EOF
         ) {
             err_unclosed_param_list(&cd->errors, cd->tokenizer.src_path, begin_param_list.pos,
-                fn_name);
+                fn_decl->as.fn.name);
             break;
         } else if (next_token.kind == TOKEN_RIGHT_PAREN) {
             err_expected_parameter(&cd->errors, cd->tokenizer.src_path, next_token.pos);
@@ -772,15 +836,27 @@ static ParamArray *parse_param_list(CompDriver *cd, const String *fn_name) {
             err_unexpected_token(&cd->errors, cd->tokenizer.src_path, next_token);
             break;
         }
-        expect_token(cd, TOKEN_KW_INT);
+        // TODO: parse for long or int type parameters
+        StorageType param_st = parse_type_storage(cd);
+        if (param_st.st != SC_NONE) {
+            err_storage_class_on_param(&cd->errors, cd->tokenizer.src_path, next_token.pos);
+            //advance_token(cd);
+            //next_token = peek_token(cd);
+            //continue;
+        }
+        if (param_st.ty == DATATYPE_INVALID) {
+            err_invalid_type_specifier(&cd->errors, cd->tokenizer.src_path, next_token.pos);
+        }
+        //expect_token(cd, TOKEN_KW_INT);
         next_token = peek_token(cd);
         const String *param_name = parse_identifier(cd);
-        ParamArray_append(param_list, param_name);
+        ParamArray_append(fn_decl->as.fn.params, param_name);
+        DataTypeArray_append(fn_decl->as.fn.type.param_types, param_st.ty);
         next_token = peek_token(cd);
     }
 
 finalize_param_list:
-    return param_list;
+    //fn_decl->as.fn.params = param_list;
 }
 
 static Decl *parse_var_declaration(CompDriver *cd) {
@@ -802,7 +878,7 @@ static Decl *parse_var_declaration(CompDriver *cd) {
 static Decl *parse_declaration(CompDriver *cd) {
     //ssize_t decl_start_idx = cd->parser.curr_idx;
     Token first_tok = peek_token(cd);
-    StorageClass sc = parse_type_storage(cd);
+    StorageType st = parse_type_storage(cd);
 
     const String *ident = parse_identifier(cd);
     Token paren_tok = peek_token(cd);
@@ -811,9 +887,10 @@ static Decl *parse_declaration(CompDriver *cd) {
         Decl *fn_decl = Decl_create(DECL_FUNCTION);
         fn_decl->pos = first_tok.pos;
         fn_decl->as.fn.name = ident;
-        fn_decl->as.fn.sc = sc;
+        fn_decl->as.fn.sc = st.st;
+        fn_decl->as.fn.type.ret_type = st.ty;
         // TODO: static and extern disallowed in param list
-        fn_decl->as.fn.params = parse_param_list(cd, fn_decl->as.fn.name);
+        parse_param_list(cd, fn_decl);
         expect_token(cd, TOKEN_RIGHT_PAREN);
         Token next_tok = peek_token(cd);
         if (next_tok.kind == TOKEN_SEMICOLON) {
@@ -831,7 +908,8 @@ static Decl *parse_declaration(CompDriver *cd) {
         //Parser_set_pos(cd, decl_start_idx);
         Decl *var_decl = parse_var_declaration(cd);
         var_decl->pos = first_tok.pos;
-        var_decl->as.variable.sc = sc;
+        var_decl->as.variable.sc = st.st;
+        var_decl->as.variable.type = st.ty;
         var_decl->as.variable.identifier = ident;
         var_decl->as.variable.origin_name = ident;
         return var_decl;

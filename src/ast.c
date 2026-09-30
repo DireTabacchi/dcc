@@ -76,6 +76,10 @@ void Expr_destroy(Expr *expr) {
     case EXPR_CONSTANT:
         free(expr);
         break;
+    case EXPR_CAST:
+        Expr_destroy(expr->as.cast.expr);
+        free(expr);
+        break;
     case EXPR_UNARY:
         Expr_destroy(expr->as.unary.expr);
         free(expr);
@@ -353,6 +357,9 @@ char *assign_op_names[12] = {
 
 static void Block_print(Block *block, int indent_lvl);
 
+// TODO: simplify some of the switch/if blocks to use a single printf statement and a table
+//       in the print functions
+
 void Expr_unary_print(Expr *expr, int indent_lvl) {
     if (expr == NULL) return;
 
@@ -399,11 +406,35 @@ void Expr_print(Expr *expr, int indent_lvl) {
         break;
 
     case EXPR_CONSTANT:
-        printf("%2$*1$s(%3$d)\n", spaces+8, "Constant", expr->as.constant);
+        printf("%2$*1$s", spaces+8, "Constant");
+        switch (expr->as.constant.kind) {
+        case CONSTANT_INT:
+            printf("Int(%d", expr->as.constant.as.const_int);
+            break;
+        case CONSTANT_LONG:
+            printf("Long(%ld", expr->as.constant.as.const_long);
+            break;
+        }
+        printf(")\n");
         break;
 
     case EXPR_VAR:
         printf("%2$*1$s(%3$s)\n", spaces+3, "Var", expr->as.var.name->cstr);
+        break;
+
+    case EXPR_CAST:
+        // TODO: turn type names into table
+        printf("%2$*1$s(\n", spaces+4, "Cast");
+        indent_lvl += 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$s=%3$s\n", spaces+11, "target_type",
+            expr->as.cast.target == DATATYPE_INT ? "int" : "long");
+        printf("%2$*1$s=(\n", spaces+4, "expr");
+        Expr_print(expr->as.cast.expr, indent_lvl+1);
+        printf("%2$*1$c\n", spaces+1, ')');
+        indent_lvl -= 1;
+        spaces = indent_lvl * SPACES_PER_INDENT;
+        printf("%2$*1$c\n", spaces+1,')');
         break;
 
     case EXPR_ASSIGN:
@@ -717,6 +748,8 @@ void Decl_print(Decl *decl, int indent_lvl) {
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$s=%3$s\n", spaces+4, "name", decl->as.variable.identifier->cstr);
+        printf("%2$*1$s=%3$s\n", spaces+4, "type",
+            decl->as.variable.type == DATATYPE_INT ? "int" : "long");
         printf("%2$*1$s=%3$s\n", spaces+13, "Storage Class",
             decl->as.variable.sc == SC_STATIC ? "static" :
                 decl->as.variable.sc == SC_EXTERN ? "extern" : "none");
@@ -734,6 +767,8 @@ void Decl_print(Decl *decl, int indent_lvl) {
         indent_lvl += 1;
         spaces = indent_lvl * SPACES_PER_INDENT;
         printf("%2$*1$s=`%3$s`\n", spaces+4, "name", decl->as.fn.name->cstr);
+        printf("%2$*1$s=%3$s\n", spaces+6, "return",
+            decl->as.fn.type.ret_type == DATATYPE_INT ? "int" : "long");
         printf("%2$*1$s=%3$s\n", spaces+13, "Storage Class",
             decl->as.fn.sc == SC_STATIC ? "static" :
                 decl->as.fn.sc == SC_EXTERN ? "extern" : "none");
@@ -746,7 +781,18 @@ void Decl_print(Decl *decl, int indent_lvl) {
             printf("(\n");
             for (size_t p_idx = 0; p_idx < decl->as.fn.params->len; p_idx++) {
                 const String *p = decl->as.fn.params->params[p_idx];
-                printf("%2$*1$s\n", (int)(spaces+p->len), p->cstr);
+                printf("%2$*1$s ", (int)(spaces+p->len), p->cstr);
+                switch(decl->as.fn.type.param_types->elems[p_idx]) {
+                case DATATYPE_INVALID:
+                    printf("(DATATYPE INVALID)\n");
+                    break;
+                case DATATYPE_INT:
+                    printf("(int)\n");
+                    break;
+                case DATATYPE_LONG:
+                    printf("(long)\n");
+                    break;
+                }
             }
             indent_lvl -= 1;
             spaces = indent_lvl * SPACES_PER_INDENT;

@@ -6,6 +6,7 @@
 
 #include "param_array.h"
 #include "sym_table.h"
+#include "typing.h"
 
 typedef enum unaryOpKind_ {
     UNARY_INVALID,
@@ -62,6 +63,7 @@ typedef enum exprKind_ {
     EXPR_INVALID,
     EXPR_CONSTANT,
     EXPR_VAR,
+    EXPR_CAST,
     EXPR_UNARY,
     EXPR_BINARY,
     EXPR_ASSIGN,
@@ -113,6 +115,16 @@ typedef enum storageClass_ {
     SC_EXTERN
 } StorageClass;
 
+typedef enum constKind_ {
+    CONSTANT_INT,
+    CONSTANT_LONG,
+} ConstantKind;
+
+typedef struct storageType_ {
+    StorageClass st;
+    DataType ty;
+} StorageType;
+
 typedef struct exprArray_ ExprArray;
 
 typedef struct expr_ *Expr_ty;
@@ -120,11 +132,21 @@ typedef struct expr_ {
     ExpressionKind kind;
     Position pos;
     union {
-        int constant;
+        struct {
+            ConstantKind kind;
+            union {
+                int const_int;
+                long const_long;
+            } as;
+        } constant;
         struct {
         const String *name;
         const String *old_name;
         } var;
+        struct {
+            DataType target;
+            Expr_ty expr;
+        } cast;
         struct {
             AssignOpKind op;
             Expr_ty lhs;
@@ -184,6 +206,7 @@ typedef struct decl_ {
             const String *identifier;
             const String *origin_name;
             Expr *init;
+            DataType type;
             StorageClass sc;
         } variable;
         struct {
@@ -191,6 +214,7 @@ typedef struct decl_ {
             const String *old_name;
             ParamArray *params;
             Block *body;
+            FnType type;
             StorageClass sc;
         } fn;
     } as;

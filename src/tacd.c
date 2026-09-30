@@ -209,7 +209,7 @@ static TacdBinaryOp trx_binary_operator(BinaryOpKind op) {
 static TacdValue trx_expression(CompDriver *cd, TacdFunction *tacd_fn, Expr *expr) {
     switch (expr->kind) {
     case EXPR_CONSTANT:
-        return (TacdValue){ .kind = TACD_VALUE_CONSTANT, .val.constant = expr->as.constant };
+        return (TacdValue){ .kind = TACD_VALUE_CONSTANT, .val.constant = expr->as.constant.as.const_int };
 
     case EXPR_UNARY: {
         TacdValue src = trx_expression(cd, tacd_fn, expr->as.unary.expr);
