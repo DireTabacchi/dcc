@@ -1,7 +1,9 @@
 program = Program(declaration*)
 declaration = FnDecl(function_declaration) | VarDecl(variable_declaration)
-variable_declaration = (identifier name, exp? init, storage_class?)
-function_declaration = (identifier name, identifier* params, block? body, storage_class?)
+variable_declaration = (identifier name, exp? init, type var_type, storage_class?)
+function_declaration = (identifier name, identifier* params, block? body, type fn_type,
+                        storage_class?)
+type = Int | Long | FnType(type* params, type ret)
 storage_class = Static | Extern
 block = Block(block_item*)
 block_item = S(statement) | D(declaration)
@@ -21,13 +23,15 @@ statement = Return(exp)
           | Case(exp label_expr, statement, identifier label)
           | Default(statement, identifier label)
           | Null
-exp = Constant(int)
+exp = Constant(constant)
     | Var(indentifier)
+    | Cast(type target_type, exp)
     | Unary(unary_operator, exp)
     | Binary(binary_operator, exp, exp)
     | Assignment(exp, exp)
     | Conditional(exp condition, exp, exp)
     | FnCall(identifier, exp* args)
+constant = ConstInt(int) | ConstLong(int)
 unary_operator = Complement | Negate | Not | Increment | Decrement
 binary_operator = Add | subtract | Multiply | Divide | Remainder
                 | BitAnd | BitOr | BitXor | LShift | RShift
